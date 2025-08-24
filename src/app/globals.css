@@ -1,0 +1,217 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  h1 {
+    @apply font-semibold text-gray-800 lg:text-4xl sm:text-3xl text-2xl;
+  }
+  h2 {
+    @apply font-semibold text-gray-800 lg:text-3xl sm:text-2xl text-xl;
+  }
+  h3 {
+    @apply font-semibold text-gray-800 lg:text-2xl sm:text-xl text-lg;
+  }
+  h4 {
+    @apply font-semibold text-gray-800 lg:text-xl sm:text-lg text-base;
+  }
+  h5 {
+    @apply font-semibold text-gray-800 lg:text-lg sm:text-base text-sm;
+  }
+  h6 {
+    @apply font-semibold text-gray-800 lg:text-base sm:text-sm text-xs;
+  }
+  input {
+    @apply outline-primaryVariant-500;
+  }
+
+  .custom-phone-input input {
+    outline: none !important;
+  }
+}
+
+/* Hide scrollbar for all elements */
+* {
+  scrollbar-width: none; /* Firefox */
+}
+
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, and Opera */
+}
+/* .track {
+  background-color: #e0f4f0; 
+  height: 10px;
+  border-radius: 5px;
+  margin: 0 2.5px;
+  position: relative;
+  overflow: hidden;
+} */
+
+/* Styles for the filled part of the track */
+/* .track-filled {
+  background-color: #a40d65; 
+  height: 100%;
+  border-radius: 5px 0 0 5px;
+  position: absolute;
+  top: 0;
+  left: 0;
+} */
+
+/* Styles for the track of the slider */
+/* Track styles */
+.track {
+  background-color: #ced0d0; /* Light version of primary color for contrast */
+  height: 8px;
+  border-radius: 5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.track-1 {
+  background-color: #3c4144; /* Unfilled part (optional) */
+}
+
+/* Thumb styles */
+.thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: #0b1215; /* Primary color */
+  border: 3px solid #ffffff; /* White border for contrast */
+  cursor: grab;
+  outline-color: #6d7173;
+  margin-top: -8px; /* Center thumb on track */
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Hover and focus effects */
+.thumb:hover,
+.thumb:focus {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px #6d7173;
+}
+
+/* Active (click-drag) effects */
+.thumb:active {
+  cursor: grabbing;
+  transform: scale(1.2);
+  box-shadow: 0 6px 16px #6d7173;
+}
+
+/* Apply to specific elements with the class .no-scrollbar */
+/* Firefox */
+/* .no-scrollbar {
+  scrollbar-width: none;
+} */
+
+/* Chrome, Safari, and Opera */
+/* .no-scrollbar::-webkit-scrollbar {
+  display: none; 
+} */
+
+/* Custom Styles for the Swiper Pagination Dots */
+.swiper-pagination-bullet {
+  background-color: #e5e7eb; /* Tailwind's 'gray-200' */
+  opacity: 1;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px; /* Adjust spacing between dots */
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #ef4444; /* Tailwind's 'red-500' */
+}
+
+/* Custom Navigation Buttons */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #ef4444; /* Tailwind's 'red-500' */
+  transition: transform 0.2s;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  transform: scale(1.1); /* Slight zoom on hover */
+}
+
+/* Adjustments for the Swiper Container */
+.swiper-container {
+  overflow: hidden;
+  padding: 20px 0; /* Space around the Swiper */
+}
+
+/* Hide spinner buttons in WebKit browsers (Chrome, Safari, Edge) */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Hide spinner buttons in Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
