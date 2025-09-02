@@ -1,12 +1,8 @@
 import {
-  Anton,
-  Archivo_Black,
   Caveat,
   Cookie,
   Merriweather,
   Noto_Sans_Display,
-  Playfair_Display,
-  Playfair_Display_SC,
   Roboto_Mono,
   Roboto_Serif,
   Russo_One,
@@ -14,23 +10,12 @@ import {
   Yatra_One,
 } from "next/font/google";
 
-
 export const merriweather = Merriweather({
   subsets: ["latin"],
   weight: ["300", "400", "700", "900"], // Include the weights you need
   variable: "--font-merriweather", // Optional: Define a CSS variable
 });
 
-export const playfair = Playfair_Display({
-  subsets: ["latin"], // Choose character sets
-  weight: ["400", "500", "600", "700"], // Include desired font weights
-  variable: "--font-playfair", // Custom CSS variable (optional)
-});
-export const playfairSc = Playfair_Display_SC({
-  subsets: ["latin"], // Choose character sets
-  weight: ["400", "700", "900"], // Include desired font weights
-  variable: "--font-playfair", // Custom CSS variable (optional)
-});
 export const roboto_mono = Roboto_Mono({
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
