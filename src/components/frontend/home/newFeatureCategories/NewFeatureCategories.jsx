@@ -1,7 +1,6 @@
 import { getMenu } from "@/components/lib/getMenu";
-import React from "react";
 import NewFeatureCategorySwiper from "./NewFeatureCategorySwiper";
-import { yatra } from "@/utils/font";
+import { titleFont } from "@/utils/font";
 
 const NewFeatureCategories = async () => {
   const data = await getMenu();
@@ -15,7 +14,7 @@ const NewFeatureCategories = async () => {
           <h2
             className="text-2xl sm:text-3xl md:text-4xl  font-bold  text-gray-900 text-center"
             style={{
-              fontFamily: yatra.style.fontFamily,
+              fontFamily: titleFont.style.fontFamily,
             }}
           >
             Feature <span className="text-primaryVariant-500">Category</span>

@@ -8,7 +8,7 @@ import "react-photo-view/dist/react-photo-view.css";
 import QueryProviders from "@/components/providers/QueryProviders";
 import Providers from "@/components/providers/Providers";
 import { getServerSettingData } from "@/components/lib/getServerSettingData";
-import { merriweather } from "@/utils/font";
+import { bodyFont, merriweather } from "@/utils/font";
 import Script from "next/script";
 
 export async function generateMetadata() {
@@ -65,7 +65,7 @@ export default async function RootLayout({ children }) {
         </Script>
       </head>
       <body
-        className={merriweather.className}
+        className={bodyFont.className}
         // style={{ "touch-action": "none" }}
       >
         <noscript>

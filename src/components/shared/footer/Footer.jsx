@@ -24,7 +24,7 @@ const Footer = ({ menuData }) => {
   }
 
   return (
-    <div className="bg-blackVariant-oilBlack border-t-2 border-primary mt-10 md:pb-0 pb-16">
+    <div className="bg-primaryVariant-700 border-t-2 border-primary mt-10 md:pb-0 pb-16">
       <Contain>
         <footer>
           <div className="mx-auto  px-4 pb-6 pt-16 sm:px-6 lg:px-8 ">
@@ -292,62 +292,66 @@ const Footer = ({ menuData }) => {
                         {footerData?.address}
                       </address>
                     </li>
-                    <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="size-5 shrink-0 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
+                    {footerData?.address_two && (
+                      <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="size-5 shrink-0 text-primary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
 
-                      <address className="-mt-0.5 flex-1 not-italic text-gray-200">
-                        {footerData?.address_two}
-                      </address>
-                    </li>
-                    <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="size-5 shrink-0 text-primary"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                      </svg>
+                        <address className="-mt-0.5 flex-1 not-italic text-gray-200">
+                          {footerData?.address_two}
+                        </address>
+                      </li>
+                    )}
+                    {/* {footerData?.address_three && (
+                      <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="size-5 shrink-0 text-primary"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
 
-                      <address className="-mt-0.5 flex-1 not-italic text-gray-200">
-                        {footerData?.address_three}
-                      </address>
-                    </li>
+                        <address className="-mt-0.5 flex-1 not-italic text-gray-200">
+                          {footerData?.address_three}
+                        </address>
+                      </li>
+                    )} */}
                   </ul>
                 </div>
               </div>
             </div>
 
-            <div className="mt-12 border-t border-gray-300 pt-6">
+            {/* <div className="mt-12 border-t border-gray-300 pt-6">
               <div className="text-center sm:flex sm:justify-between sm:text-left">
                 <p className="text-sm text-gray-500">
                   <span className="block sm:inline">All rights reserved.</span>
@@ -361,10 +365,10 @@ const Footer = ({ menuData }) => {
                 </p>
 
                 <p className="mt-4 text-sm text-gray-500 sm:order-first sm:mt-0">
-                  &copy; 2025 Classic IT & Sky Mart Ltd
+                  &copy; 2025 Arisa
                 </p>
               </div>
-            </div>
+            </div> */}
           </div>
         </footer>
       </Contain>

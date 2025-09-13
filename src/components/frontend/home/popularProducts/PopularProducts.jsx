@@ -1,24 +1,19 @@
 "use client";
 // app/popular-products/page.js
 
-import Contain from "@/components/common/Contain";
 import useGetSettingData from "@/components/lib/getSettingData";
 
 import ProductSectionSkeleton from "@/components/shared/loader/ProductSectionSkeleton";
 
 import { Button } from "@/components/ui/button";
 import { BASE_URL } from "@/components/utils/baseURL";
-import { averageRatingStar } from "@/utils/average";
-import { yatra } from "@/utils/font";
+import { titleFont } from "@/utils/font";
 import { isHexColor, lineThroughPrice, productPrice } from "@/utils/helper";
 
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect } from "react";
-import { useRef, useState } from "react";
-import { FaStar, FaStarHalfAlt } from "react-icons/fa";
-import Skeleton from "react-loading-skeleton";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "react-toastify";
 
 // Fetch the data dynamically based on the category_id from searchParams
@@ -124,7 +119,7 @@ const PopularProducts = () => {
           <h2
             className="text-2xl  sm:text-3xl lg:text-4xl font-bold text-gray-900 text-center md:text-start w-full md:w-1/2 "
             style={{
-              fontFamily: yatra.style.fontFamily,
+              fontFamily: titleFont.style.fontFamily,
             }}
           >
             New <span className="text-primaryVariant-500">Arrival</span>

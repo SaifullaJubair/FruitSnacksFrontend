@@ -1,6 +1,8 @@
 import {
   Caveat,
   Cookie,
+  Cormorant_Garamond,
+  DM_Sans,
   Merriweather,
   Noto_Sans_Display,
   Roboto_Mono,
@@ -9,6 +11,19 @@ import {
   Satisfy,
   Yatra_One,
 } from "next/font/google";
+
+export const bodyFont = DM_Sans({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600"],
+  variable: "--font-body",
+});
+
+export const titleFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["500", "600", "700"],
+  variable: "--font-title",
+});
+
 
 export const merriweather = Merriweather({
   subsets: ["latin"],

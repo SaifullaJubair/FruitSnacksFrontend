@@ -1,5 +1,6 @@
 "use client";
 
+// import { titleFont } from "@/utils/font";
 import { useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
@@ -205,7 +206,7 @@ export default ProductDescription;
 //      <h2
 //        className="text-xl sm:text-2xl  pt-6 px-6  font-bold  text-gray-800"
 //        style={{
-//          fontFamily: yatra.style.fontFamily,
+        //  fontFamily: titleFont.style.fontFamily,
 //        }}
 //      >
 //        Product <span className="text-primaryVariant-500">Description</span>

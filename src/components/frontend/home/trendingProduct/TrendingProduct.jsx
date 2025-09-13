@@ -1,13 +1,12 @@
 "use client";
 
-import Contain from "@/components/common/Contain";
 
-import TrendingSlider from "./TrendingSlider";
+import useGetTrendingProducts from "@/components/lib/getTrendingProducts";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { IoIosArrowRoundForward } from "react-icons/io";
-import useGetTrendingProducts from "@/components/lib/getTrendingProducts";
-import { yatra } from "@/utils/font";
+import TrendingSlider from "./TrendingSlider";
+import { titleFont } from "@/utils/font";
 
 const TrendingProduct = () => {
   const { data: products = [], isLoading } = useGetTrendingProducts();
@@ -20,7 +19,7 @@ const TrendingProduct = () => {
           <h2
             className="text-2xl sm:text-3xl md:text-4xl  font-bold text-center text-gray-800"
             style={{
-              fontFamily: yatra.style.fontFamily,
+              fontFamily: titleFont.style.fontFamily,
             }}
           >
             Trending <span className="text-primaryVariant-500">Product</span>

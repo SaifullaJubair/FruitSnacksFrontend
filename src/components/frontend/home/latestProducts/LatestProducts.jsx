@@ -1,18 +1,14 @@
 // PopularProducts.js
 
-import Contain from "@/components/common/Contain";
 import { getJustForYouProducts } from "@/components/lib/getJustForProducts";
 import { getServerSettingData } from "@/components/lib/getServerSettingData";
 import ProductSectionSkeleton from "@/components/shared/loader/ProductSectionSkeleton";
 import { Button } from "@/components/ui/button";
-import { images } from "@/components/utils/ImageImport";
-import { averageRatingStar } from "@/utils/average";
-import { yatra } from "@/utils/font";
+import { titleFont } from "@/utils/font";
 import { isHexColor, lineThroughPrice, productPrice } from "@/utils/helper";
 import Image from "next/image";
 import Link from "next/link";
 import { Suspense } from "react";
-import { FaStar, FaStarHalfAlt } from "react-icons/fa";
 import { IoIosArrowRoundForward } from "react-icons/io";
 
 const OnlyForYouProduct = async () => {
@@ -28,7 +24,7 @@ const OnlyForYouProduct = async () => {
           <h2
             className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-gray-900"
             style={{
-              fontFamily: yatra.style.fontFamily,
+              fontFamily: titleFont.style.fontFamily,
             }}
           >
             New <span className="text-primaryVariant-500">Arrival</span>

@@ -1,17 +1,17 @@
 "use client";
+import { titleFont } from "@/utils/font";
+import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { useState } from "react";
-import { IoMdClose } from "react-icons/io";
-import FilterSection from "./FilterSection";
 import { BsFilterLeft } from "react-icons/bs";
-import { useQuery } from "@tanstack/react-query";
-import CategoryViewCard from "./CategoryViewCard";
-import ProductSkeleton from "../shared/loader/ProductSkeleton";
+import { IoMdClose } from "react-icons/io";
+import { RiHome2Line } from "react-icons/ri";
 import NotFoundData from "../common/NotFoundData";
 import PaginationWithPageBtn from "../common/paginationWithPageBtn/PaginationWithPageBtn";
+import ProductSkeleton from "../shared/loader/ProductSkeleton";
 import { BASE_URL } from "../utils/baseURL";
-import { yatra } from "@/utils/font";
-import { RiHome2Line } from "react-icons/ri";
+import CategoryViewCard from "./CategoryViewCard";
+import FilterSection from "./FilterSection";
 
 const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
   const [rows, setRows] = useState(20);
@@ -78,7 +78,7 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
       <h2
         className="text-2xl sm:text-3xl mt-4 font-bold text-center md:text-start text-gray-800"
         style={{
-          fontFamily: yatra.style.fontFamily,
+          fontFamily: titleFont.style.fontFamily,
         }}
       >
         <span className="capitalize ">{slug[0]}</span>{" "}

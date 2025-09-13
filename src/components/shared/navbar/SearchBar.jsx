@@ -1,7 +1,7 @@
 "use client";
 import SearchForm from "@/components/frontend/searchForm/SearchForm";
-import { yatra } from "@/utils/font";
-import { useState, useRef, useEffect } from "react";
+import { titleFont } from "@/utils/font";
+import { useEffect, useRef, useState } from "react";
 import { FiSearch, FiX } from "react-icons/fi";
 
 const SearchBar = () => {
@@ -49,7 +49,7 @@ const SearchBar = () => {
           <h2
             className="text-lg lg:text-2xl mr-2 font-bold text-center sm:flex hidden text-gray-900"
             style={{
-              fontFamily: yatra.style.fontFamily,
+              fontFamily: titleFont.style.fontFamily,
             }}
           >
             Search{" "}
