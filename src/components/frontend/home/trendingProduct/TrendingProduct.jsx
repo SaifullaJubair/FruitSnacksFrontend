@@ -1,6 +1,5 @@
 "use client";
 
-
 import useGetTrendingProducts from "@/components/lib/getTrendingProducts";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -22,7 +21,7 @@ const TrendingProduct = () => {
               fontFamily: titleFont.style.fontFamily,
             }}
           >
-            Trending <span className="text-primaryVariant-500">Product</span>
+            Trending <span className="text-primary-500">Product</span>
           </h2>
           <Link href={"/all-trending-products"}>
             {" "}

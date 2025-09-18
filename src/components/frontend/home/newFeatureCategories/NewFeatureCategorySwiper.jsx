@@ -10,7 +10,7 @@ const NewFeatureCategorySwiper = ({ featureData }) => {
       {featureData.map(({ category }) => (
         <div key={category?._id} className="relative group">
           <Link href={`/category/${category.category_slug}`}>
-            <div className="relative w-full aspect-[2/3] overflow-hidden shadow-lg">
+            <div className="relative w-full  aspect-[2/3] overflow-hidden shadow-lg">
               {category.category_video ? (
                 <video
                   src={category?.category_video}
@@ -28,7 +28,7 @@ const NewFeatureCategorySwiper = ({ featureData }) => {
                 />
               )}
             </div>
-            <div className="absolute bottom-4 left-0 right-0 text-center bg-black bg-opacity-50 text-white py-2 text-xs sm:text-sm md:text-base lg:text-lg font-semibold">
+            <div className="absolute bottom-3 left-0 right-0 text-center bg-secondary opacity-75 group-hover:opacity-100   duration-300  text-white py-2 text-xs sm:text-sm md:text-base lg:text-lg font-semibold">
               {category?.category_name}
             </div>
           </Link>

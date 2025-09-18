@@ -21,7 +21,7 @@ import SearchForm from "@/components/frontend/searchForm/SearchForm";
 const Item = ({ isActive, href, label }) => (
   <Link
     href={href}
-    className={` text-sm xl:text-base font-medium  xl:tracking-wide hover:text-primaryVariant-500  hover:underline hover:underline-offset-8 ${
+    className={` text-sm xl:text-base font-medium  xl:tracking-wide hover:text-primary-500  hover:underline hover:underline-offset-8 ${
       isActive
         ? "text-primary  underline underline-offset-8"
         : "text-text-default"
@@ -193,30 +193,7 @@ const SecondNavbar = ({ menuData }) => {
             /> */}
           </Link>
 
-          {/* <div className="relative  sm:max-w-xs md:max-w-sm lg:max-w-md  xl:max-w-xl lg:mx-8    mx-4 w-full hidden sm:flex">
-            <label htmlFor="Search" className="sr-only">
-              {" "}
-              Search{" "}
-            </label>
-
-            <input
-              type="text"
-              id="Search"
-              placeholder="Search for..."
-              className="w-full   border border-primaryVariant-200 outline-primary   py-2.5 pe-10 shadow-sm sm:text-sm px-3"
-            />
-
-            <span className="absolute inset-y-0 end-0 grid w-10 place-content-center bg-primary rounded-r-md hover:bg-primary/90">
-              <button
-                type="button"
-                className="text-text-light hover:text-text-semiLight"
-              >
-                <span className="sr-only">Search</span>
-
-                <FiSearch className="text-lg text-white" />
-              </button>
-            </span>
-          </div> */}
+          
 
           <div className="hidden lg:flex items-center space-x-3  xl:space-x-8  whitespace-nowrap">
             <div className="relative">
@@ -461,14 +438,14 @@ const SecondNavbar = ({ menuData }) => {
                 <SearchBar />
               </div>
             </div>
-            <div className="h-6 w-px bg-primaryVariant-200 md:inline-flex hidden"></div>
+            <div className="h-6 w-px bg-primary-200 md:inline-flex hidden"></div>
 
             <Link
               href="/wishlist"
               className="hidden md:flex flex-col items-center justify-center  text-text-semiLight relative"
             >
               <FiHeart className="text-text-default" size={20} />
-              <span className="text-xs bg-primaryVariant-400 text-white rounded-full  w-4 h-4 flex items-center justify-center absolute -top-2 right-0">
+              <span className="text-xs bg-primary-400 text-white rounded-full  w-4 h-4 flex items-center justify-center absolute -top-2 right-0">
                 {wishlistLength !== null && <> {wishlistLength}</>}
               </span>
               <p className="text-xs    text-text-light hidden md:flex ">
@@ -476,13 +453,13 @@ const SecondNavbar = ({ menuData }) => {
               </p>
             </Link>
 
-            <div className="h-6 w-px bg-primaryVariant-200 hidden md:flex"></div>
+            <div className="h-6 w-px bg-primary-200 hidden md:flex"></div>
             <Link
               href="/cart"
               className=" text-text-semiLight  flex-col hidden md:flex items-center  justify-center relative"
             >
               <FiShoppingCart className="text-text-default" size={20} />
-              <span className="text-xs bg-primaryVariant-400 text-white  rounded-full  w-4 h-4 flex items-center justify-center absolute -top-2  right-0">
+              <span className="text-xs bg-primary-400 text-white  rounded-full  w-4 h-4 flex items-center justify-center absolute -top-2  right-0">
                 {productLength !== null && <> {productLength}</>}
               </span>
               <p className="text-xs whitespace-nowrap   text-text-light hidden md:flex">
@@ -491,7 +468,7 @@ const SecondNavbar = ({ menuData }) => {
             </Link>
             {!userGetLoading && (
               <>
-                <div className="h-6 w-px bg-primaryVariant-200 "></div>
+                <div className="h-6 w-px bg-primary-200 "></div>
                 {userInfo?.data ? (
                   <div className="text-sm items-center space-x-2  hidden xl:inline-flex cursor-pointer">
                     {userInfo?.data ? (
@@ -574,7 +551,7 @@ const SecondNavbar = ({ menuData }) => {
 
                             <div className="mt-3 border-t border-gray-200 pt-[5px]">
                               <button
-                                className="flex items-center justify-center gap-[7px]   p-[8px]  py-[3px] text-[1rem] text-red-500 bg-primaryVariant-100 font-medium w-full hover:bg-primaryVariant-200"
+                                className="flex items-center justify-center gap-[7px]   p-[8px]  py-[3px] text-[1rem] text-red-500 bg-primary-100 font-medium w-full hover:bg-primary-200"
                                 type="button"
                                 onClick={handleLogOut}
                               >

@@ -11,7 +11,7 @@ const ProductInfo = ({ products }) => {
           <Link
             href={`/products/${product?.product_slug}`}
             key={index}
-            className="bg-white   shadow-md border-primaryVariant-100 border h-80 sm:h-96 "
+            className="bg-white   shadow-md border-primary-100 border h-80 sm:h-96 "
           >
             <div className="relative p-2 group">
               {product.isNew && (

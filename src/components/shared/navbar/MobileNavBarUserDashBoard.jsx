@@ -109,7 +109,7 @@ export default function MobileNavBarUserDashBoard() {
   return (
     <div className="fixed -bottom-1 left-0 right-0 bg-white shadow-lg flex items-center justify-around py-2 md:hidden z-50  h-16">
       <Link
-        className={`flex flex-col items-center font-medium  hover:text-primaryVariant-500  ${
+        className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
           isActive("/") ? "text-primary" : "text-text-semiLight"
         }`}
         href={"/"}
@@ -119,7 +119,7 @@ export default function MobileNavBarUserDashBoard() {
         {/* <span className="text-xs">Home</span> */}
       </Link>
       <Link
-        className={`flex flex-col items-center font-medium  hover:text-primaryVariant-500  ${
+        className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
           isActive("/all-products") ? "text-primary" : "text-text-semiLight"
         }`}
         href={"/all-products"}
@@ -141,7 +141,7 @@ export default function MobileNavBarUserDashBoard() {
       {/* 
       <Link
         href="/user-profile?tab=purchase-history"
-        className={`flex flex-col items-center font-medium  hover:text-primaryVariant-500  ${
+        className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
           isActive("/user-profile?tab=purchase-history")
             ? "text-primary"
             : "text-text-semiLight"
@@ -153,7 +153,7 @@ export default function MobileNavBarUserDashBoard() {
 
       <Link
         href="/shop"
-        className={`flex flex-col items-center   hover:text-primaryVariant-500  ${
+        className={`flex flex-col items-center   hover:text-primary-500  ${
           isActive("/shop") ? "text-primary" : "text-text-default"
         }`}
       >
@@ -163,7 +163,7 @@ export default function MobileNavBarUserDashBoard() {
 
       <Link
         href="/cart"
-        className={`flex flex-col items-center font-medium  hover:text-primaryVariant-500  ${
+        className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
           isActive("/user-profile?tab=purchase-history")
             ? "text-primary"
             : "text-text-semiLight"
@@ -197,7 +197,7 @@ export default function MobileNavBarUserDashBoard() {
                   <Link
                     key={index}
                     onClick={() => setActionButtonActive(!actionButtonActive)}
-                    className={`hover:bg-primaryVariant-350 hover:text-white flex items-center gap-3 font-medium py-1 whitespace-nowrap px-4 w-full  m-1 ${
+                    className={`hover:bg-primary-300 hover:text-white flex items-center gap-3 font-medium py-1 whitespace-nowrap px-4 w-full  m-1 ${
                       isActive(`/user-profile?tab=${item.name}`)
                         ? "bg-primary text-white"
                         : ""
@@ -225,7 +225,7 @@ export default function MobileNavBarUserDashBoard() {
               <div className="flex  flex-col items-start ">
                 <Link
                   href="/sign-in"
-                  className={`text-lg px-2 font-medium  hover:text-primaryVariant-500  ${
+                  className={`text-lg px-2 font-medium  hover:text-primary-500  ${
                     isActive("/sign-in")
                       ? "text-primary"
                       : "text-text-semiLight"
@@ -236,7 +236,7 @@ export default function MobileNavBarUserDashBoard() {
 
                 <Link
                   href="/sign-up"
-                  className={`text-lg px-2 font-medium  hover:text-primaryVariant-500  ${
+                  className={`text-lg px-2 font-medium  hover:text-primary-500  ${
                     isActive("/sign-up")
                       ? "text-primary"
                       : "text-text-semiLight"

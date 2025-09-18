@@ -143,12 +143,12 @@ const ComparisonTable = ({ selectedProducts }) => {
           <tr>
             <td className="p-3 border border-gray-200 bg-gray-50"></td>
             <td className="p-3 border border-gray-200 text-center">
-              <button className="bg-primaryVariant-600 text-white py-2 px-4 hover:bg-primary">
+              <button className="bg-primary-600 text-white py-2 px-4 hover:bg-primary">
                 Add to Cart
               </button>
             </td>
             <td className="p-3 border border-gray-200 text-center">
-              <button className="bg-primaryVariant-600 text-white py-2 px-4 hover:bg-primary">
+              <button className="bg-primary-600 text-white py-2 px-4 hover:bg-primary">
                 Buy Now
               </button>
             </td>

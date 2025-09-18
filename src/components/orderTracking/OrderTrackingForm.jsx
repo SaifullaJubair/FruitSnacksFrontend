@@ -84,7 +84,7 @@ const OrderTrackingForm = ({ setOrder }) => {
           )} */}
           <button
             type="submit"
-            className="px-8 py-2.5 leading-5 text-white transition-colors duration-300 transform bg-primary   hover:bg-primaryVariant-400 focus:outline-none focus:bg-gray-600"
+            className="px-8 py-2.5 leading-5 text-white transition-colors duration-300 transform bg-primary   hover:bg-primary-400 focus:outline-none focus:bg-gray-600"
           >
             Track
           </button>

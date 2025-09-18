@@ -187,7 +187,7 @@ const Shop = () => {
               variant={categoryId === "" ? "default" : "outline"}
               className={`sm:text-base text-sm whitespace-nowrap border ${
                 categoryId === ""
-                  ? "bg-primaryVariant-500 text-white border-primaryVariant-500"
+                  ? "bg-primary-500 text-white border-primary-500"
                   : ""
               }`}
             >
@@ -217,7 +217,7 @@ const Shop = () => {
                     size="sm"
                     className={`sm:text-base text-sm whitespace-nowrap border ${
                       categoryId === category?._id
-                        ? "bg-primaryVariant-500 text-white border-primaryVariant-500"
+                        ? "bg-primary-500 text-white border-primary-500"
                         : ""
                     }`}
                   >
@@ -587,7 +587,7 @@ const Shop = () => {
             <div className="flex justify-center mt-8">
               <Button
                 onClick={handleLoadMore}
-                className="bg-primaryVariant-500 text-white px-6 py-2  hover:bg-primaryVariant-600 transition-colors duration-300"
+                className="bg-primary-500 text-white px-6 py-2  hover:bg-primary-600 transition-colors duration-300"
               >
                 Load More
               </Button>

@@ -3,7 +3,7 @@ import "react-loading-skeleton/dist/skeleton.css";
 
 const ProductSkeleton = () => {
   return (
-    <div className="bg-white   my-4 shadow-md border-primaryVariant-100 border h-80 sm:h-96">
+    <div className="bg-white   my-4 shadow-md border-primary-100 border h-80 sm:h-96">
       <div className="p-2">
         <Skeleton height={190} />
       </div>

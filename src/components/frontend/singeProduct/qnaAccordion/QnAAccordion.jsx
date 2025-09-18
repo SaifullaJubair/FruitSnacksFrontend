@@ -133,7 +133,7 @@ const QnAAccordion = ({ product }) => {
                         handleDataPost(); // Submit question
                       }
                     }}
-                    className="border-primaryVariant-300 outline-primaryVariant-600  border w-full px-2 py-2 "
+                    className="border-primary-300 outline-primary-600  border w-full px-2 py-2 "
                     rows="3"
                     maxLength="300"
                   />

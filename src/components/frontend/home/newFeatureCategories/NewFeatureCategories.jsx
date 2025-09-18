@@ -9,7 +9,7 @@ const NewFeatureCategories = async () => {
   );
   return (
     <>
-      <div className="my-16 max-w-[98%] mx-auto">
+      <div className="my-16 max-w-4xl mx-auto">
         <div className="mb-8">
           <h2
             className="text-2xl sm:text-3xl md:text-4xl  font-bold  text-gray-900 text-center"
@@ -17,7 +17,7 @@ const NewFeatureCategories = async () => {
               fontFamily: titleFont.style.fontFamily,
             }}
           >
-            Feature <span className="text-primaryVariant-500">Category</span>
+            Feature <span className="text-primary-500">Category</span>
           </h2>
           <h6 className="text-center text-gray-600 text-sm">Explore more</h6>
         </div>

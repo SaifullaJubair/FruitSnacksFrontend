@@ -46,7 +46,7 @@ const OrderInvoice = () => {
             />
           </div>
         </article>
-        <div className=" p-2.5 border-b-2 border-primary  grid grid-cols-4 divide-x-2 divide-primaryVariant-300 mt-3 gap-4">
+        <div className=" p-2.5 border-b-2 border-primary  grid grid-cols-4 divide-x-2 divide-primary-300 mt-3 gap-4">
           <div className=" px-4">
             <p className=" font-medium capitalize">Billing To</p>
             <p className="font-medium text-xl">
@@ -82,7 +82,7 @@ const OrderInvoice = () => {
           </div>
         </div>
         <div className="mt-3">
-          <div className="mb-4 overflow-x-auto  p-4 border-b border-primaryVariant-200">
+          <div className="mb-4 overflow-x-auto  p-4 border-b border-primary-200">
             <table className="min-w-full text-sm ">
               <thead className="">
                 <tr className="text-gray-900 border-y bg-[#F4F4F4] ">
@@ -107,7 +107,11 @@ const OrderInvoice = () => {
                       <span className="flex flex-col items-center justify-center">
                         {product?.variation_id ? (
                           <img
-                            src={product?.variation_id?.variation_image ? product?.variation_id?.variation_image : product?.product_id?.main_image}
+                            src={
+                              product?.variation_id?.variation_image
+                                ? product?.variation_id?.variation_image
+                                : product?.product_id?.main_image
+                            }
                             className="w-20 h-[72px]   border"
                             alt=""
                           />

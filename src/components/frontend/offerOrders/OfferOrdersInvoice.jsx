@@ -42,7 +42,7 @@ const OfferOrdersInvoice = () => {
           </div>
         </div>
 
-        <div className=" p-2.5  grid grid-cols-2 divide-x-2 gap-4 divide-primaryVariant-300  border-b-2 border-primary  ">
+        <div className=" p-2.5  grid grid-cols-2 divide-x-2 gap-4 divide-primary-300  border-b-2 border-primary  ">
           <div className=" px-4">
             <p className=" font-medium uppercase">Offer Name</p>
             <p className="font-medium text-xl">
@@ -59,7 +59,7 @@ const OfferOrdersInvoice = () => {
             />
           </div>
         </div>
-        <div className=" p-2.5  border-b-2 border-primary    grid grid-cols-4 divide-x-2 divide-primaryVariant-300 gap-4">
+        <div className=" p-2.5  border-b-2 border-primary    grid grid-cols-4 divide-x-2 divide-primary-300 gap-4">
           <div className=" px-4">
             <p className=" font-medium uppercase">Billing To</p>
             <p className="font-medium text-xl">

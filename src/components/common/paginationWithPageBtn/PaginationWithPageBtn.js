@@ -43,7 +43,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
           className={`border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   ${
             page === i
               ? "bg-primary text-white"
-              : "bg-white text-gray-600 hover:bg-primaryVariant-100"
+              : "bg-white text-gray-600 hover:bg-primary-100"
           }`}
         >
           {i}
@@ -94,7 +94,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
         <button
           onClick={() => setPage(1)}
           type="button"
-          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primaryVariant-100"
+          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primary-100"
         >
           1
         </button>
@@ -116,7 +116,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
         <button
           onClick={() => setPage(lastPage)}
           type="button"
-          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primaryVariant-100"
+          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primary-100"
         >
           {lastPage}
         </button>
@@ -157,7 +157,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
           />
           <button
             type="submit"
-            className="px-3 py-1 bg-primary text-white   hover:bg-primaryVariant-600"
+            className="px-3 py-1 bg-primary text-white   hover:bg-primary-600"
           >
             Go
           </button>

@@ -32,7 +32,6 @@ const CartTable = ({
         ? adjustedPrices[priceKey]
         : productPrice(product);
 
-
     const quantity =
       products?.find(
         (item) =>
@@ -44,8 +43,7 @@ const CartTable = ({
 
     return price * quantity;
   };
-   
-  
+
   const dispatch = useDispatch();
   const handleIncrementQuantity = (
     productId,
@@ -156,7 +154,7 @@ const CartTable = ({
                 <td className="whitespace-nowrap py-1.5  font-medium text-gray-700 px-4">
                   <button
                     type="button"
-                    className={`border border-primaryVariant-200 px-2.5   text-primaryVariant-300 hover:bg-primaryVariant-300 hover:text-white transition-all duration-300 ease-in-out `}
+                    className={`border border-primary-200 px-2.5   text-primary-300 hover:bg-primary-300 hover:text-white transition-all duration-300 ease-in-out `}
                     onClick={() => {
                       handleDecrementQuantity(
                         product?._id,
@@ -168,7 +166,7 @@ const CartTable = ({
                   </button>
                   <input
                     type="number"
-                    className="border mx-2  border-primaryVariant-200 max-w-[70px] text-center p-2 outline-primaryVariant-300"
+                    className="border mx-2  border-primary-200 max-w-[70px] text-center p-2 outline-primary-300"
                     value={
                       products?.find(
                         (item) =>
@@ -202,7 +200,7 @@ const CartTable = ({
                           : product?.product_quantity
                       );
                     }}
-                    className="border border-primaryVariant-200 px-2.5   text-primaryVariant-300 hover:bg-primaryVariant-300 hover:text-white transition-all duration-300 ease-in-out"
+                    className="border border-primary-200 px-2.5   text-primary-300 hover:bg-primary-300 hover:text-white transition-all duration-300 ease-in-out"
                   >
                     +
                   </button>

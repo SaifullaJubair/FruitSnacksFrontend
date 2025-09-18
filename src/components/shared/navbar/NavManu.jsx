@@ -6,8 +6,8 @@ export const MenuItem = ({ isActive, href, label, closeSideBar }) => (
     href={href}
     className={` px-4  py-1 transition-colors ease-in-out font-medium text-lg w-full   duration-300  ${
       isActive
-        ? "bg-primaryVariant-400 text-white    "
-        : "text-text-default  hover:bg-primaryVariant-400 hover:text-white"
+        ? "bg-primary-400 text-white    "
+        : "text-text-default  hover:bg-primary-400 hover:text-white"
     }`}
     onClick={closeSideBar}
   >
@@ -21,8 +21,8 @@ export const DropdownMenu = ({ label, isOpen, onClick, children }) => (
       onClick={onClick}
       className={`flex items-center justify-between w-full py-1 space-x-1 px-2 text-text-default transition-colors ease-in-out duration-300 ${
         isOpen
-          ? "bg-primaryVariant-300 text-white  border-secondary-700 w-full border-l-2"
-          : "text-text-default hover:bg-primaryVariant-300 hover:text-white"
+          ? "bg-primary-300 text-white  border-secondary-700 w-full border-l-2"
+          : "text-text-default hover:bg-primary-300 hover:text-white"
       }`}
     >
       <span>{label}</span>
@@ -56,8 +56,8 @@ export const SubDropdownMenu = ({
       onClick={onClick}
       className={`flex items-center justify-between w-full py-1 space-x-1 px-2 text-text-default transition-colors ease-in-out duration-300 ${
         isOpen
-          ? "bg-primaryVariant-300 text-white  border-secondary-700 w-full border-l-2"
-          : "text-text-default hover:bg-primaryVariant-300 hover:text-white"
+          ? "bg-primary-300 text-white  border-secondary-700 w-full border-l-2"
+          : "text-text-default hover:bg-primary-300 hover:text-white"
       }`}
     >
       <Link href={href} onClick={closeSideBar}>
@@ -93,8 +93,8 @@ export const ChildDropdownMenu = ({
       onClick={onClick}
       className={`flex items-center justify-between w-full py-1 space-x-1 px-2 text-text-default transition-colors ease-in-out duration-300 ${
         isOpen
-          ? "bg-primaryVariant-300 text-white  border-secondary-700 w-full border-l-2"
-          : "text-text-default hover:bg-primaryVariant-300 hover:text-white"
+          ? "bg-primary-300 text-white  border-secondary-700 w-full border-l-2"
+          : "text-text-default hover:bg-primary-300 hover:text-white"
       }`}
     >
       <Link href={href} onClick={closeSideBar}>
@@ -133,7 +133,7 @@ export const ChildMenuItem = ({ href, label, isActive, closeSideBar }) => (
     <Link
       href={href}
       className={`flex px-4  py-2 transition-colors ease-in-out duration-300 hover:border-secondary-100 ${
-        isActive ? "bg-primaryVariant-100" : ""
+        isActive ? "bg-primary-100" : ""
       }`}
       onClick={closeSideBar}
     >

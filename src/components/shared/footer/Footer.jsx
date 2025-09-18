@@ -24,7 +24,7 @@ const Footer = ({ menuData }) => {
   }
 
   return (
-    <div className="bg-primaryVariant-700 border-t-2 border-primary mt-10 md:pb-0 pb-16">
+    <div className="bg-primary-700 border-t-2 border-primary mt-10 md:pb-0 pb-16">
       <Contain>
         <footer>
           <div className="mx-auto  px-4 pb-6 pt-16 sm:px-6 lg:px-8 ">
@@ -121,7 +121,7 @@ const Footer = ({ menuData }) => {
 
               <div className="grid grid-cols-2 gap-8 sm:grid-cols-2 md:grid-cols-4 lg:col-span-2">
                 <div className="">
-                  <p className="text-lg font-medium text-primaryVariant-100">
+                  <p className="text-lg font-medium text-primary-100">
                     Helpful Link
                   </p>
 
@@ -147,7 +147,7 @@ const Footer = ({ menuData }) => {
                 </div>
 
                 <div className="">
-                  <p className="text-lg font-medium text-primaryVariant-100">
+                  <p className="text-lg font-medium text-primary-100">
                     Our Policy
                   </p>
 
@@ -190,7 +190,7 @@ const Footer = ({ menuData }) => {
                   </ul>
                 </div>
                 <div className="">
-                  <p className="text-lg font-medium text-primaryVariant-100">
+                  <p className="text-lg font-medium text-primary-100">
                     Explore Category
                   </p>
 
@@ -209,7 +209,7 @@ const Footer = ({ menuData }) => {
                   </ul>
                 </div>
                 <div className="">
-                  <p className="text-lg font-medium text-primaryVariant-100">
+                  <p className="text-lg font-medium text-primary-100">
                     Contact Us
                   </p>
 
@@ -221,7 +221,7 @@ const Footer = ({ menuData }) => {
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="size-5 shrink-0 text-primary"
+                          className="size-5 shrink-0 text-secondary-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -247,7 +247,7 @@ const Footer = ({ menuData }) => {
                       >
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="size-5 shrink-0 text-primary"
+                          className="size-5 shrink-0 text-secondary-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -270,7 +270,7 @@ const Footer = ({ menuData }) => {
                     <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="size-5 shrink-0 text-primary"
+                        className="size-5 shrink-0 text-secondary-400"
                         fill="none"
                         viewBox="0 0 24 24"
                         stroke="currentColor"
@@ -296,7 +296,7 @@ const Footer = ({ menuData }) => {
                       <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="size-5 shrink-0 text-primary"
+                          className="size-5 shrink-0 text-secondary-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -323,7 +323,7 @@ const Footer = ({ menuData }) => {
                       <li className="flex items-start justify-center gap-1.5 ltr:sm:justify-start rtl:sm:justify-end">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="size-5 shrink-0 text-primary"
+                          className="size-5 shrink-0 text-secondary-400"
                           fill="none"
                           viewBox="0 0 24 24"
                           stroke="currentColor"
@@ -357,7 +357,7 @@ const Footer = ({ menuData }) => {
                   <span className="block sm:inline">All rights reserved.</span>
 
                   <a
-                    className="font-bold inline-block text-primaryVariant-100 underline transition hover:text-primary/75 ml-2"
+                    className="font-bold inline-block text-primary-100 underline transition hover:text-primary/75 ml-2"
                     href="/terms-condition"
                   >
                     Terms & Conditions

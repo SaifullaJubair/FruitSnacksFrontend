@@ -6,7 +6,7 @@ export const NavButton = ({
   onClick,
 }) => (
   <button
-    className={`hover:bg-primaryVariant-350 hover:text-white flex items-center gap-3 font-medium py-2 px-4 w-full  ${
+    className={`hover:bg-primary-300 hover:text-white flex items-center gap-3 font-medium py-2 px-4 w-full  ${
       activeNavButton === buttonName ? "bg-primary text-white" : ""
     }`}
     onClick={() => onClick(buttonName)}

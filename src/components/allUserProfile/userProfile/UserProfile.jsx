@@ -124,7 +124,7 @@ const UserProfile = () => {
               ].map((item) => (
                 <Link
                   key={item.name}
-                  className={`hover:bg-primaryVariant-500/90 hover:text-white flex items-center gap-3 font-medium py-2 px-4 w-full  ${
+                  className={`hover:bg-primary-500/90 hover:text-white flex items-center gap-3 font-medium py-2 px-4 w-full  ${
                     activeNavButton === item.name ? "bg-primary text-white" : ""
                   }`}
                   href={`?tab=${item.name}`}

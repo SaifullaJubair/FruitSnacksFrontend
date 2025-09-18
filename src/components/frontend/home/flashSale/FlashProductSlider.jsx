@@ -40,7 +40,7 @@ const FlashProductSlider = ({ products }) => {
       {products?.map((product) => (
         <SwiperSlide
           key={product?.flash_sale_product?._id}
-          className="bg-white   shadow-md border-primaryVariant-100 border hover:shadow-lg transition-shadow duration-300 h-[400px]" // Fixed height
+          className="bg-white   shadow-md border-primary-100 border hover:shadow-lg transition-shadow duration-300 h-[400px]" // Fixed height
         >
           <Link href={`/${product?.flash_sale_product?.product_slug}`}>
             <div className="relative p-2 group">

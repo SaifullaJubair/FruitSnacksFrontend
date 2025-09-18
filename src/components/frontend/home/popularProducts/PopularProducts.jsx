@@ -122,7 +122,7 @@ const PopularProducts = () => {
               fontFamily: titleFont.style.fontFamily,
             }}
           >
-            New <span className="text-primaryVariant-500">Arrival</span>
+            New <span className="text-primary-500">Arrival</span>
           </h2>
         </div>
 
@@ -334,7 +334,7 @@ const PopularProducts = () => {
           <div className="flex justify-center mt-8">
             <Button
               onClick={handleLoadMore}
-              className="bg-primaryVariant-500 text-white px-6 py-2  hover:bg-primaryVariant-600 transition-colors duration-300"
+              className="bg-primary-500 text-white px-6 py-2  hover:bg-primary-600 transition-colors duration-300"
             >
               Load More
             </Button>

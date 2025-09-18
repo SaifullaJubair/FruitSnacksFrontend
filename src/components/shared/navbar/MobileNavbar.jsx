@@ -166,7 +166,7 @@ const MobileNavbar = ({
           {userInfo?.data ? (
             <div className="  mt-3">
               <button
-                className="flex items-center justify-center gap-[7px]   p-3 py-1.5 text-[1rem] text-white hover:text-red-400 bg-primaryVariant-400 font-medium w-full hover:bg-primaryVariant-200"
+                className="flex items-center justify-center gap-[7px]   p-3 py-1.5 text-[1rem] text-white hover:text-red-400 bg-primary-400 font-medium w-full hover:bg-primary-200"
                 type="button"
                 onClick={handleLogOut}
               >

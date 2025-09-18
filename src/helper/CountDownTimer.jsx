@@ -40,7 +40,7 @@ const CountdownTimer = ({ startDate, endDate }) => {
       <div className="flex items-center justify-center absolute top-1/2 left-0 right-0 bottom-0 gap-3 rounded">
         {["days", "hours", "minutes", "seconds"].map((unit, index) => (
           <div
-            className="w-14 h-14 flex flex-col items-center justify-center bg-white shadow-md border border-primaryVariant-100 rounded"
+            className="w-14 h-14 flex flex-col items-center justify-center bg-white shadow-md border border-primary-100 rounded"
             key={index}
           >
             <p className="font-bold text-primary">

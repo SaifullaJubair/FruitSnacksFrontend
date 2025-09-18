@@ -27,7 +27,7 @@ const OnlyForYouProduct = async () => {
               fontFamily: titleFont.style.fontFamily,
             }}
           >
-            New <span className="text-primaryVariant-500">Arrival</span>
+            New <span className="text-primary-500">Arrival</span>
           </h2>
           <Link href={"/latest-product"}>
             {" "}

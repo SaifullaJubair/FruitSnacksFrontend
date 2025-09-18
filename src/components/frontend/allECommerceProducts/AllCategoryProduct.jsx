@@ -33,7 +33,7 @@ const AllECommerceSingeProductCard = ({
               <Link
                 href={`/products/${product?.product_slug}`}
                 key={index}
-                className="bg-white   shadow-md border-primaryVariant-100 border h-80 sm:h-[380px] hover:scale-105 transition-transform duration-300 "
+                className="bg-white   shadow-md border-primary-100 border h-80 sm:h-[380px] hover:scale-105 transition-transform duration-300 "
               >
                 <div className="relative p-2 group">
                   {/* "New" Badge */}

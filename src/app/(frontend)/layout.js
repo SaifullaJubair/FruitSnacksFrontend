@@ -4,6 +4,7 @@ import BottomNavbar from "@/components/shared/navbar/BottomNavbar";
 import Footer from "@/components/shared/footer/Footer";
 import { getMenu } from "@/components/lib/getMenu";
 import dynamic from "next/dynamic";
+import Navbar from "@/components/shared/navbar/Navbar";
 
 // import MobileNavBarUserDashBoard from "@/components/shared/navbar/MobileNavBarUserDashBoard";
 const MobileNavBarUserDashBoard = dynamic(
@@ -12,12 +13,14 @@ const MobileNavBarUserDashBoard = dynamic(
 );
 
 const MainLayout = async ({ children }) => {
-  const menuData = await getMenu();
+  const dataArray = await getMenu();
+  const menuData = dataArray?.data;
   return (
     <div>
       {/* <TopNavbar /> */}
       <div className="sticky top-0 z-30 bg-white shadow-md">
-        <SecondNavbar menuData={menuData} />
+        {/* <SecondNavbar menuData={dataArray} /> */}
+        <Navbar menuData={menuData} />
         {/* <BottomNavbar menuData={menuData} /> */}
       </div>
       <div className="min-h-screen">{children}</div>

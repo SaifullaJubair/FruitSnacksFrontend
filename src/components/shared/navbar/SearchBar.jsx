@@ -25,11 +25,11 @@ const SearchBar = () => {
 
       <div className="flex flex-col items-center w-full justify-center group transition-colors duration-300">
         <button
-          className="text-gray-800 group-hover:text-primaryVariant-500  "
+          className="text-gray-800 group-hover:text-primary-500  "
           onClick={() => setIsSearchOpen(true)}
         >
-          <FiSearch size={22} className="group-hover:text-primaryVariant-500" />
-          <p className="text-xs group-hover:text-primaryVariant-500   text-text-light hidden md:flex ">
+          <FiSearch size={22} className="group-hover:text-primary-500" />
+          <p className="text-xs group-hover:text-primary-500   text-text-light hidden md:flex ">
             Search
           </p>
         </button>
@@ -52,8 +52,7 @@ const SearchBar = () => {
               fontFamily: titleFont.style.fontFamily,
             }}
           >
-            Search{" "}
-            <span className="text-primaryVariant-500 pr-1"> Products:</span>
+            Search <span className="text-primary-500 pr-1"> Products:</span>
           </h2>
           {/* Search Input */}
           {/* <input

@@ -384,7 +384,7 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
                 type="file"
                 ref={fileInputRef}
                 id="user_image"
-                className="mt-2  sm:text-sm p-0.5 file:cursor-pointer file:bg-primaryVariant-400 file:text-white file:border-none file:file:px-2 file:py-1.5"
+                className="mt-2  sm:text-sm p-0.5 file:cursor-pointer file:bg-primary-400 file:text-white file:border-none file:file:px-2 file:py-1.5"
                 onChange={handleImageChange}
               />
             </div>

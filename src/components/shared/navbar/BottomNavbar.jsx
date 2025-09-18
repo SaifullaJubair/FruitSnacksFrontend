@@ -12,7 +12,7 @@ import { IoMdFlame } from "react-icons/io";
 const Item = ({ isActive, href, label }) => (
   <Link
     href={href}
-    className={` lg:text-sm xl:text-base font-medium tracking-wide hover:text-primaryVariant-500  hover:underline hover:underline-offset-8 ${
+    className={` lg:text-sm xl:text-base font-medium tracking-wide hover:text-primary-500  hover:underline hover:underline-offset-8 ${
       isActive ? "text-primary" : "text-text-semiLight"
     }`}
   >

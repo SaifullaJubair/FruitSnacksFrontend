@@ -1,6 +1,7 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -85,7 +86,7 @@
     @apply font-semibold text-gray-800 lg:text-base sm:text-sm text-xs;
   }
   input {
-    @apply outline-primaryVariant-500;
+    @apply outline-primary-500;
   }
 
   .custom-phone-input input {

@@ -129,7 +129,7 @@ export default ProductDescription;
 //             <div className="flex items-center m-4 mt-6 gap-4 ">
 //               {product?.specifications?.length > 0 && (
 //                 <Button
-//                   className="rounded-lx shadow shadow-primaryVariant-100 "
+//                   className="rounded-lx shadow shadow-primary-100 "
 //                   variant={active === "specification" ? "default" : "outline"}
 //                   onClick={() => setActive("specification")}
 //                 >
@@ -138,7 +138,7 @@ export default ProductDescription;
 //               )}
 //               {product?.description?.length > 0 && (
 //                 <Button
-//                   className="rounded-lx shadow shadow-primaryVariant-100 "
+//                   className="rounded-lx shadow shadow-primary-100 "
 //                   variant={active === "description" ? "default" : "outline"}
 //                   onClick={() => setActive("description")}
 //                 >
@@ -206,10 +206,10 @@ export default ProductDescription;
 //      <h2
 //        className="text-xl sm:text-2xl  pt-6 px-6  font-bold  text-gray-800"
 //        style={{
-        //  fontFamily: titleFont.style.fontFamily,
+//  fontFamily: titleFont.style.fontFamily,
 //        }}
 //      >
-//        Product <span className="text-primaryVariant-500">Description</span>
+//        Product <span className="text-primary-500">Description</span>
 //      </h2>
 //      <hr className="mx-6 mt-2" />
 //      <div className="p-4">

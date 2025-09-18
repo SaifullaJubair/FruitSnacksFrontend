@@ -4,6 +4,11 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "artisen-leather.sgp1.cdn.digitaloceanspaces.com",
+        pathname: "**",
+      },
+      {
+        protocol: "https",
         hostname: "janani-image.blr1.cdn.digitaloceanspaces.com",
         pathname: "**",
       },

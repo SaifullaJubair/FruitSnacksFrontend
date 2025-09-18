@@ -7,158 +7,154 @@ module.exports = {
     "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {
-      colors: {
-        // 🌰 Primary Leather Brown
-        primary: "#5A3A1E",
-        primaryVariant: {
-          50: "#EFE8E2",
-          100: "#DCCDBF",
-          200: "#B89785",
-          300: "#946F5C",
-          400: "#6F4F39",
-          500: "#5A3A1E", // Main
-          600: "#4A2F18",
-          700: "#3B2412",
-          800: "#2B190C",
-          900: "#1B0E06",
-        },
-
-        // ⚫ Deep Espresso Brown (Dark Secondary)
-        secondary: "#2B1C17",
-        secondaryVariant: {
-          100: "#D9D0CB",
-          200: "#B8A79E",
-          300: "#8F7567",
-          400: "#5F4D43",
-          500: "#2B1C17",
-          600: "#231611",
-          700: "#1C110D",
-          800: "#150C09",
-          900: "#0D0604",
-        },
-
-        // 🍷 Burgundy Accent
-        accent: {
-          100: "#EDE6E5",
-          200: "#CBB3B0",
-          300: "#A46B68",
-          400: "#782D2C", // Oxblood
-          500: "#4B1918", // Deep burgundy
-        },
-
-        // ☁️ Warm Neutral / Cream
-        neutral: {
-          50: "#F5F3F1",
-          100: "#E6E1DC",
-          200: "#CFC5BD",
-          300: "#B3A293",
-          400: "#8C7D6F",
-          500: "#5A5147",
-          600: "#403C35",
-          700: "#2D2925",
-          800: "#1A1816",
-          900: "#0E0D0C",
-        },
-
-        // ⚫ Black Variants
-        blackVariant: {
-          charcoal: "#1A1A1A",
-          matte: "#0D0D0D",
-        },
-
-        text: {
-          light: "#B9A89A",
-          default: "#E9E2DA",
-          dark: "#FDFBF9",
-        },
-        darkblack: {
-          300: "#747681",
-          400: "#2A313C",
-          500: "#23262B",
-          600: "#1D1E24",
-          700: "#151515",
-        },
-        success: {
-          50: "#D9FBE6",
-          100: "#B7FFD1",
-          200: "#4ADE80",
-          300: "#22C55E",
-          400: "#16A34A",
-        },
-        warning: {
-          100: "#FDE047",
-          200: "#FACC15",
-          300: "#EAB308",
-        },
-        error: {
-          50: "#FCDEDE",
-          100: "#FF7171",
-          200: "#FF4747",
-          300: "#DD3333",
-          400: "#B91C1C",
-          500: "#d22e2e",
-          600: "#a82525",
-          700: "#7e1c1c",
-          800: "#541212",
-        },
-        bgray: {
-          50: "#FAFAFA",
-          100: "#F7FAFC",
-          200: "#EDF2F7",
-          300: "#E2E8F0",
-          400: "#CBD5E0",
-          500: "#A0AEC0",
-          600: "#718096",
-          700: "#4A5568",
-          800: "#2D3748",
-          900: "#1A202C",
-        },
-        bamber: {
-          50: "#FFFBEB",
-          100: "#FFC837",
-          500: "#F6A723",
-        },
-        purple: "#936DFF",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
-        card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent))",
-          foreground: "hsl(var(--accent-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
-        },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        chart: {
-          1: "hsl(var(--chart-1))",
-          2: "hsl(var(--chart-2))",
-          3: "hsl(var(--chart-3))",
-          4: "hsl(var(--chart-4))",
-          5: "hsl(var(--chart-5))",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-    },
+  	extend: {
+  		colors: {
+  			primary: {
+  				'50': '#E7ECF2',
+  				'100': '#C3CFDD',
+  				'200': '#9AB0C6',
+  				'300': '#6D8DAF',
+  				'400': '#456F97',
+  				'500': '#234E7C',
+  				'600': '#183C63',
+  				'700': '#122D4A',
+  				'800': '#0D1F34',
+  				'900': '#0A1524',
+  				DEFAULT: '#0D1B2A'
+  			},
+  			secondary: {
+  				'50': '#F0E9E8',
+  				'100': '#D7C3C0',
+  				'200': '#BC9D98',
+  				'300': '#9F7973',
+  				'400': '#82554F',
+  				'500': '#673E39',
+  				'600': '#53312D',
+  				'700': '#402521',
+  				'800': '#2D1815',
+  				'900': '#1D0E0B',
+  				DEFAULT: '#3E2723'
+  			},
+  			accent: {
+  				'50': '#FDF9F4',
+  				'100': '#FAF4EC',
+  				'200': '#F5E9DD',
+  				'300': '#EFDECD',
+  				'400': '#E9D3BE',
+  				'500': '#E2C8AE',
+  				'600': '#D5B08C',
+  				'700': '#C79869',
+  				'800': '#B88146',
+  				'900': '#A96923',
+  				DEFAULT: '#EDE0D4'
+  			},
+  			neutral: {
+  				'50': '#F5F5F5',
+  				'100': '#E9E9E9',
+  				'200': '#D2D2D2',
+  				'300': '#BCBCBC',
+  				'400': '#A5A5A5',
+  				'500': '#8F8F8F',
+  				'600': '#787878',
+  				'700': '#626262',
+  				'800': '#4B4B4B',
+  				'900': '#353535',
+  				DEFAULT: '#8F8F8F'
+  			},
+  			complementary: {
+  				'50': '#F9EEED',
+  				'100': '#F2D9D7',
+  				'200': '#E6B3AF',
+  				'300': '#D98D87',
+  				'400': '#CD675F',
+  				'500': '#C04137',
+  				'600': '#9A342C',
+  				'700': '#732721',
+  				'800': '#4D1A16',
+  				'900': '#260D0B',
+  				DEFAULT: '#C04137'
+  			},
+  			text: {
+  				light: '#F9F5F0',
+  				default: '#3A2C1E',
+  				dark: '#1A1209'
+  			},
+  			success: {
+  				'50': '#D9FBE6',
+  				'100': '#B7FFD1',
+  				'200': '#4ADE80',
+  				'300': '#22C55E',
+  				'400': '#16A34A'
+  			},
+  			warning: {
+  				'100': '#FDE047',
+  				'200': '#FACC15',
+  				'300': '#EAB308'
+  			},
+  			error: {
+  				'50': '#FCDEDE',
+  				'100': '#FF7171',
+  				'200': '#FF4747',
+  				'300': '#DD3333',
+  				'400': '#B91C1C'
+  			},
+  			background: 'hsl(var(--background))',
+  			foreground: 'hsl(var(--foreground))',
+  			card: {
+  				DEFAULT: 'hsl(var(--card))',
+  				foreground: 'hsl(var(--card-foreground))'
+  			},
+  			popover: {
+  				DEFAULT: 'hsl(var(--popover))',
+  				foreground: 'hsl(var(--popover-foreground))'
+  			},
+  			muted: {
+  				DEFAULT: 'hsl(var(--muted))',
+  				foreground: 'hsl(var(--muted-foreground))'
+  			},
+  			destructive: {
+  				DEFAULT: 'hsl(var(--destructive))',
+  				foreground: 'hsl(var(--destructive-foreground))'
+  			},
+  			border: 'hsl(var(--border))',
+  			input: 'hsl(var(--input))',
+  			ring: 'hsl(var(--ring))',
+  			chart: {
+  				'1': 'hsl(var(--chart-1))',
+  				'2': 'hsl(var(--chart-2))',
+  				'3': 'hsl(var(--chart-3))',
+  				'4': 'hsl(var(--chart-4))',
+  				'5': 'hsl(var(--chart-5))'
+  			}
+  		},
+  		borderRadius: {
+  			lg: 'var(--radius)',
+  			md: 'calc(var(--radius) - 2px)',
+  			sm: 'calc(var(--radius) - 4px)'
+  		},
+  		keyframes: {
+  			'accordion-down': {
+  				from: {
+  					height: '0'
+  				},
+  				to: {
+  					height: 'var(--radix-accordion-content-height)'
+  				}
+  			},
+  			'accordion-up': {
+  				from: {
+  					height: 'var(--radix-accordion-content-height)'
+  				},
+  				to: {
+  					height: '0'
+  				}
+  			}
+  		},
+  		animation: {
+  			'accordion-down': 'accordion-down 0.2s ease-out',
+  			'accordion-up': 'accordion-up 0.2s ease-out'
+  		}
+  	}
   },
   plugins: [
     require("tailwind-scrollbar"),
