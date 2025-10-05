@@ -8,19 +8,21 @@ import CategoryWiseProduct from "./categoryWiseProduct/CategoryWiseProduct";
 
 const Home = () => {
   return (
-    <div className="space-y-20">
-      <Banner />
-      <NewFeatureCategories />
-      {/* <FeatureCategories /> */}
-      {/* <ECommerceChoice /> */}
-      <TrendingProduct />
-      {/* <PopularProducts /> */}
-      <CategoryWiseProduct />
-      {/* Latest Product */}
-      {/* <OnlyForYouProduct /> */}
-      {/* <AdsSection /> */}
-      {/* <SliderAd /> */}
-      {/* <FeatureService /> */}
+    <div className="max-w-7xl mx-auto ">
+      <div className="space-y-20">
+        <Banner />
+        <NewFeatureCategories />
+        {/* <FeatureCategories /> */}
+        {/* <ECommerceChoice /> */}
+        <TrendingProduct />
+        {/* <PopularProducts /> */}
+        <CategoryWiseProduct />
+        {/* Latest Product */}
+        {/* <OnlyForYouProduct /> */}
+        {/* <AdsSection /> */}
+        {/* <SliderAd /> */}
+        {/* <FeatureService /> */}
+      </div>
     </div>
   );
 };

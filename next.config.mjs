@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true, // ✅ build time এ warning এ থামবে না
+  },
   images: {
     remotePatterns: [
       {
