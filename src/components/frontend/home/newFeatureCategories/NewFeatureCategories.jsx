@@ -9,7 +9,7 @@ const NewFeatureCategories = async () => {
   );
   return (
     <>
-      <div className="my-16 max-w-6xl mx-auto">
+      <div className="my-16 ">
         <div className="mb-8">
           <h2
             className="text-2xl sm:text-3xl md:text-4xl  font-bold  text-gray-900 text-center"

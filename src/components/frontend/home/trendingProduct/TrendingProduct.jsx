@@ -11,7 +11,7 @@ const TrendingProduct = () => {
   const { data: products = [], isLoading } = useGetTrendingProducts();
 
   return (
-    <div className="bg-[#F4F4F4] py-16 ">
+    <div className=" py-16 ">
       <div className="max-w-[98%] mx-auto">
         <div className="flex justify-between items-center flex-col sm:flex-row  pb-8">
           {" "}

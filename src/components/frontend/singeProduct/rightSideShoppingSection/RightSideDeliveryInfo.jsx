@@ -201,7 +201,7 @@ const RightSideDeliveryInfo = ({
         {(isOpenDistrict || zoneLoading) && (
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1">
-              Zone
+              Thana
             </label>
             <Select
               id="Zone"

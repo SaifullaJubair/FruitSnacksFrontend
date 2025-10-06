@@ -49,7 +49,7 @@ const SingleProduct = ({ product }) => {
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const [districtsData, setDistrictsData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
+  const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const navigate = useRouter();
   const [customer_phone, setUserPhone] = useState(
     userInfo?.data?.user_phone?.slice(3, 14)
