@@ -19,8 +19,8 @@ const MainLayout = async ({ children }) => {
     <div>
       {/* <TopNavbar /> */}
       <div className="sticky top-0 z-30 bg-white shadow-md">
-        {/* <SecondNavbar menuData={dataArray} /> */}
-        <Navbar menuData={menuData} />
+        <SecondNavbar menuData={dataArray} />
+        {/* <Navbar menuData={menuData} /> */}
         {/* <BottomNavbar menuData={menuData} /> */}
       </div>
       <div className="min-h-screen">{children}</div>
