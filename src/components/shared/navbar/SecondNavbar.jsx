@@ -594,7 +594,7 @@ const SecondNavbar = ({ menuData }) => {
               <FiMenu />
             </button>
           </div>
-          <div className="md:hidden w-full">
+          <div className="md:hidden w-full my-2">
             <SearchForm />
           </div>
           <button
