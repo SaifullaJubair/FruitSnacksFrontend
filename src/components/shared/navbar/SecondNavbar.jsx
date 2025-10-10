@@ -1,23 +1,23 @@
 "use client";
+import SearchForm from "@/components/frontend/searchForm/SearchForm";
+import useGetSettingData from "@/components/lib/getSettingData";
+import { Button } from "@/components/ui/button";
+import { BASE_URL } from "@/components/utils/baseURL";
+import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
-import MobileNavbar from "./MobileNavbar";
-import Contain from "@/components/common/Contain";
-import Link from "next/link";
-import { useSelector } from "react-redux";
-import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
-import { Button } from "@/components/ui/button";
-import useGetSettingData from "@/components/lib/getSettingData";
-import { TbJewishStar, TbLogout2 } from "react-icons/tb";
-import { IoSettingsOutline } from "react-icons/io5";
 import { BiPurchaseTag } from "react-icons/bi";
-import { SlUserFollowing } from "react-icons/sl";
-import { MdOutlineHome } from "react-icons/md";
-import Cookies from "js-cookie";
 import { FaUserCircle } from "react-icons/fa";
+import { FiHeart, FiMenu, FiShoppingCart, FiUser } from "react-icons/fi";
+import { IoSettingsOutline } from "react-icons/io5";
+import { MdOutlineHome } from "react-icons/md";
+import { SlUserFollowing } from "react-icons/sl";
+import { TbJewishStar } from "react-icons/tb";
+import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import MobileNavbar from "./MobileNavbar";
 import SearchBar from "./SearchBar";
-import SearchForm from "@/components/frontend/searchForm/SearchForm";
 const Item = ({ isActive, href, label }) => (
   <Link
     href={href}
@@ -62,13 +62,35 @@ const SecondNavbar = ({ menuData }) => {
     }
   }, []);
   //log out Function
-  const handleLogOut = () => {
-    // Remove the token from cookies
-    Cookies.remove("artisan_lather_token");
+  // const handleLogOut = () => {
+  //   Cookies.remove("artisan_lather_token");
 
-    // Redirect to the home page
-    router.push("/");
-    window.location.reload();
+  //   router.push("/");
+  //   window.location.reload();
+  // };
+
+  const handleLogOut = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/authentication/logout`, {
+        method: "POST",
+        credentials: "include", // cookie পাঠানোর জন্য
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        // logout success -> redirect home
+        router.push("/");
+        window.location.reload();
+        toast.success("Logout successfully");
+      } else {
+        const data = await res.json();
+        console.error("Logout failed:", data.message);
+      }
+    } catch (error) {
+      console.error("Something went wrong:", error);
+    }
   };
 
   useEffect(() => {
@@ -553,7 +575,7 @@ const SecondNavbar = ({ menuData }) => {
                                 type="button"
                                 onClick={handleLogOut}
                               >
-                                <TbLogout2 className="font-bold" size={25} />
+                                {/* <TbLogout2 className="font-bold" size={25} /> */}
                                 Logout
                               </button>
                             </div>

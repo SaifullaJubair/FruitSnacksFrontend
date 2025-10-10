@@ -22,6 +22,7 @@ import DashBoardReview from "./ReviewDashBoard";
 import { FaRegUser } from "react-icons/fa";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import useGetSettingData from "@/components/lib/getSettingData";
+import { BASE_URL } from "@/components/utils/baseURL";
 const UserProfile = () => {
   const [activeNavButton, setActiveNavButton] = useState("dashboard");
   const router = useRouter();
@@ -53,14 +54,37 @@ const UserProfile = () => {
     refetch,
   } = useUserInfoQuery();
 
-  const handleLogOut = () => {
-    // Remove the token from cookies
-    Cookies.remove("artisan_lather_token");
+  // const handleLogOut = () => {
+  //   Cookies.remove("artisan_lather_token");
 
-    // Redirect to the home page
-    router.push("/");
-    window.location.reload();
+  //   router.push("/");
+  //   window.location.reload();
+  // };
+
+  const handleLogOut = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/authentication/logout`, {
+        method: "POST",
+        credentials: "include", // cookie পাঠানোর জন্য
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (res.ok) {
+        // logout success -> redirect home
+        router.push("/");
+        window.location.reload();
+        toast.success("Logout successfully");
+      } else {
+        const data = await res.json();
+        console.error("Logout failed:", data.message);
+      }
+    } catch (error) {
+      console.error("Something went wrong:", error);
+    }
   };
+
   useEffect(() => {
     // Check if the user info is undefined or null
     if (!userInfo && !userGetLoading) {
