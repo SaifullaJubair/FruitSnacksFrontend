@@ -25,7 +25,7 @@ export async function generateMetadata({ params }) {
       type: "article",
       title: productData?.data?.product_name,
       description: productData?.data?.meta_description,
-      url: `https://fashionforyou.com.bd/${slug}`,
+      url: `https://artisenleather.com/${slug}`,
       images: [
         {
           url: productData?.data?.main_image,
@@ -33,9 +33,7 @@ export async function generateMetadata({ params }) {
         },
       ],
     },
-    metadataBase: new URL(
-      "https://fashionforyou.com.bd/"
-    ),
+    metadataBase: new URL("https://artisenleather.com/"),
     author: {
       name: "Fashion For You",
     },

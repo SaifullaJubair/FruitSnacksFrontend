@@ -64,7 +64,7 @@ const SecondNavbar = ({ menuData }) => {
   //log out Function
   const handleLogOut = () => {
     // Remove the token from cookies
-    Cookies.remove("fashion_for_you_token");
+    Cookies.remove("artisan_lather_token");
 
     // Redirect to the home page
     router.push("/");
@@ -192,8 +192,6 @@ const SecondNavbar = ({ menuData }) => {
               alt=""
             /> */}
           </Link>
-
-          
 
           <div className="hidden lg:flex items-center space-x-3  xl:space-x-8  whitespace-nowrap">
             <div className="relative">

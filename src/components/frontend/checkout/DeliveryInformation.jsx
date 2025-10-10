@@ -101,7 +101,7 @@ const DeliveryInformation = ({
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            city
+            City
           </label>
           <Select
             id="city"
