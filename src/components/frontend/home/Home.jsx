@@ -9,9 +9,9 @@ import CategoryWiseProduct from "./categoryWiseProduct/CategoryWiseProduct";
 const Home = () => {
   return (
     <div className="max-w-7xl mx-auto ">
-      <div className="space-y-20">
+      <div className="">
         <Banner />
-        <NewFeatureCategories />
+        {/* <NewFeatureCategories /> */}
         {/* <FeatureCategories /> */}
         {/* <ECommerceChoice /> */}
         <TrendingProduct />

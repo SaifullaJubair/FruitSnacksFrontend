@@ -42,12 +42,11 @@ const BannerItem = ({ bannerData }) => {
                 />
               </div>
               {/* Banner Title positioned above the Shop Now button */}
-              <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center text-white bg-black bg-opacity-50 px-4 py-2 rounded-md">
+              {/* <div className="absolute bottom-20 left-1/2 transform -translate-x-1/2 text-center text-white bg-black bg-opacity-50 px-4 py-2 rounded-md">
                 <h2 className="text-sm sm:text-lg  md:text-xl lg:text-2xl text-slate-300 font-bold">
                   {banner?.banner_title || "Made for creating tasty memories"}
                 </h2>
               </div>
-              {/* Shop Now button */}
               <Button className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
                 <a
                   href={banner?.banner_path || "#"}
@@ -56,7 +55,7 @@ const BannerItem = ({ bannerData }) => {
                 >
                   Shop Now
                 </a>
-              </Button>
+              </Button> */}
             </div>
           </SwiperSlide>
         ))}

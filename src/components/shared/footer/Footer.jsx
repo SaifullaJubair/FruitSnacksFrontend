@@ -16,9 +16,11 @@ const Footer = ({ menuData }) => {
 
   const footerData = settingsData?.data[0];
 
-  const exploreData = menuData?.data?.filter(
-    (item) => item?.category?.explore_category_show === true
+  const exploreData = menuData?.filter(
+    (item) => item?.category?.explore_category_show === true,
   );
+
+  
   if (isLoading) {
     return null;
   }

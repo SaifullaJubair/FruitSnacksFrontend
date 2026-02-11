@@ -20,7 +20,7 @@ const CategoryWiseProduct = () => {
       try {
         const response = await fetch(
           // `http://localhost:5000/api/v1/product/just_for_you_product`
-          `${BASE_URL}/product/just_for_you_product`
+          `${BASE_URL}/product/just_for_you_product`,
         );
         const result = await response.json();
         setData(result?.data);
@@ -36,11 +36,11 @@ const CategoryWiseProduct = () => {
   if (loading) return <div className="h-96 bg-gray-100 animate-pulse"></div>;
 
   return (
-    <div className="max-w-[98%] mx-auto px-4 py-8">
+    <div className="max-w-[98%] mx-auto px-4 py-4 sm:py-8">
       {data?.map((categoryGroup, index) => (
         <div
           key={index}
-          className="grid grid-cols-2 sm:grid-cols-4 grid-rows-2 gap-4 mb-12"
+          className="grid grid-cols-2 sm:grid-cols-4 grid-rows-2 gap-4 mb-4 md:mb-12"
         >
           {/* Left 2 Columns - Category (Spanning 2 rows) */}
           {categoryGroup?.categoryDetails && (
