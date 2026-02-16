@@ -1,15 +1,14 @@
 /* eslint-disable no-irregular-whitespace */
-import "./globals.css";
+import { getServerSettingData } from "@/components/lib/getServerSettingData";
+import Providers from "@/components/providers/Providers";
+import QueryProviders from "@/components/providers/QueryProviders";
+import { bodyFont } from "@/utils/font";
+import "react-loading-skeleton/dist/skeleton.css";
+import "react-photo-view/dist/react-photo-view.css";
 import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
-import "react-loading-skeleton/dist/skeleton.css";
-import "react-photo-view/dist/react-photo-view.css";
-import QueryProviders from "@/components/providers/QueryProviders";
-import Providers from "@/components/providers/Providers";
-import { getServerSettingData } from "@/components/lib/getServerSettingData";
-import { bodyFont, merriweather } from "@/utils/font";
-import Script from "next/script";
+import "./globals.css";
 
 export async function generateMetadata() {
   const settingData = await getServerSettingData();
