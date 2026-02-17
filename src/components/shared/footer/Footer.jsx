@@ -1,6 +1,7 @@
 "use client";
 import Contain from "@/components/common/Contain";
 import useGetSettingData from "@/components/lib/getSettingData";
+import Link from "next/link";
 
 import {
   FaFacebook,
@@ -20,13 +21,12 @@ const Footer = ({ menuData }) => {
     (item) => item?.category?.explore_category_show === true,
   );
 
-  
   if (isLoading) {
     return null;
   }
 
   return (
-    <div className="bg-primary-700 border-t-2 border-primary mt-10 md:pb-0 pb-16">
+    <div className="bg-primary-900 border-t-2 border-primary mt-10 md:pb-0 pb-16">
       <Contain>
         <footer>
           <div className="mx-auto  px-4 pb-6 pt-16 sm:px-6 lg:px-8 ">
@@ -353,24 +353,18 @@ const Footer = ({ menuData }) => {
               </div>
             </div>
 
-            {/* <div className="mt-12 border-t border-gray-300 pt-6">
-              <div className="text-center sm:flex sm:justify-between sm:text-left">
-                <p className="text-sm text-gray-500">
-                  <span className="block sm:inline">All rights reserved.</span>
-
-                  <a
-                    className="font-bold inline-block text-primary-100 underline transition hover:text-primary/75 ml-2"
-                    href="/terms-condition"
-                  >
-                    Terms & Conditions
-                  </a>
-                </p>
-
-                <p className="mt-4 text-sm text-gray-500 sm:order-first sm:mt-0">
-                  &copy; 2025 Arisa
-                </p>
-              </div>
-            </div> */}
+            <div className="mt-12 pt-6 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <p className="text-secondary-200 text-xs">
+                © {new Date().getFullYear()} Artisan Leather. All rights
+                reserved.
+              </p>
+              <Link
+                href="/terms-condition"
+                className="text-secondary-200 hover:text-accent-500 text-xs transition-colors duration-200"
+              >
+                Terms & Conditions
+              </Link>
+            </div>
           </div>
         </footer>
       </Contain>

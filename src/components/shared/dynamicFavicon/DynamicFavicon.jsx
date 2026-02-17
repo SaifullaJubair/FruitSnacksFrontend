@@ -13,7 +13,7 @@ const DynamicFavicon = async () => {
         {/* If favicon exists, set it, otherwise use a default */}
         <link
           rel="icon"
-          href={faviconUrl || "/default-favicon.ico"}
+          href={faviconUrl || "/favicon.ico"}
           type="image/x-icon"
         />
       </Head>

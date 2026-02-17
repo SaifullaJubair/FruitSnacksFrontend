@@ -38,7 +38,7 @@ const TrendingSlider = ({ products, isLoading }) => {
                 spaceBetween: 20,
               },
               1280: {
-                slidesPerView: 5,
+                slidesPerView: 4,
                 spaceBetween: 20,
               },
             }}
@@ -55,7 +55,7 @@ const TrendingSlider = ({ products, isLoading }) => {
           >
             {products?.map((product) => (
               <SwiperSlide key={product?._id}>
-                <div className="bg-white shadow-md hover:shadow-xl transition-shadow duration-300 group h-full">
+                <div className="bg-white shadow-md hover:shadow-lg transition-shadow duration-300 group h-full border border-gray-200 ">
                   <Link
                     href={`/products/${product?.product_slug}`}
                     className="group overflow-hidden h-full flex flex-col"
@@ -103,7 +103,7 @@ const TrendingSlider = ({ products, isLoading }) => {
                         <p className="text-xs text-gray-500 flex flex-wrap items-center">
                           {product?.attributes_details?.attribute_values
                             ?.filter((color) =>
-                              isHexColor(color?.attribute_value_code)
+                              isHexColor(color?.attribute_value_code),
                             )
                             ?.slice(0, 4)
                             ?.map((color) => (
@@ -117,13 +117,13 @@ const TrendingSlider = ({ products, isLoading }) => {
                               />
                             ))}
                           {product?.attributes_details?.attribute_values?.filter(
-                            (color) => isHexColor(color?.attribute_value_code)
+                            (color) => isHexColor(color?.attribute_value_code),
                           )?.length > 4 && (
                             <span className="w-4 h-4 lg:w-5 lg:h-5 flex items-center justify-center rounded-full bg-gray-300 text-xs text-gray-700 ml-1">
                               +
                               {product?.attributes_details?.attribute_values?.filter(
                                 (color) =>
-                                  isHexColor(color?.attribute_value_code)
+                                  isHexColor(color?.attribute_value_code),
                               ).length - 4}
                             </span>
                           )}

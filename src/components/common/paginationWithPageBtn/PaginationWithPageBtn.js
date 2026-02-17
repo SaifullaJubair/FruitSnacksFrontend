@@ -4,7 +4,7 @@ import { useState } from "react";
 
 const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
   const lastPage = Math.ceil(totalData / rows);
-  const maxPageButtons = 5; // Maximum number of pages to show in pagination
+  const maxPageButtons = 10; // Maximum number of pages to show in pagination
   const [jumpPage, setJumpPage] = useState("");
 
   const handleRowsChange = (event) => {
@@ -55,7 +55,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
   };
 
   return (
-    <div className="flex justify-end sm:text-sm gap-y-2 text-[10px] my-6 flex-wrap">
+    <div className="flex justify-center sm:text-sm gap-y-2 text-[10px] my-6 flex-wrap">
       {/* Rows per page selector */}
       <div className=" flex items-center gap-2">
         <label className="text-gray-500 font-semibold" htmlFor="rows_number">
@@ -67,7 +67,7 @@ const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
           id="rows_number"
           className="block w-full px-1 sm:px-2 py-1 sm:py-2 text-gray-700 bg-white border border-gray-200  "
         >
-          <option value="5">05</option>
+          {/* <option value="5">05</option> */}
           <option value="10">10</option>
           <option value="20">20</option>
           <option value="30">30</option>

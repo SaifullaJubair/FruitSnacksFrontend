@@ -38,7 +38,7 @@ export async function generateMetadata() {
 
 export default async function RootLayout({ children }) {
   const settingData = await getServerSettingData();
-  const faviconUrl = settingData?.data[0]?.favicon || "/default-favicon.ico";
+  const faviconUrl = settingData?.data[0]?.favicon || "/favicon.ico";
 
   return (
     <html lang="en">
