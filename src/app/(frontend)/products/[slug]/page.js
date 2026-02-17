@@ -35,7 +35,7 @@ export async function generateMetadata({ params }) {
     },
     metadataBase: new URL("https://artisenleather.com/"),
     author: {
-      name: "Fashion For You",
+      name: "Artisan Leather",
     },
   };
 }
