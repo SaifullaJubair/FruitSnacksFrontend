@@ -428,11 +428,11 @@ const SecondNavbar = ({ menuData }) => {
               href="/all-products"
               label="All Products"
             />
-            <Item
+            {/* <Item
               isActive={isActive("/all-brands")}
               href="/all-brands"
               label="All Brand"
-            />
+            /> */}
             <Item
               isActive={isActive("/new-arrival")}
               href="/new-arrival"
