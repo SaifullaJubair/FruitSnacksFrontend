@@ -53,7 +53,7 @@ const SecondNavbar = ({ menuData }) => {
   const footerData = settingsData?.data[0];
   // console.log(settingsData);
   const exploreData = menuData?.data?.filter(
-    (item) => item?.category?.explore_category_show === true
+    (item) => item?.category?.explore_category_show === true,
   );
   useEffect(() => {
     const saveDropDown = localStorage.getItem("activeDropdown");
@@ -335,7 +335,7 @@ const SecondNavbar = ({ menuData }) => {
                               <li
                                 onMouseOver={() => {
                                   setSubSubCategories(
-                                    subCategory?.child_categories
+                                    subCategory?.child_categories,
                                   );
                                   setIsCategory(subCategory?.sub_category_slug);
                                 }}
@@ -443,12 +443,18 @@ const SecondNavbar = ({ menuData }) => {
                 <Item
                   key={category?._id}
                   isActive={isActive(
-                    `/category/${category?.category?.category_slug}`
+                    `/category/${category?.category?.category_slug}`,
                   )}
                   href={`/category/${category?.category?.category_slug}`}
                   label={category?.category?.category_name}
                 />
               ))}
+
+            <Item
+              isActive={isActive("/orders/order-tracking")}
+              href="/orders/order-tracking"
+              label="Track Order"
+            />
           </div>
 
           {/* Right side: Language Switch, Sign-In, and Mobile Menu Button */}

@@ -8,7 +8,7 @@ const OrderTracking = () => {
   const [order, setOrder] = useState();
 
   return (
-    <>
+    <div className="max-w-6xl mx-auto">
       {order?.data ? (
         <div>
           <MyOrderTracking
@@ -42,7 +42,7 @@ const OrderTracking = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
