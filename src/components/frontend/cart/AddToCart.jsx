@@ -342,7 +342,14 @@ const AddToCart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4]/50">
+    <div className="min-h-screen bg-[#F4F4F4]/50 relative">
+      {/* Order submitting overlay — empty cart flash বন্ধ */}
+      {loading && (
+        <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-600 font-medium">Placing your order...</p>
+        </div>
+      )}
       <form onSubmit={handleSubmit(handleOrderProduct)}>
         <Contain>
           <div className="pt-6">
