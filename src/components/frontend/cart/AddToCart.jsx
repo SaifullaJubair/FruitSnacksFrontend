@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -13,7 +13,6 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 
-// Components
 import CartTable from "./CartTable";
 import CartSummary from "./CartSummary";
 import Contain from "../../common/Contain";
@@ -23,24 +22,20 @@ import CartTableSkeleton from "@/components/shared/loader/CartTableSkeleton";
 import DeliveryInformationSkeleton from "@/components/shared/loader/DeliveryInformationSkeleton";
 import CartSummarySkeleton from "@/components/shared/loader/CartSummarySkeleton";
 
-// Utils & Services
 import { BASE_URL } from "@/components/utils/baseURL";
 import { fetchCartDetails } from "@/utils/fetchCartDetails";
 import { productPrice, useCartCalculations } from "@/utils/helper";
-import { districts } from "@/data/districts";
-
-// Redux
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import useGetSettingData from "@/components/lib/getSettingData";
-import {
-  allRemoveFromCart,
-  removeFromCart,
-} from "@/redux/feature/cart/cartSlice";
+import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
 import useGetZoneData from "@/components/lib/getZoneData";
+
+export const CART_QUERY_KEY = "/api/v1/product/cart_product";
 
 const AddToCart = () => {
   const navigate = useRouter();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
   const { products } = useSelector((state) => state.cart);
 
   const {
@@ -49,31 +44,24 @@ const AddToCart = () => {
     formState: { errors },
   } = useForm();
 
-  // SSR hydration fix — mounted হলেই cart দেখাবে
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
-  // Data Fetching
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const { data: settingData } = useGetSettingData();
 
-  const {
-    data: cartData = [],
-    isLoading: cartLoading,
-    refetch,
-  } = useQuery({
-    queryKey: ["/api/v1/product/cart_product", products],
+  const { data: cartData = [], isLoading: cartLoading } = useQuery({
+    queryKey: [CART_QUERY_KEY],
     queryFn: async () => {
       const res = await fetchCartDetails(products);
       return res?.data || [];
     },
     enabled: mounted && products?.length > 0,
-    staleTime: 0,
+    staleTime: Infinity,
   });
 
   const isLoading = !mounted || cartLoading;
 
-  // State Management
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
@@ -111,7 +99,23 @@ const AddToCart = () => {
   const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
     useCartCalculations({ cartData, products, couponData, shippingCharge });
 
-  // Coupon handlers
+  // Remove হলে cache update — API call নেই
+  const handleRemoveFromCache = useCallback(
+    (productId, variationId) => {
+      queryClient.setQueryData([CART_QUERY_KEY], (old = []) =>
+        old.filter((item) => {
+          if (variationId) {
+            return !(
+              item._id === productId && item.variations?._id === variationId
+            );
+          }
+          return !(item._id === productId && !item.variations?._id);
+        }),
+      );
+    },
+    [queryClient],
+  );
+
   const handleRemoveCoupon = useCallback(() => {
     setCouponData(null);
     setCouponCode("");
@@ -202,24 +206,20 @@ const AddToCart = () => {
           const originalDiscountPrice = isVariation
             ? product?.variations?.variation_discount_price
             : product?.product_discount_price;
-
           const cartItem = products.find(
             (item) =>
               item.productId === product._id &&
               (!product.variations?._id ||
                 item.variation_product_id === product.variations._id),
           );
-
           const isCouponApplicable =
             couponData?.coupon_product_type === "specific" &&
             couponData?.coupon_specific_product?.some(
               (item) => item.product_id === product._id,
             );
-
           const priceKey = product?.variations?._id
             ? `${product._id}-${product.variations._id}`
             : product._id;
-
           return {
             product_id: product._id,
             variation_id: product.variations?._id || null,
@@ -250,21 +250,19 @@ const AddToCart = () => {
         if (!response.ok)
           throw new Error(result.message || "Failed to create order");
 
-        // Order success — cart clear করো
+        navigate.push(`/orders/order-success?order_id=${result?.data?._id}`);
         dispatch(allRemoveFromCart());
+        queryClient.removeQueries({ queryKey: [CART_QUERY_KEY] });
 
-        // Logged in হলে DB cart ও clear করো
         if (userInfo?.data?._id) {
           await fetch(`${BASE_URL}/cart`, {
             method: "DELETE",
             credentials: "include",
-          }).catch(() => {}); // silent fail
+          }).catch(() => {});
         }
-
         toast.success(result.message || "Order created successfully", {
           autoClose: 1000,
         });
-        navigate.push("/orders/order-success");
       } catch (error) {
         toast.error(error.message || "Something went wrong", {
           autoClose: 1000,
@@ -292,10 +290,10 @@ const AddToCart = () => {
       navigate,
       divisionID,
       districtId,
+      queryClient,
     ],
   );
 
-  // Empty State — mounted হওয়ার আগে skeleton দেখাও
   if (!mounted) {
     return (
       <div className="min-h-screen bg-[#F4F4F4]/50">
@@ -348,21 +346,19 @@ const AddToCart = () => {
           </div>
 
           <div className="grid md:gap-4 lg:gap-4 grid-cols-1 md:grid-cols-5 lg:grid-cols-4">
-            {/* Left Column */}
             <div className="flex gap-6 md:col-span-3 mt-4 overflow-x-auto pb-6">
               <div className="w-full space-y-6">
                 {isLoading ? (
                   <CartTableSkeleton />
                 ) : (
                   <CartTable
-                    refetch={refetch}
                     products={products}
                     couponData={couponData}
                     shopProduct={cartData}
                     adjustedPrices={adjustedPrices}
+                    onRemoveFromCache={handleRemoveFromCache}
                   />
                 )}
-
                 {userGetLoading ? (
                   <DeliveryInformationSkeleton />
                 ) : (
@@ -389,7 +385,6 @@ const AddToCart = () => {
               </div>
             </div>
 
-            {/* Right Column */}
             <div className="md:col-span-2 space-y-6 lg:col-span-1">
               {isLoading || userGetLoading ? (
                 <CartSummarySkeleton />

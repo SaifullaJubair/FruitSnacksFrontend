@@ -82,7 +82,8 @@ const cartSlice = createSlice({
         isSameItem(p, productId, variation_product_id),
       );
       if (item) {
-        const newQty = Math.max(1, Math.min(parseInt(quantity) || 1, maxStock));
+        const max = maxStock || 9999;
+        const newQty = Math.max(1, Math.min(parseInt(quantity) || 1, max));
         state.totalQuantity = state.totalQuantity - item.quantity + newQty;
         item.quantity = newQty;
       }
