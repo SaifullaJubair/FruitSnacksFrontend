@@ -149,7 +149,6 @@ const AddToCart = () => {
     }
   }, [couponCode, userInfo]);
 
-  // Order submit
   const handleOrderProduct = useCallback(
     async (formData) => {
       if (!userPhoneLogin && customer_phone) {
@@ -250,7 +249,7 @@ const AddToCart = () => {
         if (!response.ok)
           throw new Error(result.message || "Failed to create order");
 
-        navigate.push(`/orders/order-success?order_id=${result?.data?._id}`);
+        // আগে cart clear — তারপর redirect (empty cart flash বন্ধ)
         dispatch(allRemoveFromCart());
         queryClient.removeQueries({ queryKey: [CART_QUERY_KEY] });
 
@@ -260,9 +259,17 @@ const AddToCart = () => {
             credentials: "include",
           }).catch(() => {});
         }
+
+        const orderId = result?.data?.order_id;
+        const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
         toast.success(result.message || "Order created successfully", {
-          autoClose: 1000,
+          autoClose: 1500,
         });
+        await new Promise((r) => setTimeout(r, 300));
+        const params = new URLSearchParams();
+        if (orderId) params.set("order_id", orderId);
+        if (isGuest) params.set("guest", "true");
+        navigate.push(`/orders/order-success?${params.toString()}`);
       } catch (error) {
         toast.error(error.message || "Something went wrong", {
           autoClose: 1000,
