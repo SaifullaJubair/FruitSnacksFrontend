@@ -1,155 +1,113 @@
 import { createSlice } from "@reduxjs/toolkit";
-import { toast } from "react-toastify";
 
 const initialState = {
   products: [],
   totalQuantity: 0,
 };
 
+// Helper: same product+variation match করো
+const isSameItem = (item, productId, variationId) => {
+  if (variationId) {
+    return (
+      item.productId === productId && item.variation_product_id === variationId
+    );
+  }
+  return item.productId === productId && !item.variation_product_id;
+};
+
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
+    // Add to cart
     addToCart: (state, action) => {
-      const { productId, variation_product_id, quantity } = action.payload;
-
-      // Check if the product (with or without variation) is already in the cart
-      const existingProduct = state.products.find((p) => {
-        if (variation_product_id) {
-          return (
-            p.productId === productId &&
-            p.variation_product_id === variation_product_id
-          );
-        }
-        return p.productId === productId && !p.variation_product_id;
-      });
-
-      if (!existingProduct) {
-        // If the product/variation is not in the cart, add it
-        state.products.push({ productId, variation_product_id, quantity });
-        // Update total quantity
+      const { productId, variation_product_id, quantity = 1 } = action.payload;
+      const existing = state.products.find((p) =>
+        isSameItem(p, productId, variation_product_id),
+      );
+      if (existing) {
+        existing.quantity += quantity;
         state.totalQuantity += quantity;
       } else {
-        // If the product/variation already exists, update its quantity
-        existingProduct.quantity += quantity;
-        // Update total quantity
+        state.products.push({
+          productId,
+          variation_product_id: variation_product_id || null,
+          quantity,
+        });
         state.totalQuantity += quantity;
       }
     },
+
+    // Remove from cart (পুরো item সরিয়ে দাও)
     removeFromCart: (state, action) => {
-      const {
-        productId,
-        variation_product_id,
-        product_quantity: quantity,
-      } = action.payload;
-
-      // Find the index of the product/variation in the cart
-      const indexToRemove = state.products.findIndex((p) => {
-        if (variation_product_id) {
-          return (
-            p.productId === productId &&
-            p.variation_product_id === variation_product_id
-          );
-        }
-        return p.productId === productId && !p.variation_product_id;
-      });
-
-      if (indexToRemove !== -1) {
-        // Update the product quantity in the cart
-        const productToRemove = state.products[indexToRemove];
-
-        if (productToRemove.quantity > quantity) {
-          // Decrease the quantity if more than the quantity to remove
-          productToRemove.quantity -= quantity;
-          state.totalQuantity -= quantity;
-        } else {
-          // Remove the product entirely if the quantity matches or is less
-          state.totalQuantity -= productToRemove.quantity;
-          state.products.splice(indexToRemove, 1);
-        }
+      const { productId, variation_product_id } = action.payload;
+      const index = state.products.findIndex((p) =>
+        isSameItem(p, productId, variation_product_id),
+      );
+      if (index !== -1) {
+        state.totalQuantity -= state.products[index].quantity;
+        state.products.splice(index, 1);
       }
     },
 
+    // Increment quantity
+    incrementQuantity: (state, action) => {
+      const { productId, variation_product_id, maxStock } = action.payload;
+      const item = state.products.find((p) =>
+        isSameItem(p, productId, variation_product_id),
+      );
+      if (item && item.quantity < maxStock) {
+        item.quantity += 1;
+        state.totalQuantity += 1;
+      }
+    },
+
+    // Decrement quantity
     decrementQuantity: (state, action) => {
       const { productId, variation_product_id } = action.payload;
-
-      // Find the product or variation in the cart
-      const existingProduct = state?.products?.find(
-        (item) =>
-          item?.productId === productId &&
-          (variation_product_id
-            ? item?.variation_product_id === variation_product_id
-            : true)
+      const item = state.products.find((p) =>
+        isSameItem(p, productId, variation_product_id),
       );
-
-      if (existingProduct) {
-        // Decrement the quantity
-        if (existingProduct.quantity > 1) {
-          existingProduct.quantity -= 1;
-
-          state.totalQuantity -= 1;
-        }
+      if (item && item.quantity > 1) {
+        item.quantity -= 1;
+        state.totalQuantity -= 1;
       }
     },
 
-    incrementQuantity: (state, action) => {
-      const { productId, variation_product_id, product_quantity } =
-        action.payload;
-
-      // Find the product or variation in the cart
-      const existingProduct = state?.products?.find(
-        (item) =>
-          item?.productId === productId &&
-          (variation_product_id
-            ? item?.variation_product_id === variation_product_id
-            : true)
-      );
-
-      if (existingProduct) {
-        if (existingProduct.quantity < product_quantity) {
-          // Increment the quantity if within stock
-          existingProduct.quantity += 1;
-          state.totalQuantity += 1;
-        } else {
-          console.error("Stock limit reached");
-          // Optionally handle stock limit exceeded (e.g., show a toast message)
-        }
-      }
-    },
-
+    // Update quantity directly (input field থেকে)
     updateQuantity: (state, action) => {
-      const { productId, variation_product_id, quantity, product_quantity } =
+      const { productId, variation_product_id, quantity, maxStock } =
         action.payload;
-
-      // Find the product or variation in the cart
-      const existingProduct = state?.products?.find(
-        (item) =>
-          item?.productId === productId &&
-          (variation_product_id
-            ? item?.variation_product_id === variation_product_id
-            : true)
+      const item = state.products.find((p) =>
+        isSameItem(p, productId, variation_product_id),
       );
-
-      if (existingProduct) {
-        // Update the quantity and ensure it's within stock limits
-        if (quantity >= 1 && quantity <= product_quantity) {
-          // Update the product quantity
-          existingProduct.quantity = quantity;
-          state.totalQuantity = state.products.reduce(
-            (total, item) => total + item.quantity,
-            0
-          );
-        }
+      if (item) {
+        const newQty = Math.max(1, Math.min(parseInt(quantity) || 1, maxStock));
+        state.totalQuantity = state.totalQuantity - item.quantity + newQty;
+        item.quantity = newQty;
       }
-
-      // if (existingProduct) {
-      //   existingProduct.quantity = quantity; // Allow any quantity input
-      // }
     },
 
+    // Login এর পরে DB থেকে cart load করো (DB cart > localStorage cart)
+    setCartFromDB: (state, action) => {
+      const dbProducts = action.payload; // [{product_id, variation_id, quantity}]
+      if (!dbProducts?.length) return;
+
+      // DB format থেকে Redux format এ convert করো
+      state.products = dbProducts.map((item) => ({
+        productId: item.product_id,
+        variation_product_id: item.variation_id || null,
+        quantity: item.quantity,
+      }));
+      state.totalQuantity = state.products.reduce(
+        (sum, p) => sum + p.quantity,
+        0,
+      );
+    },
+
+    // Cart clear করো (order complete বা logout)
     allRemoveFromCart: (state) => {
       state.products = [];
-      state.totalPrice = 0;
       state.totalQuantity = 0;
     },
   },
@@ -162,6 +120,7 @@ export const {
   decrementQuantity,
   incrementQuantity,
   updateQuantity,
+  setCartFromDB,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

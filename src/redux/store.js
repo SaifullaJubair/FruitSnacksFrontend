@@ -3,13 +3,12 @@ import { configureStore } from "@reduxjs/toolkit";
 import cartReducer from "./feature/cart/cartSlice";
 import { cartLocalStorageMiddleware } from "./cartLocalstorageMiddleware";
 
-// Function to load cart state from localStorage
+// SSR safe — server এ localStorage নেই
 const cartLoadState = () => {
+  if (typeof window === "undefined") return undefined;
   try {
     const serializedCart = localStorage.getItem("cart");
-    if (serializedCart === null) {
-      return undefined;
-    }
+    if (!serializedCart) return undefined;
     return JSON.parse(serializedCart);
   } catch (error) {
     return undefined;
@@ -27,7 +26,7 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       baseApi.middleware,
-      cartLocalStorageMiddleware
+      cartLocalStorageMiddleware,
     ),
   preloadedState: {
     cart: cartPreloadedState,

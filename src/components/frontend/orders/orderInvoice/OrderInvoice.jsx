@@ -69,7 +69,7 @@ const OrderInvoice = () => {
             <p className=" font-medium capitalize">Date Issue</p>
             <p className="">
               {EnglishDateWithTimeShort(
-                orders?.data?.order?.customer_id?.createdAt
+                orders?.data?.order?.customer_id?.createdAt,
               )}
             </p>
           </div>
@@ -231,7 +231,9 @@ const OrderInvoice = () => {
               <p className="mt-2">
                 📞 Contact : {settingData?.data[0]?.contact}
               </p>
-              <p className="mt-2">© 2025 Classic IT & Sky Mart Ltd</p>
+              <p className="mt-2">
+                © 2025 Artisan Leather. All rights reserved.
+              </p>
             </div>
           </div>
 

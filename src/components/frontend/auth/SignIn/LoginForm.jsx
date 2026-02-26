@@ -6,7 +6,8 @@ import { toast } from "react-toastify";
 import { CiLock } from "react-icons/ci";
 import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
-
+import { useDispatch, useSelector } from "react-redux";
+import { syncCartAfterLogin } from "@/utils/cartSync";
 import { FaEye, FaEyeSlash, FaShoppingBag } from "react-icons/fa";
 import { useUserLoginMutation } from "@/redux/feature/auth/authApi";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
@@ -26,6 +27,8 @@ const LoginForm = () => {
   const [userLogin, { isLoading }] = useUserLoginMutation();
   const getQuery = useSearchParams();
   const successRedirect = getQuery.get("success_redirect");
+  const dispatch = useDispatch();
+  const { products: cartProducts } = useSelector((state) => state.cart);
   const {
     register,
     handleSubmit,
@@ -102,11 +105,24 @@ const LoginForm = () => {
       };
 
       const res = await userLogin(sendData);
+      // if (res?.data?.statusCode === 200 && res?.data?.success === true) {
+      //   toast.success(res?.data?.message, {
+      //     autoClose: 2000,
+      //   });
+      //   reset();
+      //   if (successRedirect) {
+      //     router.push(successRedirect);
+      //   } else {
+      //     router.push("/");
+      //   }
+      // }
       if (res?.data?.statusCode === 200 && res?.data?.success === true) {
-        toast.success(res?.data?.message, {
-          autoClose: 2000,
-        });
+        toast.success(res?.data?.message, { autoClose: 2000 });
         reset();
+
+        // Cart sync করো (localStorage → DB)
+        await syncCartAfterLogin(cartProducts, dispatch);
+
         if (successRedirect) {
           router.push(successRedirect);
         } else {

@@ -168,12 +168,12 @@ const RightSideDeliveryInfo = ({
 
         <div>
           <label className="block text-xs font-medium text-gray-700 mb-1">
-            City
+            District
           </label>
           <Select
             id="city"
             name="city"
-            placeholder="Select a city"
+            placeholder="Select a district"
             options={cities}
             value={division ? { city_name: division } : null}
             getOptionLabel={(x) => x?.city_name}
@@ -206,7 +206,7 @@ const RightSideDeliveryInfo = ({
             <Select
               id="Zone"
               name="Zone"
-              placeholder="Select Zone"
+              placeholder="Select a thana"
               options={zoneData?.data}
               value={district ? { zone_name: district } : null}
               getOptionLabel={(x) => x?.zone_name}

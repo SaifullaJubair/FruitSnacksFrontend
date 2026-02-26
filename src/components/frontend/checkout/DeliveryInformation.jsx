@@ -1,11 +1,6 @@
-import { divisions } from "@/data/divisions";
 import { cities } from "@/data/cites";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import Select from "react-select";
-import PhoneInput, {
-  formatPhoneNumber,
-  isPossiblePhoneNumber,
-  isValidPhoneNumber,
-} from "react-phone-number-input";
 
 const DeliveryInformation = ({
   register,

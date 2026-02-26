@@ -39,41 +39,30 @@ import {
 import useGetZoneData from "@/components/lib/getZoneData";
 
 const AddToCart = () => {
+  // Hooks Initialization
   const navigate = useRouter();
   const dispatch = useDispatch();
   const { products } = useSelector((state) => state.cart);
-
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
 
-  // SSR hydration fix — mounted হলেই cart দেখাবে
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   // Data Fetching
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const { data: settingData } = useGetSettingData();
-
   const {
     data: cartData = [],
-    isLoading: cartLoading,
+    isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["/api/v1/product/cart_product", products],
-    queryFn: async () => {
-      const res = await fetchCartDetails(products);
-      return res?.data || [];
-    },
-    enabled: mounted && products?.length > 0,
-    staleTime: 0,
+    queryKey: ["/api/v1/product/cart_product"],
+    queryFn: async () => (await fetchCartDetails(products))?.data,
   });
 
-  const isLoading = !mounted || cartLoading;
-
   // State Management
+  const [districtsData, setDistrictsData] = useState([]);
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
@@ -81,13 +70,13 @@ const AddToCart = () => {
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
   const [couponData, setCouponData] = useState(null);
   const [couponCode, setCouponCode] = useState("");
+  const [panelOwnerIds, setPanelOwnerIds] = useState(null);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [loading, setLoading] = useState(false);
   const [customer_phone, setUserPhone] = useState(
     userInfo?.data?.user_phone?.slice(3, 14),
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
-
   useEffect(() => {
     if (userInfo?.data?.user_phone) {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
@@ -100,6 +89,8 @@ const AddToCart = () => {
     refetch: refetchZone,
   } = useGetZoneData(divisionID);
 
+  // console.log(cartData)
+  // console.log(couponData, "couponData");
   const shippingCharge = useMemo(
     () =>
       division === "Dhaka"
@@ -109,9 +100,14 @@ const AddToCart = () => {
   );
 
   const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
-    useCartCalculations({ cartData, products, couponData, shippingCharge });
+    useCartCalculations({
+      cartData,
+      products,
+      couponData,
+      shippingCharge,
+    });
 
-  // Coupon handlers
+  // Handlers
   const handleRemoveCoupon = useCallback(() => {
     setCouponData(null);
     setCouponCode("");
@@ -123,6 +119,7 @@ const AddToCart = () => {
       toast.error("Please enter a valid coupon code.");
       return;
     }
+
     setIsApplyingCoupon(true);
     try {
       const response = await fetch(`${BASE_URL}/coupon/check_coupon`, {
@@ -133,6 +130,7 @@ const AddToCart = () => {
           customer_id: userInfo?.data?._id,
         }),
       });
+
       const data = await response.json();
       if (response.ok) {
         setCouponData(data?.data);
@@ -145,28 +143,31 @@ const AddToCart = () => {
     }
   }, [couponCode, userInfo]);
 
-  // Order submit
   const handleOrderProduct = useCallback(
     async (formData) => {
+      // Phone validation
       if (!userPhoneLogin && customer_phone) {
-        if (
-          !formatPhoneNumber(customer_phone) ||
-          !isPossiblePhoneNumber(customer_phone) ||
-          !isValidPhoneNumber(customer_phone)
-        ) {
+        const isValidFormat = formatPhoneNumber(customer_phone);
+        const isPossible = isPossiblePhoneNumber(customer_phone);
+        const isValid = isValidPhoneNumber(customer_phone);
+
+        if (!isValidFormat || !isPossible || !isValid) {
           toast.error("Mobile number not valid!");
           return;
         }
       }
+
       if (!customer_phone) {
         toast.error("Phone is required!");
         return;
       }
+
       if (!district || !division) {
         toast.error("Please select a City and Zone.");
         return;
       }
 
+      // Prepare order data
       const orderData = {
         pathao_city_id: parseInt(divisionID),
         pathao_city_name: division,
@@ -216,10 +217,6 @@ const AddToCart = () => {
               (item) => item.product_id === product._id,
             );
 
-          const priceKey = product?.variations?._id
-            ? `${product._id}-${product.variations._id}`
-            : product._id;
-
           return {
             product_id: product._id,
             variation_id: product.variations?._id || null,
@@ -227,12 +224,12 @@ const AddToCart = () => {
             product_main_discount_price: originalDiscountPrice || 0,
             product_unit_price: productPrice(product),
             product_unit_final_price: isCouponApplicable
-              ? adjustedPrices[priceKey]
+              ? adjustedPrices[product._id]
               : productPrice(product),
             product_quantity: cartItem?.quantity || 1,
             product_grand_total_price:
               (isCouponApplicable
-                ? adjustedPrices[priceKey]
+                ? adjustedPrices[product._id]
                 : productPrice(product)) * (cartItem?.quantity || 1),
             campaign_id: product?.campaign_details?._id || null,
           };
@@ -240,32 +237,30 @@ const AddToCart = () => {
       };
 
       setLoading(true);
+
       try {
         const response = await fetch(`${BASE_URL}/order`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
           body: JSON.stringify(orderData),
         });
+
         const result = await response.json();
-        if (!response.ok)
+
+        if (!response.ok) {
           throw new Error(result.message || "Failed to create order");
-
-        // Order success — cart clear করো
-        dispatch(allRemoveFromCart());
-
-        // Logged in হলে DB cart ও clear করো
-        if (userInfo?.data?._id) {
-          await fetch(`${BASE_URL}/cart`, {
-            method: "DELETE",
-            credentials: "include",
-          }).catch(() => {}); // silent fail
         }
 
         toast.success(result.message || "Order created successfully", {
           autoClose: 1000,
         });
+
+        dispatch(allRemoveFromCart());
         navigate.push("/orders/order-success");
       } catch (error) {
+        console.error("Order submission error:", error);
         toast.error(error.message || "Something went wrong", {
           autoClose: 1000,
         });
@@ -290,25 +285,49 @@ const AddToCart = () => {
       settingData,
       dispatch,
       navigate,
-      divisionID,
-      districtId,
     ],
   );
 
-  // Empty State — mounted হওয়ার আগে skeleton দেখাও
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-[#F4F4F4]/50">
-        <Contain>
-          <div className="pt-6">
-            <CartTableSkeleton />
-          </div>
-        </Contain>
-      </div>
-    );
-  }
+  // Effects
+  useEffect(() => {
+    if (districtId) {
+      setDistrictsData(districts.filter((d) => d.division_id === districtId));
+    }
+  }, [districtId]);
 
-  if (!products?.length) {
+  // useEffect(() => {
+  //   if (cartData?.length) {
+  //     const updatedCart = products.filter((item) =>
+  //       cartData.some(
+  //         (cartItem) =>
+  //           cartItem._id === item.productId &&
+  //           (!item.variation_product_id ||
+  //             cartItem.variations?._id === item.variation_product_id)
+  //       )
+  //     );
+
+  //     products.forEach((item) => {
+  //       if (
+  //         !updatedCart.some(
+  //           (updatedItem) =>
+  //             updatedItem.productId === item.productId &&
+  //             updatedItem.variation_product_id === item.variation_product_id
+  //         )
+  //       ) {
+  //         dispatch(
+  //           removeFromCart({
+  //             productId: item.productId,
+  //             variation_product_id: item.variation_product_id,
+  //             product_quantity: item.quantity,
+  //           })
+  //         );
+  //       }
+  //     });
+  //   }
+  // }, [cartData, products, dispatch]);
+
+  // Empty State
+  if (!products?.length && !isLoading) {
     return (
       <div className="text-center max-w-md mx-auto mt-2 bg-white p-6 shadow-lg">
         <img
@@ -370,6 +389,7 @@ const AddToCart = () => {
                     register={register}
                     userInfo={userInfo}
                     errors={errors}
+                    districtsData={districtsData}
                     setUserPhoneLogin={setUserPhoneLogin}
                     setUserPhone={setUserPhone}
                     customer_phone={customer_phone}

@@ -27,7 +27,7 @@ const CartTable = ({
     const price =
       couponData?.coupon_product_type === "specific" &&
       couponData?.coupon_specific_product?.some(
-        (item) => item?.product_id === product?._id
+        (item) => item?.product_id === product?._id,
       )
         ? adjustedPrices[priceKey]
         : productPrice(product);
@@ -38,7 +38,7 @@ const CartTable = ({
           item?.productId === product?._id &&
           (product?.variations?._id
             ? item?.variation_product_id === product?.variations?._id
-            : true)
+            : true),
       )?.quantity || 1;
 
     return price * quantity;
@@ -48,10 +48,11 @@ const CartTable = ({
   const handleIncrementQuantity = (
     productId,
     variation_product_id,
-    product_quantity
+    product_quantity,
+    maxStock,
   ) => {
     dispatch(
-      incrementQuantity({ productId, variation_product_id, product_quantity })
+      incrementQuantity({ productId, variation_product_id, product_quantity }),
     );
   };
 
@@ -62,7 +63,7 @@ const CartTable = ({
     e,
     productId,
     variation_product_id,
-    product_quantity
+    product_quantity,
   ) => {
     let newQuantity = e.target.value || 1;
     dispatch(
@@ -71,16 +72,16 @@ const CartTable = ({
         variation_product_id,
         quantity: newQuantity,
         product_quantity,
-      })
+      }),
     );
   };
   const handleRemoveFromCart = (
     productId,
     variation_product_id,
-    product_quantity
+    product_quantity,
   ) => {
     dispatch(
-      removeFromCart({ productId, variation_product_id, product_quantity })
+      removeFromCart({ productId, variation_product_id, product_quantity }),
     );
     setTimeout(() => refetch(), 500);
   };
@@ -158,7 +159,7 @@ const CartTable = ({
                     onClick={() => {
                       handleDecrementQuantity(
                         product?._id,
-                        product?.variations?._id
+                        product?.variations?._id,
                       );
                     }}
                   >
@@ -174,7 +175,7 @@ const CartTable = ({
                           (product?.variations?._id
                             ? item?.variation_product_id ===
                               product?.variations?._id
-                            : true)
+                            : true),
                       )?.quantity
                     }
                     onChange={(e) =>
@@ -184,7 +185,7 @@ const CartTable = ({
                         product?.variations?._id,
                         product?.variations?._id
                           ? product?.variations?.variation_quantity
-                          : product?.product_quantity
+                          : product?.product_quantity,
                       )
                     }
                   />
@@ -197,7 +198,7 @@ const CartTable = ({
                         product?.variations?._id,
                         product?.variations?._id
                           ? product?.variations?.variation_quantity
-                          : product?.product_quantity
+                          : product?.product_quantity,
                       );
                     }}
                     className="border border-primary-200 px-2.5   text-primary-300 hover:bg-primary-300 hover:text-white transition-all duration-300 ease-in-out"
@@ -208,7 +209,7 @@ const CartTable = ({
                 <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
                   {couponData?.coupon_product_type === "specific" &&
                   couponData?.coupon_specific_product?.some(
-                    (item) => item?.product_id === product?._id
+                    (item) => item?.product_id === product?._id,
                   ) ? (
                     <div className="flex items-center gap-2">
                       <p className="font-thin line-through text-text-Lighter mb-2 text-md">
@@ -261,7 +262,7 @@ const CartTable = ({
                         product?.variations?._id,
                         product?.variations?._id
                           ? product?.variations?.variation_quantity
-                          : product?.product_quantity
+                          : product?.product_quantity,
                       )
                     }
                   >
@@ -272,7 +273,7 @@ const CartTable = ({
                   </button>
                 </td>
               </tr>
-            )
+            ),
           )}
         </tbody>
       </table>
