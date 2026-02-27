@@ -35,8 +35,8 @@ import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion
 import useGetZoneData from "@/components/lib/getZoneData";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaServerEvent";
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
 
 const SingleProduct = ({ product }) => {
   useEffect(() => {

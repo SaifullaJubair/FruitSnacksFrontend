@@ -15,6 +15,16 @@ const fbq = (...args) => {
   }
 };
 
+// ✅ content_ids সব সময় String array
+const toStringIds = (ids) => {
+  if (!ids) return [];
+  if (Array.isArray(ids)) return ids.map((id) => String(id));
+  return [String(ids)];
+};
+
+// ✅ value সব সময় Number
+const toNumber = (val) => parseFloat(val) || 0;
+
 const useMetaPixel = () => {
   // PageView
   const trackPageView = useCallback(() => {
@@ -27,11 +37,13 @@ const useMetaPixel = () => {
       "track",
       "ViewContent",
       {
-        content_ids: [product?._id],
+        content_ids: toStringIds([product?._id]),
         content_name: product?.product_name,
         content_type: "product",
         currency: "BDT",
-        value: product?.product_discount_price || product?.product_price,
+        value: toNumber(
+          product?.product_discount_price || product?.product_price,
+        ),
       },
       { eventID: eventId },
     );
@@ -49,11 +61,11 @@ const useMetaPixel = () => {
         "track",
         "AddToCart",
         {
-          content_ids: [variationProduct?._id || product?._id],
+          content_ids: toStringIds([variationProduct?._id || product?._id]),
           content_name: product?.product_name,
           content_type: "product",
           currency: "BDT",
-          value: price * quantity,
+          value: toNumber(price) * quantity,
           num_items: quantity,
         },
         { eventID: eventId },
@@ -68,11 +80,13 @@ const useMetaPixel = () => {
       "track",
       "Purchase",
       {
-        content_ids: orderData?.order_products?.map((p) => p?.product_id),
+        content_ids: toStringIds(
+          orderData?.order_products?.map((p) => p?.product_id),
+        ),
         content_type: "product",
         currency: "BDT",
-        value: orderData?.grand_total_amount,
-        num_items: orderData?.order_products?.length,
+        value: toNumber(orderData?.grand_total_amount),
+        num_items: orderData?.order_products?.length || 0,
       },
       { eventID: eventId },
     );
@@ -94,10 +108,10 @@ const useMetaPixel = () => {
       "track",
       "InitiateCheckout",
       {
-        content_ids: orderData?.content_ids || [],
+        content_ids: toStringIds(orderData?.content_ids),
         content_type: "product",
         currency: "BDT",
-        value: orderData?.value || 0,
+        value: toNumber(orderData?.value),
         num_items: orderData?.num_items || 1,
       },
       { eventID: eventId },
@@ -129,11 +143,11 @@ const useMetaPixel = () => {
         "track",
         "AddToWishlist",
         {
-          content_ids: [variationProduct?._id || product?._id],
+          content_ids: toStringIds([variationProduct?._id || product?._id]),
           content_name: product?.product_name,
           content_type: "product",
           currency: "BDT",
-          value: price,
+          value: toNumber(price),
         },
         { eventID: eventId },
       );
