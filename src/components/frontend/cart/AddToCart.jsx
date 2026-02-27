@@ -82,6 +82,29 @@ const AddToCart = () => {
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
 
+  useEffect(() => {
+    if (userInfo?.data?.user_phone) {
+      setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
+    }
+  }, [userInfo?.data?.user_phone]);
+
+  const {
+    data: zoneData,
+    isLoading: zoneLoading,
+    refetch: refetchZone,
+  } = useGetZoneData(divisionID);
+
+  const shippingCharge = useMemo(
+    () =>
+      division === "Dhaka"
+        ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
+        : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0,
+    [division, settingData],
+  );
+
+  const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
+    useCartCalculations({ cartData, products, couponData, shippingCharge });
+
   // ✅ InitiateCheckout — phone input করলে একবার fire
   const handlePhoneChangeWithTracking = useCallback(
     (value) => {
@@ -110,30 +133,6 @@ const AddToCart = () => {
     },
     [cartData, shopGrandTotals, trackInitiateCheckout],
   );
-
-  useEffect(() => {
-    if (userInfo?.data?.user_phone) {
-      setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
-    }
-  }, [userInfo?.data?.user_phone]);
-
-  const {
-    data: zoneData,
-    isLoading: zoneLoading,
-    refetch: refetchZone,
-  } = useGetZoneData(divisionID);
-
-  const shippingCharge = useMemo(
-    () =>
-      division === "Dhaka"
-        ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
-        : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0,
-    [division, settingData],
-  );
-
-  const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
-    useCartCalculations({ cartData, products, couponData, shippingCharge });
-
   // Remove হলে cache update — API call নেই
   const handleRemoveFromCache = useCallback(
     (productId, variationId) => {

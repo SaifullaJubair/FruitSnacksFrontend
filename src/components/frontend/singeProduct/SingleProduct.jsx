@@ -53,6 +53,7 @@ const SingleProduct = ({ product }) => {
     trackAddToWishlist,
   } = useMetaPixel();
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
+  const initiateCheckoutFired = useRef(false);
 
   // ✅ ViewContent — product page open হলে একবার fire
   useEffect(() => {
