@@ -30,6 +30,10 @@ import useGetSettingData from "@/components/lib/getSettingData";
 import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
 import useGetZoneData from "@/components/lib/getZoneData";
 
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+
 export const CART_QUERY_KEY = "/api/v1/product/cart_product";
 
 const AddToCart = () => {
@@ -37,6 +41,7 @@ const AddToCart = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { products } = useSelector((state) => state.cart);
+  const { trackPurchase } = useMetaPixel();
 
   const {
     register,
@@ -170,6 +175,16 @@ const AddToCart = () => {
         return;
       }
 
+      // ✅ Purchase event_id — browser + server deduplication
+      const purchaseEventId = generateEventId();
+
+      // ✅ fbc, fbp cookie পড়ো
+      const getCookie = (name) => {
+        if (typeof document === "undefined") return "";
+        const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
+        return match ? match[2] : "";
+      };
+
       const orderData = {
         pathao_city_id: parseInt(divisionID),
         pathao_city_name: division,
@@ -197,6 +212,9 @@ const AddToCart = () => {
         grand_total_amount: shopGrandTotals || 0,
         coupon_id: couponData?._id || null,
         need_user_create: !userInfo?.data?.user_phone,
+        purchase_event_id: purchaseEventId, // ✅ server side deduplication
+        fbc: getCookie("_fbc"),
+        fbp: getCookie("_fbp"),
         order_products: cartData.map((product) => {
           const isVariation = product?.is_variation;
           const originalPrice = isVariation
@@ -260,15 +278,37 @@ const AddToCart = () => {
           }).catch(() => {});
         }
 
+        // ✅ Browser + Server Purchase event
+        trackPurchase(orderData, purchaseEventId);
+        sendServerEvent({
+          event_name: "Purchase",
+          event_id: purchaseEventId,
+          user_data: {
+            ph: customer_phone,
+            fn: formData.customer_name || userInfo?.data?.user_name,
+            external_id: userInfo?.data?._id,
+          },
+          custom_data: {
+            currency: "BDT",
+            value: shopGrandTotals,
+            content_ids: cartData.map((p) => p._id),
+            content_type: "product",
+            num_items: cartData.length,
+            order_id: result?.data?.order_id,
+          },
+        });
+
         const orderId = result?.data?.order_id;
         const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
         toast.success(result.message || "Order created successfully", {
           autoClose: 1500,
         });
+
         // await new Promise((r) => setTimeout(r, 300));
         const params = new URLSearchParams();
         if (orderId) params.set("order_id", orderId);
         if (isGuest) params.set("guest", "true");
+        // loading false করো না — redirect হওয়া পর্যন্ত overlay থাকবে
         navigate.push(`/orders/order-success?${params.toString()}`);
       } catch (error) {
         toast.error(error.message || "Something went wrong", {
