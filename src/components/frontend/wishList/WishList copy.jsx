@@ -1,10 +1,13 @@
 "use client";
 
+import { FaAngleRight, FaStar } from "react-icons/fa";
+import { FaStarHalfAlt } from "react-icons/fa";
 import { MdDeleteForever } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import Contain from "../../common/Contain";
 import Image from "next/image";
+
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
@@ -17,24 +20,11 @@ import { BiCart } from "react-icons/bi";
 import { lineThroughPrice, productPrice } from "@/utils/helper";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import WishlistTableSkeleton from "@/components/shared/loader/WishlistTableSkeleton";
-import { CART_QUERY_KEY } from "../cart/AddToCart";
-
-// ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
-import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
-
-// Wishlist এর আলাদা query key
-const WISHLIST_QUERY_KEY = "/api/v1/product/wishlist_product";
 
 const WishList = () => {
   const [wishList, setWishList] = useState([]);
   const dispatch = useDispatch();
-  const queryClient = useQueryClient();
   const cartProducts = useSelector((state) => state.cart.products);
-  const { trackAddToCart } = useMetaPixel();
-  const { data: userInfo } = useUserInfoQuery();
-
   useEffect(() => {
     try {
       const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
@@ -44,20 +34,94 @@ const WishList = () => {
     }
   }, []);
 
-  const { data: cartDetails, isLoading } = useQuery({
-    queryKey: [
-      WISHLIST_QUERY_KEY,
-      wishList
-        .map((w) => w.productId + (w.variation_product_id || ""))
-        .join(","),
-    ],
+  const {
+    data: cartDetails,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["/api/v1/product/cart_product"],
     queryFn: async () => await fetchCartDetails(wishList),
-    enabled: wishList.length > 0,
-    staleTime: Infinity,
   });
 
-  // Product remove হলে cache update — refetch নেই
-  const handleRemoveWishlist = (product) => {
+  useEffect(() => {
+    if (cartDetails?.data?.length) {
+      setWishList((prevWishlist) => {
+        const updatedWishlist = prevWishlist.filter((wishItem) => {
+          return cartDetails?.data?.some((cartItem) => {
+            if (wishItem?.variation_product_id) {
+              // Match productId and variation ID
+              return (
+                cartItem?._id === wishItem?.productId &&
+                cartItem?.variations?._id === wishItem?.variation_product_id
+              );
+            } else {
+              // Match only productId if no variation
+              return cartItem?._id === wishItem?.productId;
+            }
+          });
+        });
+
+        // Update localStorage if wishlist changes
+        if (JSON.stringify(updatedWishlist) !== JSON.stringify(prevWishlist)) {
+          localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
+          window.dispatchEvent(new Event("localStorageUpdated"));
+        }
+
+        return updatedWishlist;
+      });
+    }
+  }, [cartDetails]);
+
+  // console.log(wishList);
+
+  useEffect(() => {
+    refetch();
+  }, [wishList, refetch]);
+
+  const handleAddToCart = (product) => {
+    const cartItem = {
+      productId: product?._id,
+      quantity: 1,
+      variation_product_id: product?.is_variation
+        ? product?.variations?._id
+        : null,
+    };
+    const productID = cartProducts.find(
+      (cartItem) => cartItem?.productId === product?._id,
+    );
+    if (product?.is_variation) {
+      const variationID = cartProducts.find(
+        (cartItem) =>
+          cartItem?.variation_product_id === product?.variations?._id,
+      );
+
+      if (productID && variationID) {
+        toast.error("Already is added cart", {
+          autoClose: 1500,
+        });
+      } else {
+        dispatch(addToCart(cartItem));
+        toast.success("Successfully added to cart", {
+          autoClose: 1500,
+        });
+      }
+    } else if (productID) {
+      toast.error("Already is added cart", {
+        autoClose: 1500,
+      });
+    } else {
+      dispatch(addToCart(cartItem));
+      toast.success("Successfully added to cart", {
+        autoClose: 1500,
+      });
+    }
+    // dispatch(addToCart(cartItem));
+    // toast.success("Successfully added to cart", {
+    //   autoClose: 1500,
+    // });
+  };
+
+  const handleRemoveWishlist = async (product) => {
     const wishListItem = {
       productId: product?._id,
       variation_product_id: product?.is_variation
@@ -68,86 +132,45 @@ const WishList = () => {
     let existingWishlist = [];
     try {
       existingWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-    } catch (error) {}
+    } catch (error) {
+      console.error("Error parsing wishlist from localStorage", error);
+    }
 
+    // Filter out the product
     const updatedWishlist = existingWishlist.filter(
       (item) =>
         item.productId !== wishListItem.productId ||
         item.variation_product_id !== wishListItem.variation_product_id,
     );
 
+    // Update Local State & LocalStorage
     setWishList(updatedWishlist);
     localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
-    toast.error("Product removed from your wishlist", { autoClose: 1500 });
+    // Refetch data to update `cartDetails`
+    await refetch()
+      .then(() => {
+        toast.error("Product removed from your wishlist", {
+          autoClose: 1500,
+        });
+      })
+      .catch((error) => {
+        console.error("Failed to refetch cart details:", error);
+      });
   };
 
-  const handleAddToCart = (product) => {
-    const cartItem = {
-      productId: product?._id,
-      quantity: 1,
-      variation_product_id: product?.is_variation
-        ? product?.variations?._id
-        : null,
-    };
+  const { data: settingsData, isLoading: siteSettingLoading } =
+    useGetSettingData();
 
-    const productID = cartProducts.find(
-      (item) => item?.productId === product?._id,
-    );
-
-    if (product?.is_variation) {
-      const variationID = cartProducts.find(
-        (item) => item?.variation_product_id === product?.variations?._id,
-      );
-      if (productID && variationID) {
-        toast.error("Already is added cart", { autoClose: 1500 });
-        return;
-      }
-    } else if (productID) {
-      toast.error("Already is added cart", { autoClose: 1500 });
-      return;
-    }
-
-    dispatch(addToCart(cartItem));
-    toast.success("Successfully added to cart", { autoClose: 1500 });
-
-    // ✅ Cart page cache update করো — নতুন product add হলে refetch trigger হবে
-    queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
-
-    // ✅ AddToCart Meta Pixel event
-    const eventId = generateEventId();
-    trackAddToCart(
-      product,
-      product?.is_variation ? product?.variations : null,
-      1,
-      eventId,
-    );
-    sendServerEvent({
-      event_name: "AddToCart",
-      event_id: eventId,
-      user_data: {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
-      custom_data: {
-        content_ids: [product?.variations?._id || product?._id],
-        content_name: product?.product_name,
-        content_type: "product",
-        currency: "BDT",
-        value: productPrice(product),
-        num_items: 1,
-      },
-    });
-  };
-
-  const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data[0];
+  // console.log(wishList.length);
+
+  // if (!isLoading) return <WishlistTableSkeleton />;
 
   if (!isLoading && !wishList?.length) return <WishlistEmpty />;
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4]/50">
+    <div className="min-h-screen  bg-[#F4F4F4]/50">
       <PhotoProvider>
         <Contain>
           <div>
@@ -161,13 +184,15 @@ const WishList = () => {
             </div>
           </div>
           {isLoading ? (
-            <WishlistTableSkeleton />
+            <>
+              <WishlistTableSkeleton />
+            </>
           ) : (
             <div className="mt-6 bg-white shadow-lg">
               <div className="overflow-x-auto scrollbar-thin">
                 <table className="min-w-full text-sm">
                   <thead className="ltr:text-left rtl:text-right bg-gray-100">
-                    <tr className="text-gray-900">
+                    <tr className="text-gray-900 ">
                       <td className="whitespace-nowrap p-4">#</td>
                       <td className="whitespace-nowrap p-4">Image</td>
                       <td className="whitespace-nowrap p-4">Product</td>
@@ -177,28 +202,32 @@ const WishList = () => {
                       <td className="whitespace-nowrap p-4">Remove</td>
                     </tr>
                   </thead>
+
                   <tbody className="divide-gray-200">
                     {cartDetails?.data?.map((product, index) => (
                       <tr
                         className={`divide-y divide-gray-100 space-y-2 py-2 ${
                           index % 2 === 0 ? "bg-white" : "bg-gray-50"
                         }`}
-                        key={`${product._id}-${product?.variations?._id || "no-var"}`}
+                        key={index}
                       >
-                        <td className="whitespace-nowrap p-4">{index + 1}</td>
+                        <td className="whitespace-nowrap p-4 ">
+                          {/* <input type="checkbox" id="" name="" value="" /> */}{" "}
+                          {index + 1}
+                        </td>
                         <td>
                           <PhotoView src={product?.main_image}>
                             <Image
                               src={product?.main_image}
-                              className="w-20 h-[72px] cursor-zoom-in border"
+                              className="w-20 h-[72px]  cursor-zoom-in  border"
                               height={100}
                               width={100}
-                              alt={product?.product_name}
+                              alt=""
                             />
                           </PhotoView>
                         </td>
-                        <td className="min-w-[260px] py-2.5 text-gray-700 px-4">
-                          <div className="mt-1">
+                        <td className="min-w-[260px] py-2.5 text-gray-700  px-4  scrollbar-track-gray-200">
+                          <div className="mt-1 ">
                             <p className="mb-1">
                               <Link
                                 href={`/products/${product?.product_slug}`}
@@ -211,6 +240,7 @@ const WishList = () => {
                               {product?.brand_id?.brand_name && (
                                 <p>Brand: {product?.brand_id?.brand_name}</p>
                               )}
+
                               {product?.is_variation && (
                                 <p>
                                   Variations:{" "}
@@ -220,16 +250,19 @@ const WishList = () => {
                             </div>
                           </div>
                         </td>
+
                         <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
                           <div className="flex items-center justify-between space-x-2 mt-2">
                             <div>
                               <span className="text-base font-semibold">
+                                {" "}
                                 {currencySymbol?.currency_symbol}
                                 {productPrice(product)}
                               </span>
                               {lineThroughPrice(product) && (
                                 <span className="text-sm ml-2 line-through text-gray-400">
                                   {currencySymbol?.currency_symbol}
+
                                   {lineThroughPrice(product)}
                                 </span>
                               )}
@@ -239,24 +272,25 @@ const WishList = () => {
                         <td className="whitespace-nowrap py-1.5 font-medium text-gray-700 px-4">
                           {product?.is_variation ? (
                             product?.variations?.variation_quantity > 0 ? (
-                              <button className="px-[10px] py-[4px] bg-green-100 cursor-auto">
+                              <button className=" px-[10px] py-[4px]  bg-green-100 text-red cursor-auto">
                                 In Stock
                               </button>
                             ) : (
-                              <button className="px-[10px] py-[4px] bg-red-100 cursor-auto">
+                              <button className=" px-[10px] py-[4px]  bg-red-100 text-red cursor-auto">
                                 Out of Stock
                               </button>
                             )
                           ) : product?.product_quantity > 0 ? (
-                            <button className="px-[10px] py-[4px] bg-green-100 cursor-auto">
+                            <button className=" px-[10px] py-[4px]  bg-green-100 text-red cursor-auto">
                               In Stock
                             </button>
                           ) : (
-                            <button className="px-[10px] py-[4px] bg-red-100 cursor-auto">
+                            <button className=" px-[10px] py-[4px]  bg-red-100 text-red cursor-auto">
                               Out of Stock
                             </button>
                           )}
                         </td>
+
                         <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
                           {cartProducts?.some(
                             (cartItem) =>
@@ -266,15 +300,16 @@ const WishList = () => {
                                   product?.variations?._id),
                           ) ? (
                             <Button
+                              className=""
                               variant="default"
                               size="sm"
-                              className="cursor-not-allowed"
                               disabled
                             >
                               Already Added
                             </Button>
                           ) : (
                             <Button
+                              className=""
                               size="sm"
                               onClick={() => handleAddToCart(product)}
                             >
@@ -283,6 +318,7 @@ const WishList = () => {
                             </Button>
                           )}
                         </td>
+
                         <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
                           <button onClick={() => handleRemoveWishlist(product)}>
                             <MdDeleteForever

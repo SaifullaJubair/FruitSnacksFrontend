@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useCallback, useState } from "react";
+import { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
@@ -41,7 +41,7 @@ const AddToCart = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { products } = useSelector((state) => state.cart);
-  const { trackPurchase } = useMetaPixel();
+  const { trackPurchase, trackInitiateCheckout } = useMetaPixel();
 
   const {
     register,
@@ -50,6 +50,7 @@ const AddToCart = () => {
   } = useForm();
 
   const [mounted, setMounted] = useState(false);
+  const initiateCheckoutFired = useRef(false);
   useEffect(() => setMounted(true), []);
 
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
@@ -80,6 +81,35 @@ const AddToCart = () => {
     userInfo?.data?.user_phone?.slice(3, 14),
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
+
+  // ✅ InitiateCheckout — phone input করলে একবার fire
+  const handlePhoneChangeWithTracking = useCallback(
+    (value) => {
+      setUserPhone(value);
+      if (!initiateCheckoutFired.current && value) {
+        initiateCheckoutFired.current = true;
+        const eventId = generateEventId();
+        trackInitiateCheckout(
+          {
+            content_ids: cartData?.map((p) => p?._id) || [],
+            value: shopGrandTotals || 0,
+            num_items: cartData?.length || 1,
+          },
+          eventId,
+        );
+        sendServerEvent({
+          event_name: "InitiateCheckout",
+          event_id: eventId,
+          custom_data: {
+            currency: "BDT",
+            value: shopGrandTotals || 0,
+            num_items: cartData?.length || 1,
+          },
+        });
+      }
+    },
+    [cartData, shopGrandTotals, trackInitiateCheckout],
+  );
 
   useEffect(() => {
     if (userInfo?.data?.user_phone) {
@@ -303,8 +333,7 @@ const AddToCart = () => {
         toast.success(result.message || "Order created successfully", {
           autoClose: 1500,
         });
-
-        // await new Promise((r) => setTimeout(r, 300));
+        await new Promise((r) => setTimeout(r, 300));
         const params = new URLSearchParams();
         if (orderId) params.set("order_id", orderId);
         if (isGuest) params.set("guest", "true");
@@ -314,8 +343,7 @@ const AddToCart = () => {
         toast.error(error.message || "Something went wrong", {
           autoClose: 1000,
         });
-      } finally {
-        setLoading(false);
+        setLoading(false); // শুধু error এ loading false
       }
     },
     [
@@ -421,7 +449,7 @@ const AddToCart = () => {
                     userInfo={userInfo}
                     errors={errors}
                     setUserPhoneLogin={setUserPhoneLogin}
-                    setUserPhone={setUserPhone}
+                    setUserPhone={handlePhoneChangeWithTracking}
                     customer_phone={customer_phone}
                     setDivision={setDivision}
                     setDistrictId={setDistrictId}

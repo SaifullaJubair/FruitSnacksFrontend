@@ -88,6 +88,59 @@ const useMetaPixel = () => {
     fbq("track", "CompleteRegistration", {}, { eventID: eventId });
   }, []);
 
+  // ✅ InitiateCheckout — form fill শুরু করলে একবার fire
+  const trackInitiateCheckout = useCallback((orderData, eventId) => {
+    fbq(
+      "track",
+      "InitiateCheckout",
+      {
+        content_ids: orderData?.content_ids || [],
+        content_type: "product",
+        currency: "BDT",
+        value: orderData?.value || 0,
+        num_items: orderData?.num_items || 1,
+      },
+      { eventID: eventId },
+    );
+  }, []);
+
+  // ✅ Search — user search করলে fire
+  const trackSearch = useCallback((searchString, eventId) => {
+    fbq(
+      "track",
+      "Search",
+      {
+        search_string: searchString,
+        currency: "BDT",
+      },
+      { eventID: eventId },
+    );
+  }, []);
+
+  // ✅ AddToWishlist — wishlist এ add করলে fire
+  const trackAddToWishlist = useCallback(
+    (product, variationProduct, eventId) => {
+      const price = variationProduct
+        ? variationProduct?.variation_discount_price ||
+          variationProduct?.variation_price
+        : product?.product_discount_price || product?.product_price;
+
+      fbq(
+        "track",
+        "AddToWishlist",
+        {
+          content_ids: [variationProduct?._id || product?._id],
+          content_name: product?.product_name,
+          content_type: "product",
+          currency: "BDT",
+          value: price,
+        },
+        { eventID: eventId },
+      );
+    },
+    [],
+  );
+
   return {
     trackPageView,
     trackViewContent,
@@ -95,6 +148,9 @@ const useMetaPixel = () => {
     trackPurchase,
     trackLogin,
     trackCompleteRegistration,
+    trackInitiateCheckout,
+    trackSearch,
+    trackAddToWishlist,
   };
 };
 

@@ -9,7 +9,7 @@ import RightSideShoppingSection from "./rightSideShoppingSection/RightSideShoppi
 import RecentProducts from "./sellerProduct/RecentProducts";
 import RelatedProducts from "./relatedProducts/RelatedProducts";
 import QnAAccordion from "./qnaAccordion/QnAAccordion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { updateRecentProducts } from "@/utils/helper";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
@@ -33,9 +33,10 @@ import PhoneInput, {
 import MobileDeliveryInfoAccordion from "./rightSideShoppingSection/MobileDeliveryInfoAccordion";
 import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion";
 import useGetZoneData from "@/components/lib/getZoneData";
+
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, { generateEventId } from "@/utils/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaServerEvent";
 
 const SingleProduct = ({ product }) => {
   useEffect(() => {
@@ -44,7 +45,13 @@ const SingleProduct = ({ product }) => {
     }
   }, [product]);
 
-  const { trackViewContent, trackAddToCart, trackPurchase } = useMetaPixel();
+  const {
+    trackViewContent,
+    trackAddToCart,
+    trackPurchase,
+    trackInitiateCheckout,
+    trackAddToWishlist,
+  } = useMetaPixel();
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
 
   // ✅ ViewContent — product page open হলে একবার fire
@@ -85,6 +92,33 @@ const SingleProduct = ({ product }) => {
     userInfo?.data?.user_phone?.slice(3, 14),
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
+
+  // ✅ InitiateCheckout — phone input করলে একবার fire
+  const handlePhoneChangeWithTracking = (value) => {
+    setUserPhone(value);
+    if (!initiateCheckoutFired.current && value) {
+      initiateCheckoutFired.current = true;
+      const eventId = generateEventId();
+      trackInitiateCheckout(
+        {
+          content_ids: [product?._id],
+          value: productPrice,
+          num_items: quantity,
+        },
+        eventId,
+      );
+      sendServerEvent({
+        event_name: "InitiateCheckout",
+        event_id: eventId,
+        custom_data: {
+          content_ids: [product?._id],
+          currency: "BDT",
+          value: productPrice,
+          num_items: quantity,
+        },
+      });
+    }
+  };
   useEffect(() => {
     if (userInfo?.data?.user_phone) {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
@@ -327,6 +361,26 @@ const SingleProduct = ({ product }) => {
       existingWishlist.push(wishListItem);
       setIsWishlisted(true);
       toast.success("Product added to your wishlist", { autoClose: 1500 });
+
+      // ✅ AddToWishlist Meta Pixel event
+      const eventId = generateEventId();
+      trackAddToWishlist(product, variationProduct, eventId);
+      sendServerEvent({
+        event_name: "AddToWishlist",
+        event_id: eventId,
+        user_data: {
+          ph: userInfo?.data?.user_phone,
+          fn: userInfo?.data?.user_name,
+          external_id: userInfo?.data?._id,
+        },
+        custom_data: {
+          content_ids: [variationProduct?._id || product?._id],
+          content_name: product?.product_name,
+          content_type: "product",
+          currency: "BDT",
+          value: productPrice,
+        },
+      });
     }
     localStorage.setItem("wishlist", JSON.stringify(existingWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
@@ -562,7 +616,7 @@ const SingleProduct = ({ product }) => {
                 isAccordionOpen={isAccordionOpen}
                 setIsAccordionOpen={setIsAccordionOpen}
                 customer_phone={customer_phone}
-                setUserPhone={setUserPhone}
+                setUserPhone={handlePhoneChangeWithTracking}
                 setUserPhoneLogin={setUserPhoneLogin}
                 refetchZone={refetchZone}
                 zoneLoading={zoneLoading}
@@ -595,9 +649,7 @@ const SingleProduct = ({ product }) => {
               settingData={settingData}
             />
             <ReturnPolicyAccordion />
-            {/* <QnAAccordion product={product} /> */}
           </div>
-
           <div className="lg:col-span-2 md:col-span-2 col-span-1">
             <RecentProducts
               productId={product?._id}
@@ -607,11 +659,8 @@ const SingleProduct = ({ product }) => {
         </div>
       </div>
 
-      {/* Related Product */}
-
       <div className=" mt-16 mb-4  bg-white p-4">
         <p className="text-primary text-lg font-bold mb-4">RELATED PRODUCT</p>
-
         <RelatedProducts product_slug={product?.product_slug} />
       </div>
     </Contain>

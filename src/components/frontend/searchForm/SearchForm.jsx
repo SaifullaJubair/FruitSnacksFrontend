@@ -11,6 +11,10 @@ import { useRouter } from "next/navigation";
 import { lineThroughPrice, productPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+
 const SearchForm = () => {
   const router = useRouter();
   const [tab, setTab] = useState("products");
@@ -18,7 +22,7 @@ const SearchForm = () => {
   const [searchValue, setSearchValue] = useState("");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
-  const [showResults, setShowResults] = useState(false); // State to toggle search results visibility
+  const [showResults, setShowResults] = useState(false);
   const { data: settingsData } = useGetSettingData();
   const { data: searchData = [] } = useGetAllProductAndSearchProduct({
     page,
@@ -26,35 +30,41 @@ const SearchForm = () => {
     searchTerm,
   });
   const searchText = useDebounced({ searchQuery: searchValue, delay: 500 });
-
   const searchRef = useRef(null);
+  const { trackSearch } = useMetaPixel();
 
   useEffect(() => {
     setSearchTerm(searchText);
     if (searchText) {
-      setShowResults(true); // Show results when there's text
+      setShowResults(true);
+
+      // ✅ Search Meta Pixel event — debounce হওয়ার পরে একবার fire
+      const eventId = generateEventId();
+      trackSearch(searchText, eventId);
+      sendServerEvent({
+        event_name: "Search",
+        event_id: eventId,
+        custom_data: {
+          search_string: searchText,
+        },
+      });
     }
   }, [searchText]);
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setShowResults(false);
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowResults(false);
     if (searchValue === "") return router.push(`/all-products`);
-
     if (searchValue.trim()) {
       router.push(`/all-products?search=${searchValue}`);
     }
@@ -66,9 +76,8 @@ const SearchForm = () => {
       router.push(`/all-products?search=${searchValue}`);
     }
   };
-  const currencySymbol = settingsData?.data[0];
 
-  // console.log(searchData?.data);
+  const currencySymbol = settingsData?.data[0];
 
   return (
     <>
@@ -98,7 +107,7 @@ const SearchForm = () => {
 
         <button
           type="button"
-          className="absolute inset-y-0 md:end-0  end-3 grid w-10 place-content-center 
+          className="absolute inset-y-0 md:end-0 end-3 grid w-10 place-content-center 
                    bg-transparent text-white hover:text-gray-300
                    md:bg-primary md:text-white md:hover:bg-primary/90"
           onClick={handleSearchClick}
@@ -107,7 +116,6 @@ const SearchForm = () => {
           <FiSearch className="text-lg" />
         </button>
 
-        {/* Search Result */}
         {searchValue && searchData?.data?.length > 0 && showResults && (
           <div className="absolute bg-white shadow-lg w-full top-12 overflow-hidden mb-5 z-50">
             <div className="overflow-y-auto scrollbar-thin max-h-[40vh] pb-5">
@@ -128,12 +136,10 @@ const SearchForm = () => {
                     alt={product?.product_name}
                     loading="lazy"
                   />
-
                   <article>
                     <p className="text-wrap text-sm group-hover:underline group-hover:text-primary block">
                       {product?.product_name}
                     </p>
-
                     <div className="flex items-center justify-between space-x-2 mt-2">
                       <div>
                         <span className="font-semibold">
