@@ -1,4 +1,5 @@
 
+// src/app/(auth)/sign-in/page.jsx
 import LoginForm from "@/components/frontend/auth/SignIn/LoginForm";
 
 const SignInPage = () => {

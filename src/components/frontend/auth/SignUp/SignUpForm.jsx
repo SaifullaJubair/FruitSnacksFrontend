@@ -5,7 +5,6 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { useUserRegistrationMutation } from "@/redux/feature/auth/authApi";
 import { FaEye, FaEyeSlash, FaRegUser, FaShoppingBag } from "react-icons/fa";
-
 import { CiLock } from "react-icons/ci";
 import Link from "next/link";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
@@ -18,10 +17,16 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+
+
 const SignUpForm = () => {
   const [isPasswordShow, setPasswordShow] = useState(false);
   const [userRegistration, { isLoading }] = useUserRegistrationMutation();
   const [user_phone, setUserPhone] = useState();
+  const { trackCompleteRegistration } = useMetaPixel();
 
   const {
     register,
@@ -39,42 +44,14 @@ const SignUpForm = () => {
         const isPossiblePhoneNumberValueCheck =
           isPossiblePhoneNumber(user_phone);
         const isValidPhoneNumberValueCheck = isValidPhoneNumber(user_phone);
-        if (formatPhoneNumberValueCheck == false) {
+        if (
+          !formatPhoneNumberValueCheck ||
+          !isPossiblePhoneNumberValueCheck ||
+          !isValidPhoneNumberValueCheck
+        ) {
           toast.error("Mobile number not valid !", {
             position: "top-center",
             autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isPossiblePhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isValidPhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
           });
           return;
         }
@@ -83,15 +60,10 @@ const SignUpForm = () => {
         toast.error("Phone is required !", {
           position: "top-center",
           autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
         });
         return;
       }
+
       const sendData = {
         user_name: data?.user_name,
         user_phone: user_phone,
@@ -101,12 +73,22 @@ const SignUpForm = () => {
       const res = await userRegistration(sendData);
 
       if (res.data?.statusCode === 200 && res.data?.success === true) {
+        // ✅ CompleteRegistration Meta Pixel event
+        const eventId = generateEventId();
+        trackCompleteRegistration(eventId);
+        sendServerEvent({
+          event_name: "CompleteRegistration",
+          event_id: eventId,
+          user_data: {
+            ph: user_phone,
+            fn: data?.user_name,
+          },
+        });
+
         reset();
         router.push("/sign-in");
       } else {
-        toast.error(res.error.data?.message, {
-          autoClose: 2000,
-        });
+        toast.error(res.error.data?.message, { autoClose: 2000 });
       }
     } catch (error) {
       console.log(error);
@@ -140,7 +122,7 @@ const SignUpForm = () => {
                     name="user_name"
                     type="text"
                     placeholder="Enter Name"
-                    className="w-full   border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
+                    className="w-full border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
                     {...register("user_name", {
                       required: "First Name is Required!",
                     })}
@@ -160,7 +142,7 @@ const SignUpForm = () => {
                   Phone
                 </label>
                 <PhoneInput
-                  className="w-full   border border-white-light bg-white px-2 py-3 text-sm text-black !outline-none ps-4 placeholder:text-white-dark"
+                  className="w-full border border-white-light bg-white px-2 py-3 text-sm text-black !outline-none ps-4 placeholder:text-white-dark"
                   placeholder="Enter phone number"
                   id="user_phone"
                   value={user_phone}
@@ -176,7 +158,6 @@ const SignUpForm = () => {
                   }
                 />
               </div>
-
               <div>
                 <label htmlFor="Password" className="font-medium">
                   Password
@@ -188,7 +169,7 @@ const SignUpForm = () => {
                     name="user_password"
                     type={isPasswordShow ? "text" : "password"}
                     placeholder="Enter Password"
-                    className="w-full   border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
+                    className="w-full border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
                     {...register("user_password", {
                       required: "Password is Required!",
                     })}
@@ -209,7 +190,6 @@ const SignUpForm = () => {
                   </span>
                 )}
               </div>
-
               <div className="flex flex-row">
                 <label className="flex cursor-pointer items-center">
                   <input
@@ -233,7 +213,7 @@ const SignUpForm = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || Object.keys(errors).length > 0}
-                className="bg-primary text-white py-[6px]  font-medium !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]"
+                className="bg-primary text-white py-[6px] font-medium !mt-6 w-full border-0 uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]"
               >
                 {isLoading ? <MiniSpinner /> : "Sign Up"}
               </button>

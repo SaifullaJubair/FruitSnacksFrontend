@@ -265,7 +265,7 @@ const AddToCart = () => {
         toast.success(result.message || "Order created successfully", {
           autoClose: 1500,
         });
-        await new Promise((r) => setTimeout(r, 300));
+        // await new Promise((r) => setTimeout(r, 300));
         const params = new URLSearchParams();
         if (orderId) params.set("order_id", orderId);
         if (isGuest) params.set("guest", "true");

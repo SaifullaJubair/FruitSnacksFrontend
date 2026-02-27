@@ -1,3 +1,5 @@
+// src/app/(frontend)/products/[slug]/page.js
+
 import { BASE_URL } from "@/components/utils/baseURL";
 import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
 import Link from "next/link";

@@ -1,5 +1,5 @@
 "use client";
-
+// src/components/frontend/singeProduct/SingleProduct.jsx
 import Contain from "@/components/common/Contain";
 import ProductPhotoSelect from "./productDetails/ProductPhotoSelect";
 import ProductHighlightSection from "./productHighLightSection/ProductHighlightSection";
@@ -33,12 +33,43 @@ import PhoneInput, {
 import MobileDeliveryInfoAccordion from "./rightSideShoppingSection/MobileDeliveryInfoAccordion";
 import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion";
 import useGetZoneData from "@/components/lib/getZoneData";
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+
 const SingleProduct = ({ product }) => {
   useEffect(() => {
     if (product) {
       updateRecentProducts(product);
     }
   }, [product]);
+
+  const { trackViewContent, trackAddToCart, trackPurchase } = useMetaPixel();
+  const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
+
+  // ✅ ViewContent — product page open হলে একবার fire
+  useEffect(() => {
+    if (!product?._id) return;
+    const eventId = generateEventId();
+    trackViewContent(product, eventId);
+    sendServerEvent({
+      event_name: "ViewContent",
+      event_id: eventId,
+      user_data: {
+        ph: userInfo?.data?.user_phone,
+        fn: userInfo?.data?.user_name,
+        external_id: userInfo?.data?._id,
+      },
+      custom_data: {
+        content_ids: [product?._id],
+        content_name: product?.product_name,
+        content_type: "product",
+        currency: "BDT",
+        value: product?.product_discount_price || product?.product_price,
+      },
+    });
+  }, [product?._id]);
+
   const {
     register,
     handleSubmit,
@@ -46,13 +77,12 @@ const SingleProduct = ({ product }) => {
     watch,
   } = useForm();
   const { data: settingData, isLoading: settingLoading } = useGetSettingData();
-  const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const [districtsData, setDistrictsData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const navigate = useRouter();
   const [customer_phone, setUserPhone] = useState(
-    userInfo?.data?.user_phone?.slice(3, 14)
+    userInfo?.data?.user_phone?.slice(3, 14),
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
   useEffect(() => {
@@ -77,7 +107,7 @@ const SingleProduct = ({ product }) => {
   const [stock, setStock] = useState(
     product?.is_variation === true
       ? product?.variations?.[0]?.variation_quantity
-      : product?.product_quantity
+      : product?.product_quantity,
   );
   const [productPrice, setProductPrice] = useState(null);
   const [lineThoughPrice, setLineThoughPrice] = useState(null);
@@ -105,7 +135,7 @@ const SingleProduct = ({ product }) => {
       product?.product_discount_price
     ) {
       setLineThoughPrice(
-        product?.variations?.[0]?.variation_price || product?.product_price
+        product?.variations?.[0]?.variation_price || product?.product_price,
       );
     }
     if (product?.is_variation === true) {
@@ -151,7 +181,6 @@ const SingleProduct = ({ product }) => {
         const priceType = flashProduct?.flash_price_type;
         const discountPrice = flashProduct?.flash_sale_product_price;
         const originalPrice = price;
-
         if (priceType) {
           price = calculatePrice(originalPrice, discountPrice, priceType);
         }
@@ -161,7 +190,6 @@ const SingleProduct = ({ product }) => {
         const priceType = campaignProduct?.campaign_price_type;
         const discountPrice = campaignProduct?.campaign_product_price;
         const originalPrice = price;
-
         if (priceType) {
           price = calculatePrice(originalPrice, discountPrice, priceType);
         }
@@ -173,7 +201,6 @@ const SingleProduct = ({ product }) => {
           setLineThoughPrice(newVariationProduct?.variation_price);
         }
       }
-
       setProductPrice(price);
     }
   };
@@ -189,8 +216,6 @@ const SingleProduct = ({ product }) => {
   };
 
   const handleIncrement = () => {
-    // setQuantity(quantity + 1);
-
     if (quantity < stock) {
       setQuantity(quantity + 1);
     } else {
@@ -213,41 +238,47 @@ const SingleProduct = ({ product }) => {
       variation_product_id: variationProduct ? variationProduct?._id : null,
     };
     const productID = cartProducts.find(
-      (cartItem) => cartItem?.productId === product?._id
+      (cartItem) => cartItem?.productId === product?._id,
     );
     if (variationProduct) {
       const variationID = cartProducts.find(
-        (cartItem) => cartItem?.variation_product_id === variationProduct?._id
+        (cartItem) => cartItem?.variation_product_id === variationProduct?._id,
       );
-
       if (productID && variationID) {
-        toast.error("Already is added cart", {
-          autoClose: 1500,
-        });
-      } else {
-        dispatch(addToCart(cartItem));
-        toast.success("Successfully added to cart", {
-          autoClose: 1500,
-        });
+        toast.error("Already is added cart", { autoClose: 1500 });
+        return;
       }
     } else if (productID) {
-      toast.error("Already is added cart", {
-        autoClose: 1500,
-      });
-    } else {
-      dispatch(addToCart(cartItem));
-      toast.success("Successfully added to cart", {
-        autoClose: 1500,
-      });
+      toast.error("Already is added cart", { autoClose: 1500 });
+      return;
     }
-    // dispatch(addToCart(cartItem));
-    // toast.success("Successfully added to cart", {
-    //   autoClose: 1500,
-    // });
+
+    dispatch(addToCart(cartItem));
+    toast.success("Successfully added to cart", { autoClose: 1500 });
+
+    // ✅ AddToCart Meta Pixel event
+    const eventId = generateEventId();
+    trackAddToCart(product, variationProduct, quantity, eventId);
+    sendServerEvent({
+      event_name: "AddToCart",
+      event_id: eventId,
+      user_data: {
+        ph: userInfo?.data?.user_phone,
+        fn: userInfo?.data?.user_name,
+        external_id: userInfo?.data?._id,
+      },
+      custom_data: {
+        content_ids: [variationProduct?._id || product?._id],
+        content_name: product?.product_name,
+        content_type: "product",
+        currency: "BDT",
+        value: productPrice * quantity,
+        num_items: quantity,
+      },
+    });
   };
 
   useEffect(() => {
-    // Check if product is in the wishlist when the component mounts
     try {
       const existingWishlist =
         JSON.parse(localStorage.getItem("wishlist")) || [];
@@ -256,13 +287,13 @@ const SingleProduct = ({ product }) => {
         (item) =>
           item.productId === product?._id &&
           item.variation_product_id ===
-            (variationProduct ? variationProduct?._id : null)
+            (variationProduct ? variationProduct?._id : null),
       );
       const productExistsCompare = existingCompare.some(
         (item) =>
           item.productId === product?._id &&
           item.variation_product_id ===
-            (variationProduct ? variationProduct?._id : null)
+            (variationProduct ? variationProduct?._id : null),
       );
       setIsWishlisted(productExists);
       setIsCompare(productExistsCompare);
@@ -270,75 +301,63 @@ const SingleProduct = ({ product }) => {
       console.error("Error parsing wishlist from localStorage", error);
     }
   }, [product?._id, variationProduct?._id]);
+
   const handleWishlist = () => {
     const wishListItem = {
       productId: product?._id,
       variation_product_id: variationProduct ? variationProduct?._id : null,
     };
-
     let existingWishlist = [];
     try {
       existingWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
     } catch (error) {
       console.error("Error parsing wishlist from localStorage", error);
     }
-
     const productIndex = existingWishlist.findIndex(
       (item) =>
         item.productId === product?._id &&
         item.variation_product_id ===
-          (variationProduct ? variationProduct?._id : null)
+          (variationProduct ? variationProduct?._id : null),
     );
-
     if (productIndex !== -1) {
-      // If the product is in the wishlist, remove it
       existingWishlist.splice(productIndex, 1);
       setIsWishlisted(false);
       toast.error("Product removed from your wishlist", { autoClose: 1500 });
     } else {
-      // If the product is not in the wishlist, add it
       existingWishlist.push(wishListItem);
       setIsWishlisted(true);
       toast.success("Product added to your wishlist", { autoClose: 1500 });
     }
-
-    // Update the wishlist in localStorage
     localStorage.setItem("wishlist", JSON.stringify(existingWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
   };
+
   const handleAddToCompare = () => {
     const compareItem = {
       productId: product?._id,
       variation_product_id: variationProduct ? variationProduct?._id : null,
     };
-
     let existingCompare = [];
     try {
       existingCompare = JSON.parse(localStorage.getItem("compare")) || [];
     } catch (error) {
       console.error("Error parsing compare from localStorage", error);
     }
-
     const productIndex = existingCompare.findIndex(
       (item) =>
         item.productId === product?._id &&
         item.variation_product_id ===
-          (variationProduct ? variationProduct?._id : null)
+          (variationProduct ? variationProduct?._id : null),
     );
-
     if (productIndex !== -1) {
-      // If the product is in the wishlist, remove it
       existingCompare.splice(productIndex, 1);
       setIsCompare(false);
       toast.error("Product removed from your compare", { autoClose: 1500 });
     } else {
-      // If the product is not in the wishlist, add it
       existingCompare.push(compareItem);
       setIsCompare(true);
       toast.success("Product added to your compare", { autoClose: 1500 });
     }
-
-    // Update the wishlist in localStorage
     localStorage.setItem("compare", JSON.stringify(existingCompare));
     window.dispatchEvent(new Event("localStorageUpdated"));
   };
@@ -360,6 +379,7 @@ const SingleProduct = ({ product }) => {
       setIsAccordionOpen(true);
     }
   }, [errors]);
+
   const handleOrderProduct = async (data) => {
     if (userPhoneLogin == false) {
       if (customer_phone) {
@@ -367,68 +387,35 @@ const SingleProduct = ({ product }) => {
         const isPossiblePhoneNumberValueCheck =
           isPossiblePhoneNumber(customer_phone);
         const isValidPhoneNumberValueCheck = isValidPhoneNumber(customer_phone);
-        if (formatPhoneNumberValueCheck == false) {
+        if (
+          !formatPhoneNumberValueCheck ||
+          !isPossiblePhoneNumberValueCheck ||
+          !isValidPhoneNumberValueCheck
+        ) {
           toast.error("Mobile number not valid !", {
             position: "top-center",
             autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isPossiblePhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isValidPhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
           });
           return;
         }
       }
     }
-
     if (!customer_phone) {
       toast.error("Phone is required !", {
         position: "top-center",
         autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
       });
       return;
     }
-
     const today =
       new Date().toISOString().split("T")[0] +
       " " +
       new Date().toLocaleTimeString();
     if (!district || !division || !divisionID || !districtId)
       return toast.error("Please select a City and Zone.");
+
+    // ✅ Purchase event_id — browser + server deduplication
+    const purchaseEventId = generateEventId();
 
     const sendData = {
       order_status: "pending",
@@ -440,7 +427,6 @@ const SingleProduct = ({ product }) => {
       billing_state: division || userInfo?.data?.user_division,
       billing_address: data?.address,
       user_name: data?.customer_name,
-      // user_password: data?.user_password || null,
       need_user_create: userInfo?.data?.user_phone ? false : true,
       shipping_location:
         division === "Dhaka"
@@ -455,7 +441,7 @@ const SingleProduct = ({ product }) => {
       pathao_city_name: division,
       pathao_zone_id: parseInt(districtId),
       pathao_zone_name: district,
-
+      purchase_event_id: purchaseEventId, // ✅ server side deduplication
       order_products: [product]?.map((item) => {
         return {
           product_id: item._id,
@@ -465,8 +451,8 @@ const SingleProduct = ({ product }) => {
             variationProduct?.variation_discount_price
               ? variationProduct?.variation_discount_price
               : product?.product_discount_price
-              ? product?.product_discount_price
-              : 0,
+                ? product?.product_discount_price
+                : 0,
           product_unit_price: productPrice,
           product_unit_final_price: productPrice,
           product_quantity: quantity,
@@ -476,37 +462,38 @@ const SingleProduct = ({ product }) => {
       }),
     };
 
-    // console.log("sendData:", sendData);
-    // return
     setLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/order/single_order`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sendData),
       });
       const result = await response.json();
-      // if (response.success) {
-      //   sessionStorage.removeItem("order_info");
-      // }
+
       if (result?.statusCode === 200 && result?.success === true) {
-        toast.success(
-          result?.message ? result?.message : "Order created successfully",
-          {
-            autoClose: 1000,
-          }
-        );
-        navigate.push("/orders/order-success");
-        setLoading(false);
+        // ✅ Browser side Purchase event
+        trackPurchase(sendData, purchaseEventId);
+
+        toast.success(result?.message || "Order created successfully", {
+          autoClose: 1000,
+        });
+
+        const orderId = result?.data?.order_id;
+        const isGuest = !userInfo?.data?._id;
+        const params = new URLSearchParams();
+        if (orderId) params.set("order_id", orderId);
+        if (isGuest) params.set("guest", "true");
+
+        // await new Promise((r) => setTimeout(r, 300));
+        navigate.push(`/orders/order-success?${params.toString()}`);
+        // loading false করো না — overlay থাকবে redirect পর্যন্ত
       } else {
         toast.error(result?.message || "Something went wrong", {
           autoClose: 1000,
         });
         setLoading(false);
       }
-      setLoading(false);
     } catch (error) {
       console.error("Error posting data:", error);
       setLoading(false);
@@ -515,7 +502,15 @@ const SingleProduct = ({ product }) => {
 
   return (
     <Contain>
-      <div className="bg-white p-2 sm:p-5  ">
+      <div className="bg-white p-2 sm:p-5 relative">
+        {/* ✅ Order submit overlay — empty page flash বন্ধ */}
+        {loading && (
+          <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-gray-600 font-medium">Placing your order...</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit(handleOrderProduct)}>
           <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-7 lg:grid-cols-7  xl:grid-cols-8 xl:gap-4">
             <div className="xl:col-span-2 lg:col-span-2 md:col-span-2 sm:col-span-1  col-span-1 ">

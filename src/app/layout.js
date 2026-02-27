@@ -9,6 +9,7 @@ import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
+import MetaPixelScript from "@/components/frontend/metaPixel/MetaPixelScript";
 
 export async function generateMetadata() {
   const settingData = await getServerSettingData();
@@ -75,6 +76,8 @@ export default async function RootLayout({ children }) {
             src="https://www.facebook.com/tr?id=1006536941213561&ev=PageView&noscript=1"
           />
         </noscript> */}
+        {/* ✅ Meta Pixel  */}
+        <MetaPixelScript />
 
         <Providers>
           <QueryProviders>

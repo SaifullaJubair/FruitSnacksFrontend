@@ -20,6 +20,9 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 import { LoaderOverlay } from "@/components/shared/loader/LoaderOverlay";
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
 
 const LoginForm = () => {
   const [user_phone, setUserPhone] = useState();
@@ -29,6 +32,7 @@ const LoginForm = () => {
   const successRedirect = getQuery.get("success_redirect");
   const dispatch = useDispatch();
   const { products: cartProducts } = useSelector((state) => state.cart);
+  const { trackLogin } = useMetaPixel();
   const {
     register,
     handleSubmit,
@@ -44,42 +48,14 @@ const LoginForm = () => {
         const isPossiblePhoneNumberValueCheck =
           isPossiblePhoneNumber(user_phone);
         const isValidPhoneNumberValueCheck = isValidPhoneNumber(user_phone);
-        if (formatPhoneNumberValueCheck == false) {
+        if (
+          !formatPhoneNumberValueCheck ||
+          !isPossiblePhoneNumberValueCheck ||
+          !isValidPhoneNumberValueCheck
+        ) {
           toast.error("Mobile number not valid !", {
             position: "top-center",
             autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isPossiblePhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
-          });
-          return;
-        }
-        if (isValidPhoneNumberValueCheck == false) {
-          toast.error("Mobile number not valid !", {
-            position: "top-center",
-            autoClose: 2000,
-            hideProgressBar: false,
-            closeOnClick: true,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: "light",
           });
           return;
         }
@@ -89,12 +65,6 @@ const LoginForm = () => {
         toast.error("Phone is required !", {
           position: "top-center",
           autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
         });
         return;
       }
@@ -120,7 +90,18 @@ const LoginForm = () => {
         toast.success(res?.data?.message, { autoClose: 2000 });
         reset();
 
-        // Cart sync করো (localStorage → DB)
+        // ✅ Login Meta Pixel event
+        const eventId = generateEventId();
+        trackLogin(eventId);
+        sendServerEvent({
+          event_name: "Login",
+          event_id: eventId,
+          user_data: {
+            ph: user_phone,
+          },
+        });
+
+        // Cart sync করো
         await syncCartAfterLogin(cartProducts, dispatch);
 
         if (successRedirect) {
@@ -160,9 +141,8 @@ const LoginForm = () => {
                   <label htmlFor="user_phone" className="font-medium">
                     Phone
                   </label>
-
                   <PhoneInput
-                    className="custom-phone-input w-full   border border-white-light bg-white px-4 py-2 text-sm text-black placeholder:text-white-dark"
+                    className="custom-phone-input w-full border border-white-light bg-white px-4 py-2 text-sm text-black placeholder:text-white-dark"
                     placeholder="Enter phone number"
                     id="user_phone"
                     value={user_phone}
@@ -191,7 +171,7 @@ const LoginForm = () => {
                     name="user_password"
                     type={isPasswordShow ? "text" : "password"}
                     placeholder="Enter Password"
-                    className="w-full   border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
+                    className="w-full border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
                     {...register("user_password", {
                       required: "Password is Required!",
                     })}
@@ -225,7 +205,7 @@ const LoginForm = () => {
               <button
                 type="submit"
                 disabled={isSubmitting || Object.keys(errors).length > 0}
-                className="bg-primary text-white py-[6px]  !mt-6 w-full border-0 font-medium uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]"
+                className="bg-primary text-white py-[6px] !mt-6 w-full border-0 font-medium uppercase shadow-[0_10px_20px_-10px_rgba(67,97,238,0.44)]"
               >
                 {isLoading ? <MiniSpinner /> : "Sign in"}
               </button>
@@ -251,7 +231,6 @@ const LoginForm = () => {
     </div>
   );
 };
-// export default LoginForm;
 
 export default function Page() {
   return (
