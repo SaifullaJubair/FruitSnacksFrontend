@@ -19,8 +19,8 @@ const Home = () => {
         <LatestProducts />
         <CategoryWiseProduct />
         {/* <PopularProducts /> */}
-        {/* <FeatureService />
-        <PromotionalBanner /> */}
+        <FeatureService />
+        <PromotionalBanner />
         {/* Latest Product */}
         {/* <OnlyForYouProduct /> */}
         {/* <AdsSection /> */}

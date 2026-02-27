@@ -17,7 +17,7 @@ const services = [
   {
     icon: <TbArrowsExchange className="text-3xl text-primary-400" />,
     title: "Easy Return",
-    desc: "7 days return policy",
+    desc: "Instant return if you don't like it.",
   },
   {
     icon: <MdOutlinePayment className="text-3xl text-primary-400" />,
