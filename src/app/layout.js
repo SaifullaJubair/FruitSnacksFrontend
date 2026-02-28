@@ -24,6 +24,7 @@ export async function generateMetadata() {
     // description — buildPageMeta থেকে আসে, কিন্তু
     // যে page এ generateMetadata নেই সেখানে এটা fallback
     description: seo.seoDescription,
+    keywords: seo.seoKeywords,
 
     // ── 2. Robots ─────────────────────────────────────────
     robots: {
@@ -47,7 +48,7 @@ export async function generateMetadata() {
     icons: {
       icon: seo.favicon || "/favicon.ico",
       shortcut: seo.favicon || "/favicon.ico",
-      apple: "/apple-touch-icon.png", // ⚠️ /public এ 180x180px PNG রাখো
+      apple: "/apple-touch-icon.png", // ✅ /public এ 180x180px PNG রাখো
     },
 
     // ── 5. Format Detection ───────────────────────────────
@@ -57,9 +58,7 @@ export async function generateMetadata() {
       telephone: false,
     },
 
-    // ── 6. OG & Twitter — শুধু fallback ──────────────────
-    // buildPageMeta আছে এমন page এ এগুলো override হবে
-    // generateMetadata নেই এমন page এ এটা দেখাবে
+    // ── 6. OG & Twitter — fallback ────────────────────────
     openGraph: {
       type: "website",
       locale: "bn_BD",
