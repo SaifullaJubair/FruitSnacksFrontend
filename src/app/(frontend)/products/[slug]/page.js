@@ -1,43 +1,90 @@
 // src/app/(frontend)/products/[slug]/page.js
-
 import { BASE_URL } from "@/components/utils/baseURL";
 import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-// import RelatedProducts from "@/components/frontend/singeProduct/relatedProducts/RelatedProducts";
+import { getSeoConfig } from "@/components/lib/getSeoConfig";
 
 export async function generateMetadata({ params }) {
   const { slug } = params;
+  const seo = await getSeoConfig();
 
-  const productDataResponse = await fetch(`${BASE_URL}/product/${slug}`, {
+  const res = await fetch(`${BASE_URL}/product/${slug}`, {
     next: { revalidate: 30 },
   });
 
-  // Check if the response is okay (status code 200-299 )
-  if (!productDataResponse.ok) {
-    console.log("Failed to fetch product data");
+  if (!res.ok) {
+    return {
+      title: `Product Not Found | ${seo.siteName}`,
+      robots: { index: false },
+    };
   }
 
-  // Convert the response to JSON
-  const productData = await productDataResponse.json();
+  const productData = await res.json();
+  const product = productData?.data;
+  const price = product?.product_discount_price || product?.product_price;
+  const description =
+    product?.meta_description ||
+    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
+
   return {
-    title: productData?.data?.product_name || "product Name",
-    description: productData?.data?.meta_description || "product Description",
+    title: product?.product_name,
+    description,
+    alternates: {
+      canonical: `${seo.siteUrl}/products/${slug}`,
+    },
     openGraph: {
       type: "article",
-      title: productData?.data?.product_name,
-      description: productData?.data?.meta_description,
-      url: `https://artisenleather.com/${slug}`,
+      url: `${seo.siteUrl}/products/${slug}`,
+      title: product?.product_name,
+      description,
+      siteName: seo.siteName,
       images: [
         {
-          url: productData?.data?.main_image,
-          alt: productData?.data?.product_name,
+          url: product?.main_image,
+          width: 800,
+          height: 800,
+          alt: product?.product_name,
         },
       ],
     },
-    metadataBase: new URL("https://artisenleather.com/"),
-    author: {
-      name: "Artisan Leather",
+    twitter: {
+      card: "summary_large_image",
+      title: product?.product_name,
+      description,
+      images: [product?.main_image],
+    },
+    other: {
+      "script:ld+json": JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: product?.product_name,
+        image: product?.main_image,
+        description,
+        brand: { "@type": "Brand", name: seo.siteName },
+        offers: {
+          "@type": "Offer",
+          url: `${seo.siteUrl}/products/${slug}`,
+          priceCurrency: "BDT",
+          price,
+          priceValidUntil: new Date(
+            new Date().setFullYear(new Date().getFullYear() + 1),
+          )
+            .toISOString()
+            .split("T")[0],
+          availability: "https://schema.org/InStock",
+          seller: { "@type": "Organization", name: seo.siteName },
+        },
+        ...(product?.average_review_rating && {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product?.average_review_rating,
+            reviewCount: product?.total_reviews || 1,
+            bestRating: 5,
+            worstRating: 1,
+          },
+        }),
+      }),
     },
   };
 }
@@ -49,13 +96,14 @@ const ProductDetailsPage = async ({ params }) => {
   });
   const data = await res.json();
   const product = data?.data;
+
   if (!product) {
     return (
-      <div className="text-center max-w-md mx-auto mt-2 bg-white p-6   shadow-lg">
+      <div className="text-center max-w-md mx-auto mt-2 bg-white p-6 shadow-lg">
         <img
           src="/assets/images/empty/Empty-cuate.png"
           alt="Product not found"
-          className="mx-auto mb-2 w-80 sm:w-96 "
+          className="mx-auto mb-2 w-80 sm:w-96"
         />
         <h3 className="font-semibold text-gray-800 mb-2">Product Not Found!</h3>
         <p className="text-gray-600 mb-6">
@@ -66,7 +114,6 @@ const ProductDetailsPage = async ({ params }) => {
           <Link href="/">
             <Button className="w-full">Go Home</Button>
           </Link>
-
           <Link href="/all-products">
             <Button variant="secondary" className="w-full">
               View All Products
@@ -76,6 +123,7 @@ const ProductDetailsPage = async ({ params }) => {
       </div>
     );
   }
+
   return (
     <section className="bg-[#F4F4F4] py-6">
       <SingleProduct product={product} />

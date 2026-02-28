@@ -1,9 +1,10 @@
+// src/components/lib/getServerSettingData.js
 import { BASE_URL } from "../utils/baseURL";
 
 export async function getServerSettingData() {
   const res = await fetch(`${BASE_URL}/setting`, {
     next: {
-      revalidate: 30,
+      revalidate: 21600, // 6 hours
     },
   });
 
