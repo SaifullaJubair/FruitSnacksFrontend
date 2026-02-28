@@ -1,3 +1,4 @@
+// src/components/frontend/home/Home.jsx
 import Banner from "./banner/Banner";
 import TrendingProduct from "./trendingProduct/TrendingProduct";
 

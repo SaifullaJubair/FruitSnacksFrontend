@@ -1,3 +1,4 @@
+//scr/app/(frontend)/category/[...slug]/page.js
 import CategoryViewSection from "@/components/categoryview/CategoryViewSection";
 import { getFilterData } from "@/components/lib/getFilterData";
 import { getFilterHeadData } from "@/components/lib/getFilterHeadData";

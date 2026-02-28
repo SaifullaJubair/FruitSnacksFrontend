@@ -1,3 +1,4 @@
+// src/app/(frontend)/all-products/page.jsx
 import AllProduct from "@/components/frontend/seeAllProduct/AllProduct";
 
 const AllProductPage = () => {

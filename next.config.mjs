@@ -12,11 +12,6 @@ const nextConfig = {
       },
       {
         protocol: "https",
-        hostname: "janani-image.blr1.cdn.digitaloceanspaces.com",
-        pathname: "**",
-      },
-      {
-        protocol: "https",
         hostname: "cit-node.blr1.cdn.digitaloceanspaces.com",
         pathname: "**",
       },
