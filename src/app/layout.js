@@ -87,7 +87,7 @@ export default async function RootLayout({ children }) {
     name: seo.siteName,
     url: seo.siteUrl,
     logo: seo.logo,
-    sameAs: [seo.facebook, seo.instagram].filter(Boolean),
+    sameAs: [seo.facebook, seo.instagram].filter(Boolean), //YouTube বা TikTok লিঙ্কও থাকে, তবে সেগুলোও সেখানে অ্যাড করে দিও।
   };
 
   return (

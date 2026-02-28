@@ -10,11 +10,16 @@ const joinUrl = (base, path) => {
 };
 
 // ✅ Fallback OG image — DB থেকে না আসলে এটা use হবে
-const FALLBACK_IMAGE = "/public/logo.jpg";
+const FALLBACK_IMAGE = "/logo.jpg"; // public folder a এটা আছে site logo
 
 export async function getSeoConfig() {
-  const settingData = await getServerSettingData();
-  const s = settingData?.data?.[0];
+  let s = null;
+  try {
+    const settingData = await getServerSettingData();
+    s = settingData?.data?.[0];
+  } catch (error) {
+    console.error("Server Setting Data Fetch Error:", error);
+  }
 
   const siteName = s?.title || "Artisan Leather";
   const seoTitle =

@@ -38,10 +38,11 @@ export async function generateMetadata({ params }) {
     },
     openGraph: {
       type: "article",
+      locale: "bn_BD",
+      siteName: seo.siteName,
       url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
       title: product?.product_name,
       description,
-      siteName: seo.siteName,
       images: [
         {
           url: productImage,
@@ -62,10 +63,15 @@ export async function generateMetadata({ params }) {
 
 const ProductDetailsPage = async ({ params }) => {
   const { slug } = params;
-  const res = await fetch(`${BASE_URL}/product/${slug}`, {
-    next: { revalidate: 60 },
-  });
-  const data = await res.json();
+
+  // ✅ getSeoConfig আর product fetch একসাথে — দুইবার call না
+  const [seoResult, productRes] = await Promise.all([
+    getSeoConfig(),
+    fetch(`${BASE_URL}/product/${slug}`, { next: { revalidate: 3600 } }),
+  ]);
+
+  const seo = seoResult;
+  const data = await productRes.json();
   const product = data?.data;
 
   if (!product) {
@@ -78,7 +84,7 @@ const ProductDetailsPage = async ({ params }) => {
         />
         <h3 className="font-semibold text-gray-800 mb-2">Product Not Found!</h3>
         <p className="text-gray-600 mb-6">
-          We couldn’t find the product you’re looking for. It might have been
+          We couldn't find the product you're looking for. It might have been
           removed or the URL might be incorrect.
         </p>
         <div className="flex items-center justify-center gap-2 mt-2">
@@ -96,9 +102,7 @@ const ProductDetailsPage = async ({ params }) => {
   }
 
   const price = product?.product_discount_price || product?.product_price;
-  const seo = await getSeoConfig();
 
-  // ✅ JSON-LD সরাসরি page component এ — metadata other এ না
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",

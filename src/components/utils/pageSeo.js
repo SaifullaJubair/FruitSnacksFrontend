@@ -67,8 +67,7 @@ export const PAGE_SEO = {
   },
   shippingInfo: {
     title: "Shipping Information",
-    description:
-      "Delivery time, charge ও shipping সম্পর্কে বিস্তারিত জানুন।",
+    description: "Delivery time, charge ও shipping সম্পর্কে বিস্তারিত জানুন।",
     path: "shipping-information",
   },
   termsCondition: {
@@ -117,6 +116,30 @@ export const PAGE_SEO = {
     title: "Forget Password",
     description: "",
     path: "forget-password",
+    noIndex: true,
+  },
+  offer: {
+    title: "Offers",
+    description: "",
+    path: "offer",
+    noIndex: true,
+  },
+  orders: {
+    title: "Orders",
+    description: "",
+    path: "orders",
+    noIndex: true,
+  },
+  orderSuccess: {
+    title: "Order Success",
+    description: "",
+    path: "order-success",
+    noIndex: true,
+  },
+  shop: {
+    title: "Shop",
+    description: "",
+    path: "shop",
     noIndex: true,
   },
 };
