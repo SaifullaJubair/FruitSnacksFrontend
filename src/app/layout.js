@@ -15,16 +15,17 @@ export async function generateMetadata() {
   const seo = await getSeoConfig();
 
   return {
+    // ✅ layout এ শুধু template আর metadataBase — page level এ override হবে
     metadataBase: new URL(seo.siteUrl),
     title: {
       default: seo.seoTitle,
       template: `%s | ${seo.siteName}`,
     },
-    description: seo.seoDescription,
-    keywords: seo.seoKeywords,
-    authors: [{ name: seo.siteName, url: seo.siteUrl }],
-    creator: seo.siteName,
-    publisher: seo.siteName,
+    // description: seo.seoDescription,
+    // keywords: seo.seoKeywords,
+    // authors: [{ name: seo.siteName, url: seo.siteUrl }],
+    // creator: seo.siteName,
+    // publisher: seo.siteName,
     robots: {
       index: true,
       follow: true,
@@ -36,31 +37,21 @@ export async function generateMetadata() {
         "max-snippet": -1,
       },
     },
+    // ✅ Default fallback — page এ নিজের না থাকলে এটা use হবে
     openGraph: {
       type: "website",
       locale: "bn_BD",
-      url: seo.siteUrl,
       siteName: seo.siteName,
-      title: seo.seoTitle,
-      description: seo.seoDescription,
-      images: [
-        {
-          url: seo.logo,
-          width: 1200,
-          height: 630,
-          alt: seo.siteName,
-        },
-      ],
+      images: [{ url: seo.logo, width: 1200, height: 630, alt: seo.siteName }],
     },
     twitter: {
       card: "summary_large_image",
-      title: seo.seoTitle,
-      description: seo.seoDescription,
       images: [seo.logo],
     },
-    alternates: {
-      canonical: seo.siteUrl,
-    },
+
+    // alternates: {
+    //   canonical: seo.siteUrl,
+    // },
   };
 }
 

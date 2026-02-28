@@ -1,14 +1,21 @@
 // src/components/lib/getSeoConfig.js
-// ✅ Reusable SEO config — সব page এ use করো
-
 import { SITE_URL } from "../utils/baseURL";
 import { getServerSettingData } from "./getServerSettingData";
+
+// ✅ Trailing slash fix
+const joinUrl = (base, path) => {
+  const cleanBase = base.replace(/\/+$/, "");
+  const cleanPath = path.replace(/^\/+/, "");
+  return `${cleanBase}/${cleanPath}`;
+};
+
+// ✅ Fallback OG image — DB থেকে না আসলে এটা use হবে
+const FALLBACK_IMAGE = "/public/logo.jpg";
 
 export async function getSeoConfig() {
   const settingData = await getServerSettingData();
   const s = settingData?.data?.[0];
 
-  // Admin setting থেকে নাও, না থাকলে fallback
   const siteName = s?.title || "Artisan Leather";
   const seoTitle =
     s?.seo_title || `${siteName} – Premium Genuine Leather Products Bangladesh`;
@@ -28,12 +35,12 @@ export async function getSeoConfig() {
   return {
     siteName,
     siteUrl: SITE_URL,
+    joinUrl, // ✅ helper export করলাম
     seoTitle,
     seoDescription,
     seoKeywords,
-    logo: s?.logo || "",
+    logo: s?.logo || FALLBACK_IMAGE, // ✅ fallback
     favicon: s?.favicon || "/favicon.ico",
-    // Social
     facebook: s?.facebook || "",
     instagram: s?.instagram || "",
   };

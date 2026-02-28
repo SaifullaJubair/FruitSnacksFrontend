@@ -1,6 +1,9 @@
 // src/app/sitemap.js
+import { BASE_URL as API_URL } from "@/components/utils/baseURL";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
-import { BASE_URL } from "@/components/utils/baseURL";
+
+// ✅ Static pages এর জন্য fixed date — project launch date
+const LAUNCH_DATE = new Date("2025-03-12");
 
 export default async function sitemap() {
   const seo = await getSeoConfig();
@@ -19,39 +22,39 @@ export default async function sitemap() {
       changeFrequency: "daily",
       priority: 0.9,
     },
+    // ✅ Static pages এ fixed date — Google কে mislead করবে না
     {
       url: `${SITE_URL}/about-us`,
-      lastModified: new Date(),
+      lastModified: LAUNCH_DATE,
       changeFrequency: "monthly",
       priority: 0.5,
     },
     {
       url: `${SITE_URL}/privacy-policy`,
-      lastModified: new Date(),
+      lastModified: LAUNCH_DATE,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/return-policy`,
-      lastModified: new Date(),
+      lastModified: LAUNCH_DATE,
       changeFrequency: "yearly",
       priority: 0.3,
     },
     {
       url: `${SITE_URL}/terms-condition`,
-      lastModified: new Date(),
+      lastModified: LAUNCH_DATE,
       changeFrequency: "yearly",
       priority: 0.3,
     },
   ];
 
+  // ✅ Products — updatedAt use করছি
   let productPages = [];
   try {
     const res = await fetch(
-      `${BASE_URL}/product?page=1&limit=500&product_status=active`,
-      {
-        next: { revalidate: 3600 },
-      },
+      `${API_URL}/product?page=1&limit=500&product_status=active`,
+      { next: { revalidate: 3600 } },
     );
     const data = await res.json();
     productPages = (data?.data || []).map((p) => ({
@@ -60,11 +63,14 @@ export default async function sitemap() {
       changeFrequency: "weekly",
       priority: 0.8,
     }));
-  } catch {}
+  } catch (e) {
+    console.error("Sitemap: product fetch failed", e);
+  }
 
+  // ✅ Categories
   let categoryPages = [];
   try {
-    const res = await fetch(`${BASE_URL}/category/category_sub_child`, {
+    const res = await fetch(`${API_URL}/category/category_sub_child`, {
       next: { revalidate: 3600 },
     });
     const data = await res.json();
@@ -76,7 +82,9 @@ export default async function sitemap() {
       changeFrequency: "weekly",
       priority: 0.7,
     }));
-  } catch {}
+  } catch (e) {
+    console.error("Sitemap: category fetch failed", e);
+  }
 
   return [...staticPages, ...productPages, ...categoryPages];
 }

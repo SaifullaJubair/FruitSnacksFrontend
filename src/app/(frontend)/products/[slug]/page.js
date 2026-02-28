@@ -27,21 +27,24 @@ export async function generateMetadata({ params }) {
     product?.meta_description ||
     `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
 
+  // ✅ Fallback image
+  const productImage = product?.main_image || seo.logo;
+
   return {
     title: product?.product_name,
     description,
     alternates: {
-      canonical: `${seo.siteUrl}/products/${slug}`,
+      canonical: seo.joinUrl(seo.siteUrl, `products/${slug}`),
     },
     openGraph: {
       type: "article",
-      url: `${seo.siteUrl}/products/${slug}`,
+      url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
       title: product?.product_name,
       description,
       siteName: seo.siteName,
       images: [
         {
-          url: product?.main_image,
+          url: productImage,
           width: 800,
           height: 800,
           alt: product?.product_name,
@@ -52,39 +55,7 @@ export async function generateMetadata({ params }) {
       card: "summary_large_image",
       title: product?.product_name,
       description,
-      images: [product?.main_image],
-    },
-    other: {
-      "script:ld+json": JSON.stringify({
-        "@context": "https://schema.org",
-        "@type": "Product",
-        name: product?.product_name,
-        image: product?.main_image,
-        description,
-        brand: { "@type": "Brand", name: seo.siteName },
-        offers: {
-          "@type": "Offer",
-          url: `${seo.siteUrl}/products/${slug}`,
-          priceCurrency: "BDT",
-          price,
-          priceValidUntil: new Date(
-            new Date().setFullYear(new Date().getFullYear() + 1),
-          )
-            .toISOString()
-            .split("T")[0],
-          availability: "https://schema.org/InStock",
-          seller: { "@type": "Organization", name: seo.siteName },
-        },
-        ...(product?.average_review_rating && {
-          aggregateRating: {
-            "@type": "AggregateRating",
-            ratingValue: product?.average_review_rating,
-            reviewCount: product?.total_reviews || 1,
-            bestRating: 5,
-            worstRating: 1,
-          },
-        }),
-      }),
+      images: [productImage],
     },
   };
 }
@@ -124,8 +95,48 @@ const ProductDetailsPage = async ({ params }) => {
     );
   }
 
+  const price = product?.product_discount_price || product?.product_price;
+  const seo = await getSeoConfig();
+
+  // ✅ JSON-LD সরাসরি page component এ — metadata other এ না
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product?.product_name,
+    image: product?.main_image,
+    description: product?.meta_description || product?.product_name,
+    brand: { "@type": "Brand", name: seo.siteName },
+    offers: {
+      "@type": "Offer",
+      url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
+      priceCurrency: "BDT",
+      price,
+      priceValidUntil: new Date(
+        new Date().setFullYear(new Date().getFullYear() + 1),
+      )
+        .toISOString()
+        .split("T")[0],
+      availability: "https://schema.org/InStock",
+      seller: { "@type": "Organization", name: seo.siteName },
+    },
+    ...(product?.average_review_rating && {
+      aggregateRating: {
+        "@type": "AggregateRating",
+        ratingValue: product?.average_review_rating,
+        reviewCount: product?.total_reviews || 1,
+        bestRating: 5,
+        worstRating: 1,
+      },
+    }),
+  };
+
   return (
     <section className="bg-[#F4F4F4] py-6">
+      {/* ✅ JSON-LD সরাসরি script tag এ */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <SingleProduct product={product} />
     </section>
   );

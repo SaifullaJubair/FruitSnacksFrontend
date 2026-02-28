@@ -1,5 +1,4 @@
 // src/app/robots.js
-
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
 
 export default async function robots() {
@@ -21,6 +20,10 @@ export default async function robots() {
           "/offer-orders/",
           "/compare/",
           "/wishlist/",
+          // ✅ Search query params index হবে না
+          "/*?search=*",
+          "/*?page=*",
+          "/*?sort=*",
         ],
       },
     ],
