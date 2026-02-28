@@ -56,6 +56,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   // Full product details
   const [product, setProduct] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
   // Variation & quantity state
   const [selectedVariations, setSelectedVariations] = useState({});
   const [variationProduct, setVariationProduct] = useState(null);
@@ -67,23 +69,54 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [addedToCart, setAddedToCart] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isInCart, setIsInCart] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
 
   // Gallery images
   const [galleryImages, setGalleryImages] = useState([]);
 
+  // Check if product is in cart
+  useEffect(() => {
+    if (!product) return;
+
+    const inCart = cartProducts.some((item) => {
+      if (variationProduct) {
+        return (
+          item.productId === product._id &&
+          item.variation_product_id === variationProduct._id
+        );
+      }
+      return item.productId === product._id && !item.variation_product_id;
+    });
+
+    setIsInCart(inCart);
+  }, [product, variationProduct, cartProducts]);
+
   // Full product fetch
   useEffect(() => {
     if (!listProduct?.product_slug) return;
+
     setFetchLoading(true);
+    setFetchError(false);
+
     fetch(`${BASE_URL}/product/${listProduct.product_slug}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return r.json();
+      })
       .then((data) => {
         const p = data?.data;
+        if (!p) {
+          throw new Error("Product data not found");
+        }
+
         setProduct(p);
+        setFetchError(false);
 
         // Setup gallery images with all available images
-        const images = [p?.main_image];
+        const images = [p?.main_image].filter(Boolean);
 
         // Add other images
         if (p?.other_images?.length > 0) {
@@ -125,17 +158,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           },
         });
 
-        // Check wishlist status
-        try {
-          const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-          const isInWishlist = wishlist.some(
-            (item) => item.productId === p?._id && !item.variation_product_id,
-          );
-          setIsWishlisted(isInWishlist);
-        } catch (error) {
-          console.error("Error reading wishlist:", error);
-        }
-
         // Initial price & stock set
         if (p?.is_variation && p?.variations?.length > 0) {
           const firstVariation = p.variations[0];
@@ -149,14 +171,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             setLineThoughPrice(firstVariation.variation_price);
           }
           setActiveImage(firstVariation.variation_image || p.main_image);
-
-          // Check wishlist for variation
-          const variationInWishlist = wishlist.some(
-            (item) =>
-              item.productId === p?._id &&
-              item.variation_product_id === firstVariation._id,
-          );
-          setIsWishlisted(variationInWishlist);
 
           // Initial variation selections
           if (p.attributes_details?.length > 0) {
@@ -176,15 +190,41 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             setLineThoughPrice(p.product_price);
           }
         }
+
+        // Check wishlist status (after setting product and variation)
+        try {
+          const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
+          if (p?.is_variation && p?.variations?.length > 0) {
+            const firstVariation = p.variations[0];
+            const variationInWishlist = wishlist.some(
+              (item) =>
+                item.productId === p?._id &&
+                item.variation_product_id === firstVariation._id,
+            );
+            setIsWishlisted(variationInWishlist);
+          } else {
+            const isInWishlist = wishlist.some(
+              (item) => item.productId === p?._id && !item.variation_product_id,
+            );
+            setIsWishlisted(isInWishlist);
+          }
+        } catch (error) {
+          console.error("Error reading wishlist:", error);
+        }
       })
-      .catch(() => toast.error("Failed to load product"))
+      .catch((error) => {
+        console.error("Error fetching product:", error);
+        setFetchError(true);
+        toast.error("Failed to load product. Please try again.");
+      })
       .finally(() => setFetchLoading(false));
-  }, [listProduct?.product_slug]);
+  }, [listProduct?.product_slug, trackViewContent, userInfo]);
 
   // Variation select
   const handleSelectVariation = useCallback(
     (value, attributeName) => {
       if (!product) return;
+
       const newVariations = { ...selectedVariations, [attributeName]: value };
       setSelectedVariations(newVariations);
 
@@ -256,19 +296,12 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       toast.error("Please select a variation");
       return;
     }
-    const alreadyInCart = cartProducts.some((item) => {
-      if (variationProduct) {
-        return (
-          item.productId === product._id &&
-          item.variation_product_id === variationProduct._id
-        );
-      }
-      return item.productId === product._id && !item.variation_product_id;
-    });
-    if (alreadyInCart) {
+
+    if (isInCart) {
       toast.error("Already in cart!", { autoClose: 1500 });
       return;
     }
+
     dispatch(
       addToCart({
         productId: product._id,
@@ -305,12 +338,12 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   }, [
     product,
     variationProduct,
-    cartProducts,
     quantity,
     dispatch,
     trackAddToCart,
     userInfo,
     productPrice,
+    isInCart,
   ]);
 
   // Wishlist handler
@@ -450,41 +483,56 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.2, ease: "easeOut" }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
         style={{ overscrollBehavior: "contain" }}
       >
         <motion.div
           ref={modalRef}
-          className="bg-white w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl relative rounded-xl"
+          className="bg-white w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[80vh] lg:max-h-[95vh] overflow-y-auto shadow-2xl relative rounded-xl"
           layout
+          style={{
+            marginTop: "env(safe-area-inset-top)",
+            marginBottom: "env(safe-area-inset-bottom)",
+          }}
         >
-          {/* Close Button */}
+          {/* Close Button - Fixed position on mobile, absolute on desktop */}
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className="sticky top-4 z-50 float-right mr-4 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
+            className=" absolute -top-2 right-2 z-50 bg-white/90 border backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
+            style={{
+              top: "max(0.5rem, env(safe-area-inset-top))",
+            }}
           >
             <IoClose size={20} className="text-gray-600" />
           </motion.button>
 
           {fetchLoading ? (
-            <div className="flex items-center justify-center h-96">
+            <div className="flex items-center justify-center h-screen sm:h-96">
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 className="w-10 h-10 border-3 border-primary border-t-transparent rounded-full"
               />
             </div>
-          ) : !product ? (
-            <div className="flex items-center justify-center h-96 text-gray-500">
-              Product not found
+          ) : fetchError || !product ? (
+            <div className="flex flex-col items-center justify-center h-screen sm:h-96 text-gray-500 p-8">
+              <p className="text-center mb-4">
+                Product not found or failed to load
+              </p>
+              <button
+                onClick={onClose}
+                className="px-4 py-2 bg-primary text-white rounded-lg"
+              >
+                Close
+              </button>
             </div>
           ) : (
-            <div className="flex flex-col lg:flex-row">
+            <div className="flex flex-col md:flex-row min-h-screen sm:min-h-0">
               {/* Left — Image Gallery */}
-              <div className="lg:w-[45%] bg-gray-50 p-4 sm:p-6">
-                <div className="relative aspect-square mb-3">
+              <div className="md:w-[45%] bg-gray-50 p-4 sm:p-6">
+                <div className="relative aspect-square mb-3 sm:mt-0">
                   <Swiper
                     spaceBetween={10}
                     navigation={true}
@@ -564,16 +612,19 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               </div>
 
               {/* Right — Details */}
-              <div className="lg:w-[55%] p-4 sm:p-6 overflow-y-auto max-h-[50vh] lg:max-h-[85vh]">
-                <div className="space-y-4">
+              <div
+                className="md:w-[55%] p-4 sm:p-6 overflow-y-auto"
+                style={{ maxHeight: "calc(100vh - 80px)" }}
+              >
+                <div className="space-y-4 pb-8 sm:pb-4">
                   {/* Brand/Title */}
-                  <div>
+                  <div className="mt-12 sm:mt-0">
                     {product.product_brand && (
                       <span className="text-xs text-gray-400 uppercase tracking-wider">
                         {product.product_brand}
                       </span>
                     )}
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-1 leading-tight">
+                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mt-1 mr-0 md:mr-2 leading-tight">
                       {product.product_name}
                     </h2>
                   </div>
@@ -622,25 +673,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       {product.product_short_description}
                     </p>
                   )}
-
-                  {/* Stock Status */}
-                  <div className="flex items-center gap-2">
-                    {stock > 0 ? (
-                      <>
-                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                        <p className="text-xs sm:text-sm text-green-600 font-medium">
-                          In Stock ({stock} available)
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <span className="w-2 h-2 bg-red-500 rounded-full" />
-                        <p className="text-xs sm:text-sm text-red-500 font-medium">
-                          Out of Stock
-                        </p>
-                      </>
-                    )}
-                  </div>
 
                   {/* Variations */}
                   {product.is_variation &&
@@ -713,9 +745,58 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                   {stock > 0 && (
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs sm:text-sm text-gray-700 mb-2 font-medium">
-                          Quantity:
-                        </p>
+                        <div className="flex gap-2 items-center mb-2">
+                          <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                            Quantity:
+                          </p>
+                          {/* Share and More Options */}
+                          <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
+                            {/* Stock Status Badge */}
+                            <div className="flex items-center gap-1.5">
+                              {stock > 0 ? (
+                                <>
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                  <span className="text-[10px] sm:text-xs text-gray-500">
+                                    {stock} in stock
+                                  </span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
+                                  <span className="text-[10px] sm:text-xs text-gray-500">
+                                    Out of stock
+                                  </span>
+                                </>
+                              )}
+                            </div>
+
+                            {/* Share Button */}
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              onClick={() => {
+                                if (navigator.share) {
+                                  navigator.share({
+                                    title: product.product_name,
+                                    url:
+                                      window.location.origin +
+                                      `/products/${product.product_slug}`,
+                                  });
+                                } else {
+                                  navigator.clipboard.writeText(
+                                    window.location.origin +
+                                      `/products/${product.product_slug}`,
+                                  );
+                                  toast.success("Link copied to clipboard!");
+                                }
+                              }}
+                              className="text-gray-400 hover:text-primary transition-colors"
+                              title="Share product"
+                            >
+                              <BsShare size={14} />
+                            </motion.button>
+                          </div>
+                        </div>
                         <div className="flex items-center">
                           <motion.button
                             whileTap={{ scale: 0.9 }}
@@ -747,16 +828,35 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                         </div>
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2">
+                        {/* Add to Cart */}
                         <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                          whileHover={
+                            !isInCart && stock > 0 ? { scale: 1.02 } : {}
+                          }
+                          whileTap={
+                            !isInCart && stock > 0 ? { scale: 0.98 } : {}
+                          }
                           type="button"
                           onClick={handleAddToCart}
-                          disabled={stock <= 0}
-                          className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 bg-primary text-white hover:bg-primary/90 transition text-xs sm:text-sm font-medium rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={stock <= 0 || isInCart}
+                          className={`
+     flex-1   py-2 sm:py-3 flex items-center justify-center gap-2 
+      transition text-xs sm:text-sm font-medium rounded-lg
+      ${
+        isInCart
+          ? "bg-green-500 text-white cursor-not-allowed"
+          : "bg-primary text-white hover:bg-primary/90"
+      }
+      disabled:opacity-50 disabled:cursor-not-allowed
+    `}
                         >
-                          {addedToCart ? (
+                          {isInCart ? (
+                            <>
+                              <FiCheck size={16} />
+                              In Cart
+                            </>
+                          ) : addedToCart ? (
                             <>
                               <FiCheck size={16} />
                               Added
@@ -769,12 +869,33 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           )}
                         </motion.button>
 
+                        {/* View Details (same width as Add to Cart) */}
+                        <Link
+                          href={`/products/${product.product_slug}`}
+                          onClick={onClose}
+                          className="flex-1 "
+                        >
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            type="button"
+                            className="w-full py-2 sm:py-3 flex items-center justify-center gap-2
+                 text-xs sm:text-sm font-medium rounded-lg
+                 border border-primary text-primary hover:bg-primary/5 transition"
+                          >
+                            View Details
+                            <FiArrowUpRight size={14} />
+                          </motion.button>
+                        </Link>
+
+                        {/* Wishlist */}
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
                           type="button"
                           onClick={handleWishlist}
-                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all"
+                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary 
+               rounded-lg transition-all shrink-0"
                         >
                           {isWishlisted ? (
                             <BsHeartFill size={16} className="text-primary" />
@@ -786,48 +907,62 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     </div>
                   )}
 
-                  {/* View Full Details Link */}
-                  <Link
-                    href={`/products/${product.product_slug}`}
-                    onClick={onClose}
-                  >
-                    <motion.div
-                      whileHover={{ x: 5 }}
-                      className="inline-flex items-center gap-1 text-xs sm:text-sm text-primary font-medium hover:underline"
-                    >
-                      View Full Details
-                      <FiArrowUpRight size={14} />
-                    </motion.div>
-                  </Link>
-
-                  {/* Features */}
-                  <div className="grid grid-cols-3 gap-2 pt-3 border-t border-gray-100">
-                    <div className="text-center">
+                  {/* Features - Alternative Grid Layout */}
+                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+                    <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <MdOutlineLocalShipping
-                        className="mx-auto text-gray-400 mb-1"
-                        size={16}
+                        className="mx-auto text-primary mb-1"
+                        size={20}
                       />
-                      <span className="text-[10px] sm:text-xs text-gray-500">
-                        Free Shipping
-                      </span>
+                      <p className="text-xs font-medium text-gray-800">
+                        Free Delivery
+                      </p>
+                      <p className="text-[9px] text-gray-500">
+                        On orders above ৳999
+                      </p>
                     </div>
-                    <div className="text-center">
+
+                    <div className="text-center p-2 bg-gray-50 rounded-lg">
+                      <svg
+                        className="w-5 h-5 mx-auto text-primary mb-1"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+                      </svg>
+                      <p className="text-xs font-medium text-gray-800">
+                        Genuine Leather
+                      </p>
+                      <p className="text-[9px] text-gray-500">100% authentic</p>
+                    </div>
+
+                    <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <TbTruckReturn
-                        className="mx-auto text-gray-400 mb-1"
-                        size={16}
+                        className="mx-auto text-primary mb-1"
+                        size={20}
                       />
-                      <span className="text-[10px] sm:text-xs text-gray-500">
-                        7 Days Return
-                      </span>
+                      <p className="text-xs font-medium text-gray-800">
+                        Easy Return
+                      </p>
+                      <p className="text-[9px] text-gray-500">
+                        Instant if you don't like
+                      </p>
                     </div>
-                    <div className="text-center">
+
+                    <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <RiSecurePaymentLine
-                        className="mx-auto text-gray-400 mb-1"
-                        size={16}
+                        className="mx-auto text-primary mb-1"
+                        size={20}
                       />
-                      <span className="text-[10px] sm:text-xs text-gray-500">
-                        Secure
-                      </span>
+                      <p className="text-xs font-medium text-gray-800">
+                        Cash on Delivery
+                      </p>
+                      <p className="text-[9px] text-gray-500">
+                        Pay when you receive
+                      </p>
                     </div>
                   </div>
                 </div>
