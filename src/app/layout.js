@@ -77,10 +77,10 @@ export default async function RootLayout({ children }) {
           />
         </noscript> */}
         {/* ✅ Meta Pixel  */}
-        <MetaPixelScript />
 
         <Providers>
           <QueryProviders>
+            <MetaPixelScript />
             <main>
               {children}
               <ToastContainer
