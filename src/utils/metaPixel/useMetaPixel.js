@@ -2,7 +2,6 @@
 
 import { useCallback } from "react";
 
-const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 // Unique event_id generate করো — browser + server deduplication এর জন্য
 export const generateEventId = () =>

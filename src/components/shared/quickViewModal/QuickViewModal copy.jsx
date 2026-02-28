@@ -16,7 +16,11 @@ import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { calculatePrice, isHexColor, singleProductPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 
-// Overlay — modal এর বাইরে click করলে বন্ধ হবে
+// ✅ Meta Pixel
+import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+
 const Overlay = ({ onClick }) => (
   <div className="fixed inset-0 bg-black/50 z-40" onClick={onClick} />
 );
@@ -26,6 +30,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   const cartProducts = useSelector((state) => state.cart.products);
   const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data[0]?.currency_symbol;
+  const { trackAddToCart, trackViewContent } = useMetaPixel();
+  const { data: userInfo } = useUserInfoQuery();
 
   // Full product details (slug দিয়ে fetch করব)
   const [product, setProduct] = useState(null);
@@ -50,6 +56,25 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         const p = data?.data;
         setProduct(p);
 
+        // ✅ ViewContent — modal open হলে fire
+        const eventId = generateEventId();
+        trackViewContent(p, eventId);
+        sendServerEvent({
+          event_name: "ViewContent",
+          event_id: eventId,
+          user_data: {
+            ph: userInfo?.data?.user_phone,
+            fn: userInfo?.data?.user_name,
+            external_id: userInfo?.data?._id,
+          },
+          custom_data: {
+            content_ids: [p?._id],
+            content_name: p?.product_name,
+            content_type: "product",
+            currency: "BDT",
+            value: p?.product_discount_price || p?.product_price,
+          },
+        });
         // Initial price & stock set করো
         if (p?.is_variation && p?.variations?.length > 0) {
           const firstVariation = p.variations[0];
@@ -105,29 +130,24 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         setStock(found.variation_quantity);
         setQuantity(1);
         setActiveImage(found.variation_image || product.main_image);
-
         let price = found.variation_discount_price || found.variation_price;
-
-        // Flash sale check
         if (product?.flash_sale_details?.flash_sale_product) {
           const fp = product.flash_sale_details.flash_sale_product;
-          if (fp?.flash_price_type) {
+          if (fp?.flash_price_type)
             price = calculatePrice(
               price,
               fp.flash_sale_product_price,
               fp.flash_price_type,
             );
-          }
           setLineThoughPrice(found.variation_price);
         } else if (product?.campaign_details?.campaign_product) {
           const cp = product.campaign_details.campaign_product;
-          if (cp?.campaign_price_type) {
+          if (cp?.campaign_price_type)
             price = calculatePrice(
               price,
               cp.campaign_product_price,
               cp.campaign_price_type,
             );
-          }
           setLineThoughPrice(found.variation_price);
         } else {
           setLineThoughPrice(
@@ -149,7 +169,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       toast.error("Please select a variation");
       return;
     }
-
     const alreadyInCart = cartProducts.some((item) => {
       if (variationProduct) {
         return (
@@ -159,12 +178,10 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       }
       return item.productId === product._id && !item.variation_product_id;
     });
-
     if (alreadyInCart) {
       toast.error("Already in cart!", { autoClose: 1500 });
       return;
     }
-
     dispatch(
       addToCart({
         productId: product._id,
@@ -173,8 +190,40 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       }),
     );
     toast.success("Added to cart!", { autoClose: 1500 });
+
+    // ✅ AddToCart Meta Pixel event
+    const eventId = generateEventId();
+    trackAddToCart(product, variationProduct, quantity, eventId);
+    sendServerEvent({
+      event_name: "AddToCart",
+      event_id: eventId,
+      user_data: {
+        ph: userInfo?.data?.user_phone,
+        fn: userInfo?.data?.user_name,
+        external_id: userInfo?.data?._id,
+      },
+      custom_data: {
+        content_ids: [variationProduct?._id || product._id],
+        content_name: product.product_name,
+        content_type: "product",
+        currency: "BDT",
+        value: productPrice * quantity,
+        num_items: quantity,
+      },
+    });
+
     onClose();
-  }, [product, variationProduct, cartProducts, quantity, dispatch, onClose]);
+  }, [
+    product,
+    variationProduct,
+    cartProducts,
+    quantity,
+    dispatch,
+    onClose,
+    trackAddToCart,
+    userInfo,
+    productPrice,
+  ]);
 
   // Quantity handlers
   const handleIncrement = () => {
@@ -286,7 +335,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                               ?.attribute_value_name ===
                             val.attribute_value_name;
                           const isColor = isHexColor(val.attribute_value_code);
-
                           return (
                             <button
                               key={val._id}
@@ -296,12 +344,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                               }
                               title={val.attribute_value_name}
                               className={`border transition-all duration-200
-                                ${isColor ? "w-7 h-7 rounded-full" : "px-2.5 py-1 text-xs"}
-                                ${
-                                  isSelected
-                                    ? "border-primary bg-primary text-white"
-                                    : "border-gray-300 hover:border-primary text-gray-700 hover:text-primary"
-                                }`}
+                              ${isColor ? "w-7 h-7 rounded-full" : "px-2.5 py-1 text-xs"}
+                              ${isSelected ? "border-primary bg-primary text-white" : "border-gray-300 hover:border-primary text-gray-700 hover:text-primary"}`}
                               style={{
                                 backgroundColor:
                                   isColor && !isSelected
@@ -369,8 +413,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     className="w-full py-2.5 flex items-center justify-center gap-2 border border-gray-300 text-gray-700 hover:border-primary hover:text-primary transition text-sm"
                     onClick={onClose}
                   >
-                    View Full Details
-                    <FiArrowUpRight />
+                    View Full Details <FiArrowUpRight />
                   </Link>
                 </div>
               </div>
