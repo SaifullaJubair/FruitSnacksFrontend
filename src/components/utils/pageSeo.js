@@ -1,4 +1,7 @@
 // src/components/utils/pageSeo.js
+// ✅ সব static page এর SEO এক জায়গায়
+// Site change করলে শুধু এই file এর values change করলেই হবে
+// ⚠️ description এ site নাম hardcode করবে না — buildPageMeta এ siteName inject হয়
 
 export const PAGE_SEO = {
   home: {
@@ -38,7 +41,7 @@ export const PAGE_SEO = {
   aboutUs: {
     title: "About Us",
     description:
-      "Artisan Leather সম্পর্কে জানুন। Bangladesh এর trusted genuine leather products store।",
+      "Bangladesh এর trusted genuine leather products store সম্পর্কে জানুন।",
     path: "about-us",
   },
   privacyPolicy: {
@@ -64,7 +67,8 @@ export const PAGE_SEO = {
   },
   shippingInfo: {
     title: "Shipping Information",
-    description: "Delivery time, charge ও shipping সম্পর্কে বিস্তারিত জানুন।",
+    description:
+      "Delivery time, charge ও shipping সম্পর্কে বিস্তারিত জানুন।",
     path: "shipping-information",
   },
   termsCondition: {
@@ -72,16 +76,16 @@ export const PAGE_SEO = {
     description: "আমাদের terms and conditions সম্পর্কে জানুন।",
     path: "terms-condition",
   },
-  // ✅ Private pages — noindex
+  // ── Private pages — noindex ────────────────────────────
   signIn: {
     title: "Sign In",
-    description: "Account এ login করুন।",
+    description: "",
     path: "sign-in",
     noIndex: true,
   },
   signUp: {
     title: "Sign Up",
-    description: "নতুন account তৈরি করুন।",
+    description: "",
     path: "sign-up",
     noIndex: true,
   },

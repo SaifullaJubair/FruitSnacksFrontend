@@ -15,17 +15,17 @@ export async function generateMetadata() {
   const seo = await getSeoConfig();
 
   return {
-    // ✅ layout এ শুধু template আর metadataBase — page level এ override হবে
+    // ── 1. Basic ──────────────────────────────────────────
     metadataBase: new URL(seo.siteUrl),
     title: {
       default: seo.seoTitle,
       template: `%s | ${seo.siteName}`,
     },
-    // description: seo.seoDescription,
-    // keywords: seo.seoKeywords,
-    // authors: [{ name: seo.siteName, url: seo.siteUrl }],
-    // creator: seo.siteName,
-    // publisher: seo.siteName,
+    // description — buildPageMeta থেকে আসে, কিন্তু
+    // যে page এ generateMetadata নেই সেখানে এটা fallback
+    description: seo.seoDescription,
+
+    // ── 2. Robots ─────────────────────────────────────────
     robots: {
       index: true,
       follow: true,
@@ -37,26 +37,59 @@ export async function generateMetadata() {
         "max-snippet": -1,
       },
     },
-    // ✅ Default fallback — page এ নিজের না থাকলে এটা use হবে
+
+    // ── 3. Verification ───────────────────────────────────
+    verification: {
+      google: "your-google-verification-code", // ⚠️ Search Console থেকে replace করো
+    },
+
+    // ── 4. Icons ──────────────────────────────────────────
+    icons: {
+      icon: seo.favicon || "/favicon.ico",
+      shortcut: seo.favicon || "/favicon.ico",
+      apple: "/apple-touch-icon.png", // ⚠️ /public এ 180x180px PNG রাখো
+    },
+
+    // ── 5. Format Detection ───────────────────────────────
+    formatDetection: {
+      email: false,
+      address: false,
+      telephone: false,
+    },
+
+    // ── 6. OG & Twitter — শুধু fallback ──────────────────
+    // buildPageMeta আছে এমন page এ এগুলো override হবে
+    // generateMetadata নেই এমন page এ এটা দেখাবে
     openGraph: {
       type: "website",
       locale: "bn_BD",
       siteName: seo.siteName,
+      url: seo.siteUrl,
+      title: seo.seoTitle,
+      description: seo.seoDescription,
       images: [{ url: seo.logo, width: 1200, height: 630, alt: seo.siteName }],
     },
     twitter: {
       card: "summary_large_image",
+      title: seo.seoTitle,
+      description: seo.seoDescription,
       images: [seo.logo],
     },
-
-    // alternates: {
-    //   canonical: seo.siteUrl,
-    // },
   };
 }
 
 export default async function RootLayout({ children }) {
   const seo = await getSeoConfig();
+
+  // Organization JSON-LD — Google কে business সম্পর্কে জানায়
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: seo.siteName,
+    url: seo.siteUrl,
+    logo: seo.logo,
+    sameAs: [seo.facebook, seo.instagram].filter(Boolean),
+  };
 
   return (
     <html lang="bn">
@@ -64,6 +97,12 @@ export default async function RootLayout({ children }) {
         <link rel="icon" href={seo.favicon} type="image/x-icon" />
       </head>
       <body className={bodyFont.className}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(organizationJsonLd),
+          }}
+        />
         <Providers>
           <QueryProviders>
             <MetaPixelScript />

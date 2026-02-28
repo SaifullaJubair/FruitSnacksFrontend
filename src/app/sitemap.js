@@ -47,6 +47,43 @@ export default async function sitemap() {
       changeFrequency: "yearly",
       priority: 0.3,
     },
+
+    {
+      url: `${SITE_URL}/refund-policy`,
+      lastModified: LAUNCH_DATE,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/cancel-policy`,
+      lastModified: LAUNCH_DATE,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/shipping-information`,
+      lastModified: LAUNCH_DATE,
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: `${SITE_URL}/new-arrival`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/top-product`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
+    {
+      url: `${SITE_URL}/all-trending-products`,
+      lastModified: new Date(),
+      changeFrequency: "daily",
+      priority: 0.9,
+    },
   ];
 
   // ✅ Products — updatedAt use করছি
@@ -71,7 +108,7 @@ export default async function sitemap() {
   let categoryPages = [];
   try {
     const res = await fetch(`${API_URL}/category/category_sub_child`, {
-      next: { revalidate: 3600 },
+      next: { revalidate: 3600 * 24 },
     });
     const data = await res.json();
     categoryPages = (data?.data || []).map((item) => ({
