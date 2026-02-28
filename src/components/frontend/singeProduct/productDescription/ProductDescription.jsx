@@ -1,222 +1,97 @@
 "use client";
-
-// import { titleFont } from "@/utils/font";
 import { useState } from "react";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FiChevronDown, FiFileText, FiList } from "react-icons/fi";
+
+const AccordionItem = ({ title, icon, children, defaultOpen = false }) => {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="border-b border-gray-100 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50/80 transition-colors text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${open ? "bg-primary text-white" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}
+          >
+            {icon}
+          </div>
+          <span
+            className={`text-sm font-semibold transition-colors ${open ? "text-primary" : "text-gray-700"}`}
+          >
+            {title}
+          </span>
+        </div>
+        <div
+          className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${open ? "bg-primary/10 rotate-180" : "bg-gray-100"}`}
+        >
+          <FiChevronDown
+            size={13}
+            className={open ? "text-primary" : "text-gray-500"}
+          />
+        </div>
+      </button>
+      <div
+        className={`overflow-hidden transition-all duration-400 ease-in-out ${open ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
+        <div className="px-5 pb-5">{children}</div>
+      </div>
+    </div>
+  );
+};
 
 const ProductDescription = ({ product }) => {
-  const [isDescriptionOpen, setIsDescriptionOpen] = useState(true);
-  const [isSpecificationOpen, setIsSpecificationOpen] = useState(false);
-
   return (
-    <div className="my-4">
-      {/* Product Description Accordion */}
+    <div className="divide-y divide-gray-50">
+      {/* Description */}
       {product?.description && (
-        <div className="border-y mb-4">
+        <AccordionItem
+          title="Product Details"
+          icon={<FiFileText size={13} />}
+          defaultOpen={true}
+        >
           <div
-            className=" px-3 flex items-center justify-between py-2 cursor-pointer"
-            onClick={() => setIsDescriptionOpen(!isDescriptionOpen)}
-          >
-            <p className="text-gray-700 font-semibold">Details</p>
-            {isDescriptionOpen ? (
-              <FaChevronUp className="text-[20px] font-light text-gray-600" />
-            ) : (
-              <FaChevronDown className="text-[20px] font-light text-gray-600" />
-            )}
-          </div>
-          <div
-            className={`grid overflow-hidden transition-all duration-500 ease-in-out ${
-              isDescriptionOpen
-                ? "grid-rows-[1fr] opacity-100"
-                : "grid-rows-[0fr] opacity-0"
-            }`}
-          >
-            <div className="overflow-hidden ">
-              <div className="p-4">
-                {" "}
-                <p
-                  className="text-gray-700 "
-                  dangerouslySetInnerHTML={{ __html: product?.description }}
-                ></p>
-              </div>
-            </div>
-          </div>
-        </div>
+            className="prose prose-sm max-w-none text-gray-600 leading-relaxed
+              prose-headings:text-gray-800 prose-strong:text-gray-800
+              prose-ul:space-y-1 prose-li:text-gray-600"
+            dangerouslySetInnerHTML={{ __html: product?.description }}
+          />
+        </AccordionItem>
       )}
 
-      {/* Product Specification Accordion */}
+      {/* Specifications */}
       {product?.specifications?.length > 0 && (
-        <div className="border-y">
-          <div
-            className=" px-3 flex items-center justify-between py-2 cursor-pointer"
-            onClick={() => setIsSpecificationOpen(!isSpecificationOpen)}
-          >
-            <p className="text-gray-700 font-semibold">Specifications</p>
-            {isSpecificationOpen ? (
-              <FaChevronUp className="text-[20px] font-light text-gray-600" />
-            ) : (
-              <FaChevronDown className="text-[20px] font-light text-gray-600" />
-            )}
+        <AccordionItem
+          title="Specifications"
+          icon={<FiList size={13} />}
+          defaultOpen={false}
+        >
+          <div className="overflow-x-auto rounded-lg border border-gray-100">
+            <table className="w-full text-sm">
+              <tbody>
+                {product?.specifications?.map((spec, i) => (
+                  <tr
+                    key={spec._id}
+                    className={i % 2 === 0 ? "bg-white" : "bg-gray-50/60"}
+                  >
+                    <td className="px-4 py-2.5 font-medium text-gray-700 border-r border-gray-100 w-[40%]">
+                      {spec?.specification_id?.specification_name}
+                    </td>
+                    <td className="px-4 py-2.5 text-gray-600">
+                      {spec?.specification_id?.specification_values
+                        ?.map((v) => v?.specification_value_name)
+                        .join(", ")}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <div
-            className={`grid overflow-hidden transition-all duration-500 ease-in-out ${
-              isSpecificationOpen
-                ? "grid-rows-[1fr] opacity-100"
-                : "grid-rows-[0fr] opacity-0"
-            }`}
-          >
-            <div className="overflow-hidden ">
-              <div className="p-4">
-                {" "}
-                <div className="overflow-x-auto shadow-md ">
-                  <table className="w-full text-sm text-left text-gray-700 border border-gray-300">
-                    <thead className="text-sm text-gray-700 uppercase bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 border">Specification Name</th>
-                        <th className="px-4 py-3 border">Details</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {product?.specifications?.map((specification, i) => (
-                        <tr
-                          key={specification._id}
-                          className={`border-t ${
-                            i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                          }`}
-                        >
-                          <td className="px-4 py-3 border font-medium text-gray-800">
-                            {
-                              specification?.specification_id
-                                ?.specification_name
-                            }
-                          </td>
-                          <td className="px-4 py-3 border">
-                            {specification?.specification_id?.specification_values
-                              ?.map((value) => value?.specification_value_name)
-                              .join(", ")}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </AccordionItem>
       )}
     </div>
   );
 };
 
 export default ProductDescription;
-
-// "use client";
-
-// import { Button } from "@/components/ui/button";
-// import { yatra } from "@/utils/font";
-// import { useState } from "react";
-
-// const ProductDescription = ({ product }) => {
-//   const [active, setActive] = useState(
-//     product?.specifications?.length > 0 ? "specification" : "description"
-//   );
-//   return (
-//     <>
-//       {(product?.description || product?.specifications) && (
-//         <div className="mb-6">
-//           <div className="border  ">
-//             <div className="flex items-center m-4 mt-6 gap-4 ">
-//               {product?.specifications?.length > 0 && (
-//                 <Button
-//                   className="rounded-lx shadow shadow-primary-100 "
-//                   variant={active === "specification" ? "default" : "outline"}
-//                   onClick={() => setActive("specification")}
-//                 >
-//                   Specification
-//                 </Button>
-//               )}
-//               {product?.description?.length > 0 && (
-//                 <Button
-//                   className="rounded-lx shadow shadow-primary-100 "
-//                   variant={active === "description" ? "default" : "outline"}
-//                   onClick={() => setActive("description")}
-//                 >
-//                   Description
-//                 </Button>
-//               )}
-//             </div>
-//             <hr className="mx-4" />
-//             {active === "specification" && (
-//               <div className="my-8 px-8">
-//                 <div className="overflow-x-auto   shadow-md">
-//                   <table className="w-full text-sm text-left text-gray-700 border border-gray-300">
-//                     <thead className="text-sm text-gray-700 uppercase bg-gray-100">
-//                       <tr>
-//                         <th className="px-4 py-3 border">Specification Name</th>
-//                         <th className="px-4 py-3 border">Details</th>
-//                       </tr>
-//                     </thead>
-//                     <tbody>
-//                       {product?.specifications?.map((specification, i) => (
-//                         <tr
-//                           key={specification._id}
-//                           className={`border-t ${
-//                             i % 2 === 0 ? "bg-white" : "bg-gray-50"
-//                           }`}
-//                         >
-//                           <td className="px-4 py-3 border font-medium text-gray-800">
-//                             {
-//                               specification?.specification_id
-//                                 ?.specification_name
-//                             }
-//                           </td>
-
-//                           <td className="px-4 py-3 border">
-//                             {specification?.specification_id?.specification_values
-//                               ?.map((value) => value?.specification_value_name)
-//                               .join(", ")}
-//                           </td>
-//                         </tr>
-//                       ))}
-//                     </tbody>
-//                   </table>
-//                 </div>
-//               </div>
-//             )}
-//             {active === "description" && (
-//               <div className="p-4">
-//                 <p
-//                   className="mx-6 text-text-Lighter"
-//                   dangerouslySetInnerHTML={{ __html: product?.description }}
-//                 ></p>
-//               </div>
-//             )}
-//           </div>
-//         </div>
-//       )}
-//     </>
-//   );
-// };
-
-// export default ProductDescription;
-
-//  <div className="mb-6">
-//    <div className="border  ">
-//      <h2
-//        className="text-xl sm:text-2xl  pt-6 px-6  font-bold  text-gray-800"
-//        style={{
-//  fontFamily: titleFont.style.fontFamily,
-//        }}
-//      >
-//        Product <span className="text-primary-500">Description</span>
-//      </h2>
-//      <hr className="mx-6 mt-2" />
-//      <div className="p-4">
-//        <p
-//          className="mx-6 text-text-Lighter"
-//          dangerouslySetInnerHTML={{ __html: product?.description }}
-//        ></p>
-//      </div>
-//    </div>
-//  </div>;

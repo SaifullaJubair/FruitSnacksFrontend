@@ -1,18 +1,44 @@
-import { divisions } from "@/data/divisions";
 import { cities } from "@/data/cites";
 import { useEffect, useState } from "react";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { FaChevronDown } from "react-icons/fa6";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import Select from "react-select";
 import "react-phone-number-input/style.css";
-import "react-phone-number-input/style.css";
-import PhoneInput, {
-  formatPhoneNumber,
-  isPossiblePhoneNumber,
-  isValidPhoneNumber,
-} from "react-phone-number-input";
+import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
+import {
+  FiUser,
+  FiPhone,
+  FiMapPin,
+  FiHome,
+  FiChevronDown,
+  FiChevronUp,
+} from "react-icons/fi";
+
+// ✅ Custom react-select styles
+const selectStyles = {
+  control: (base, state) => ({
+    ...base,
+    borderRadius: "0.5rem",
+    borderColor: state.isFocused ? "var(--color-primary, #e11d48)" : "#e5e7eb",
+    boxShadow: state.isFocused ? "0 0 0 2px rgba(225,29,72,0.15)" : "none",
+    "&:hover": { borderColor: "#9ca3af" },
+    padding: "1px 2px",
+    fontSize: "0.813rem",
+    minHeight: "38px",
+  }),
+  option: (base, state) => ({
+    ...base,
+    fontSize: "0.813rem",
+    backgroundColor: state.isSelected
+      ? "var(--color-primary, #e11d48)"
+      : state.isFocused
+        ? "#fff1f2"
+        : "white",
+    color: state.isSelected ? "white" : "#374151",
+  }),
+  menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+};
 
 const RightSideDeliveryInfo = ({
   register,
@@ -24,7 +50,6 @@ const RightSideDeliveryInfo = ({
   setDistrict,
   setIsOpenDistrict,
   isOpenDistrict,
-  districtsData,
   division,
   district,
   watch,
@@ -38,281 +63,179 @@ const RightSideDeliveryInfo = ({
   zoneLoading,
   zoneData,
 }) => {
-  // const [showPassword, setShowPassword] = useState(false);
-  // const [showConformPassword, setShowConformPassword] = useState(false);
-  console.log(zoneData);
-
   if (loading) {
     return (
-      <div className="bg-white shadow-md   p-4 mb-2">
-        <Skeleton height={12} width="60%" className="mb-4" />
-        <Skeleton height={10} className="mb-4" />
+      <div className="bg-white rounded-xl border border-gray-100 p-4 mb-3">
+        <Skeleton height={14} width="50%" className="mb-3" />
+        <Skeleton height={36} className="mb-2" />
+        <Skeleton height={36} />
       </div>
     );
   }
-  // console.log(userInfo);
+
   return (
-    <div className="bg-white shadow-md    p-4 mb-2">
-      <div
-        className="cursor-pointer text-xl mb-2 flex justify-between items-center"
+    <div className="bg-white rounded-xl border border-gray-100 overflow-hidden mb-3 shadow-sm">
+      {/* Accordion Header */}
+      <button
+        type="button"
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors"
         onClick={() => setIsAccordionOpen(!isAccordionOpen)}
       >
-        <h5 className="text-text-light">Delivery Information</h5>
-        <span
-          className={`transform transition-transform duration-300 ${
-            isAccordionOpen ? "rotate-180" : "rotate-0"
-          }`}
-        >
-          <FaChevronDown />
-        </span>
-      </div>
-      <div
-        className={`grid grid-cols-1 lg:grid-cols-2 gap-4 overflow-hidden transition-all duration-500 ease-in-out ${
-          isAccordionOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        <div>
-          <label htmlFor="" className="block text-xs font-medium text-gray-700">
-            Name
-          </label>
-
-          <input
-            {...register("customer_name", {
-              required: "Name is required",
-            })}
-            type="text"
-            readOnly={userInfo?.data ? true : false}
-            value={userInfo?.data?.user_name}
-            placeholder="Your Name"
-            className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
-          />
-          {errors.customer_name && (
-            <p className="text-red-600 text-sm ml-2">
-              {errors.customer_name?.message}
-            </p>
-          )}
+        <div className="flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
+            <FiHome size={12} className="text-primary" />
+          </div>
+          <span className="text-sm font-semibold text-gray-800">
+            Delivery Information
+          </span>
         </div>
-        <div className="">
-          <label
-            htmlFor=""
-            className="block text-xs  font-medium text-gray-700"
-          >
-            Phone Number
-          </label>
+        <div
+          className={`transition-transform duration-300 ${isAccordionOpen ? "rotate-180" : "rotate-0"}`}
+        >
+          <FiChevronDown size={16} className="text-gray-500" />
+        </div>
+      </button>
 
-          {/* <input
-            {...register("customer_phone", {
-              required: "Phone number is required",
-              pattern: {
-                value: /^(?:\+88|88)?(01[3-9]\d{8})$/,
-                message: "Invalid Bangladeshi phone number",
-              },
-            })}
-            type="number"
-            defaultValue={
-              userInfo?.data?.user_phone &&
-              userInfo?.data?.user_phone?.startsWith("+88")
-                ? userInfo?.data?.user_phone?.slice(3)
-                : userInfo?.data?.user_phone
-            }
-            placeholder="Your Phone"
-            className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
-          />
-          {errors.customer_phone && (
-            <p className="text-red-600 text-sm ml-2">
-              {errors.customer_phone?.message}
-            </p>
-          )} */}
-          {userInfo?.data?.user_phone ? (
-            <div>
+      {/* Accordion Body */}
+      <div
+        className={`overflow-hidden transition-all duration-400 ease-in-out ${isAccordionOpen ? "max-h-[600px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
+        <div className="px-4 pb-4 space-y-3 border-t border-gray-50">
+          {/* Name */}
+          <div className="pt-3">
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              <FiUser size={11} />
+              Full Name
+            </label>
+            <input
+              {...register("customer_name", { required: "Name is required" })}
+              type="text"
+              readOnly={!!userInfo?.data}
+              defaultValue={userInfo?.data?.user_name}
+              placeholder="Your full name"
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all placeholder:text-gray-400 bg-white read-only:bg-gray-50 read-only:text-gray-600"
+            />
+            {errors.customer_name && (
+              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                <span>⚠</span> {errors.customer_name?.message}
+              </p>
+            )}
+          </div>
+
+          {/* Phone */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              <FiPhone size={11} />
+              Phone Number
+            </label>
+            {userInfo?.data?.user_phone ? (
               <input
                 {...register("customer_phone", {
                   required: "Phone number is required",
                   pattern: {
                     value: /^(?:\+88|88)?(01[3-9]\d{8})$/,
-                    message: "Invalid Bangladeshi phone number",
+                    message: "Invalid phone number",
                   },
                 })}
                 onChange={() => setUserPhoneLogin(true)}
                 type="number"
                 defaultValue={userInfo?.data?.user_phone}
-                placeholder="Your Phone"
-                className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+                placeholder="Phone number"
+                className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all"
               />
-              {errors.customer_phone && (
-                <p className="text-red-600 text-sm ml-2">
-                  {errors.customer_phone?.message}
-                </p>
-              )}
-            </div>
-          ) : (
-            <PhoneInput
-              className="custom-phone-input w-full   mt-2 border border-white-light bg-white px-4 py-2 text-sm text-black placeholder:text-white-dark"
-              placeholder="Enter phone number"
-              id="customer_phone"
-              value={customer_phone}
-              defaultCountry="BD"
-              international
-              countryCallingCodeEditable={false}
-              countries={["BD"]}
-              onChange={setUserPhone}
-              error={
-                customer_phone
-                  ? !isValidPhoneNumber(customer_phone) &&
-                    "Invalid phone number"
-                  : "Phone number required"
-              }
-            />
-          )}
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            District
-          </label>
-          <Select
-            id="city"
-            name="city"
-            placeholder="Select a district"
-            options={cities}
-            value={division ? { city_name: division } : null}
-            getOptionLabel={(x) => x?.city_name}
-            getOptionValue={(x) => x?.city_id}
-            onChange={(selectedOption) => {
-              refetchZone();
-              setIsOpenDistrict(false);
-              setDistrict();
-              setDistrictId();
-              setDivisionID(selectedOption?.city_id);
-              setDivision(selectedOption?.city_name);
-              setTimeout(() => {
-                setIsOpenDistrict(true);
-              }, 100);
-            }}
-            menuPortalTarget={document.body}
-            styles={{
-              menuPortal: (base) => ({
-                ...base,
-                zIndex: 999,
-              }), // Set a high z-index
-            }}
-          ></Select>
-        </div>
-        {(isOpenDistrict || zoneLoading) && (
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
-              Thana
-            </label>
-            <Select
-              id="Zone"
-              name="Zone"
-              placeholder="Select a thana"
-              options={zoneData?.data}
-              value={district ? { zone_name: district } : null}
-              getOptionLabel={(x) => x?.zone_name}
-              getOptionValue={(x) => x?.zone_id}
-              onChange={(selectedOption) => {
-                setDistrict(selectedOption?.zone_name);
-                setDistrictId(selectedOption?.zone_id);
-              }}
-              menuPortalTarget={document.body}
-              styles={{
-                menuPortal: (base) => ({
-                  ...base,
-                  zIndex: 999,
-                }), // Set a high z-index
-              }}
-            ></Select>
+            ) : (
+              <PhoneInput
+                className="custom-phone-input-new w-full text-sm rounded-lg border border-gray-200 bg-white px-3 py-2"
+                placeholder="01XXXXXXXXX"
+                value={customer_phone}
+                defaultCountry="BD"
+                international
+                countryCallingCodeEditable={false}
+                countries={["BD"]}
+                onChange={setUserPhone}
+              />
+            )}
+            {errors.customer_phone && (
+              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                <span>⚠</span> {errors.customer_phone?.message}
+              </p>
+            )}
           </div>
-        )}
-        <div className=" lg:col-span-2 col-span-1">
-          <label htmlFor="" className="block text-xs font-medium text-gray-700">
-            Address
-          </label>
 
-          <input
-            {...register("address", {
-              required: "Fill the address",
-            })}
-            type="text"
-            defaultValue={userInfo?.data?.user_address}
-            placeholder="Your Address"
-            className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
-          />
-          {errors.address && (
-            <p className="text-red-600 text-sm ml-2">
-              {errors.address?.message}
-            </p>
-          )}
+          {/* District + Thana in 2 columns */}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                <FiMapPin size={11} />
+                District
+              </label>
+              <Select
+                placeholder="Select..."
+                options={cities}
+                value={division ? { city_name: division } : null}
+                getOptionLabel={(x) => x?.city_name}
+                getOptionValue={(x) => x?.city_id}
+                onChange={(opt) => {
+                  refetchZone();
+                  setIsOpenDistrict(false);
+                  setDistrict(undefined);
+                  setDistrictId(undefined);
+                  setDivisionID(opt?.city_id);
+                  setDivision(opt?.city_name);
+                  setTimeout(() => setIsOpenDistrict(true), 100);
+                }}
+                styles={selectStyles}
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
+              />
+            </div>
+            {(isOpenDistrict || zoneLoading) && (
+              <div>
+                <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                  <FiMapPin size={11} />
+                  Thana
+                </label>
+                <Select
+                  placeholder="Select..."
+                  options={zoneData?.data}
+                  value={district ? { zone_name: district } : null}
+                  getOptionLabel={(x) => x?.zone_name}
+                  getOptionValue={(x) => x?.zone_id}
+                  isLoading={zoneLoading}
+                  onChange={(opt) => {
+                    setDistrict(opt?.zone_name);
+                    setDistrictId(opt?.zone_id);
+                  }}
+                  styles={selectStyles}
+                  menuPortalTarget={
+                    typeof document !== "undefined" ? document.body : null
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Address */}
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              <FiHome size={11} />
+              Full Address
+            </label>
+            <input
+              {...register("address", { required: "Address is required" })}
+              type="text"
+              defaultValue={userInfo?.data?.user_address}
+              placeholder="House, road, area..."
+              className="w-full px-3 py-2.5 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 transition-all placeholder:text-gray-400"
+            />
+            {errors.address && (
+              <p className="text-red-500 text-xs mt-1 flex items-center gap-1">
+                <span>⚠</span> {errors.address?.message}
+              </p>
+            )}
+          </div>
         </div>
-        {/* {!userInfo?.data && (
-          <>
-            <div>
-              <label
-                htmlFor=""
-                className="block text-xs font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  {...register("user_password", {
-                    required: userInfo?.data ? false : "Password is required",
-                  })}
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Your Password"
-                  className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2 pr-10"
-                />
-                <span
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer "
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <FaEye /> : <FaEyeSlash />}
-                </span>
-              </div>
-              {errors.user_password && (
-                <p className="text-red-600 text-sm ml-2">
-                  {errors.user_password?.message}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label
-                htmlFor=""
-                className="block text-xs font-medium text-gray-700"
-              >
-                Confirm Password
-              </label>
-              <div className="relative">
-                <input
-                  {...register("confirm_password", {
-                    required: userInfo?.data
-                      ? false
-                      : "Please confirm your password",
-                    validate: (value) =>
-                      value === watch("user_password") ||
-                      "Passwords do not match",
-                  })}
-                  type={showConformPassword ? "text" : "password"}
-                  placeholder="Confirm Your Password"
-                  className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
-                />
-                <span
-                  className="absolute right-0 inset-y-0 flex items-center pr-3 cursor-pointer"
-                  onClick={() => setShowConformPassword(!showConformPassword)}
-                >
-                  {showConformPassword ? <FaEye /> : <FaEyeSlash />}
-                </span>
-              </div>
-              {errors.confirm_password && (
-                <p className="text-red-600 text-sm ml-2">
-                  {errors.confirm_password?.message}
-                </p>
-              )}
-            </div>
-          </>
-        )} */}
       </div>
     </div>
   );

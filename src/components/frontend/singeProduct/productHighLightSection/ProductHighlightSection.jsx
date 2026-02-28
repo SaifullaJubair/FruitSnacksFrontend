@@ -1,17 +1,36 @@
 "use client";
-import { Button } from "@/components/ui/button";
-import { EnglishDateWithTimeShort } from "@/components/utils/EnglishDateWithTimeShort";
 import Link from "next/link";
-import { FaHeart, FaRegHeart, FaStar } from "react-icons/fa";
+import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { HiMinus, HiOutlinePlus } from "react-icons/hi";
-import { BsCart } from "react-icons/bs";
-import { averageRatingStar } from "@/utils/average";
+import { BsCart, BsCartCheckFill } from "react-icons/bs";
 import { TbShoppingCartOff } from "react-icons/tb";
 import { GoGitCompare } from "react-icons/go";
+import { MdLocalShipping, MdVerified } from "react-icons/md";
+import { RiSecurePaymentLine } from "react-icons/ri";
+import { TbTruckReturn } from "react-icons/tb";
+import { IoTimeOutline } from "react-icons/io5";
+import { FiAward } from "react-icons/fi";
+import { EnglishDateWithTimeShort } from "@/components/utils/EnglishDateWithTimeShort";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { isHexColor } from "@/utils/helper";
 import { useState } from "react";
 import ChartModal from "./ChartModal";
+
+const StarRow = ({ rating }) => {
+  const r = parseFloat(rating);
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={`text-sm ${i <= Math.round(r) ? "text-amber-400" : "text-gray-200"}`}
+        >
+          ★
+        </span>
+      ))}
+    </div>
+  );
+};
 
 const ProductHighlightSection = ({
   product,
@@ -31,208 +50,185 @@ const ProductHighlightSection = ({
   handleAddToCompare,
   isCompare,
 }) => {
+  const { data: settingsData } = useGetSettingData();
+  const currencySymbol = settingsData?.data[0]?.currency_symbol;
+  const [showChart, setShowChart] = useState(false);
+  const [cartAnim, setCartAnim] = useState(false);
+
   const rating = parseFloat(product?.avarage_review_ratting || 0).toFixed(1);
 
-  const { data: settingsData } = useGetSettingData();
-  const [showChart, setShowChart] = useState(false);
-  const currencySymbol = settingsData?.data[0]?.currency_symbol;
+  // ✅ Discount percentage — based on actual lineThoughPrice vs productPrice
+  const discountPct =
+    lineThoughPrice && productPrice && lineThoughPrice > productPrice
+      ? Math.round(((lineThoughPrice - productPrice) / lineThoughPrice) * 100)
+      : 0;
+
+  const onCartClick = () => {
+    handleAddToCart();
+    setCartAnim(true);
+    setTimeout(() => setCartAnim(false), 1500);
+  };
+
   return (
-    <div>
-      <h2 className="font-semibold text-lg  md:text-2xl text-text-default max-w-screen-md">
-        {product?.product_name}{" "}
-        {/* {product?.unit && (
-          <small className="font-bold"> / ({product?.unit})</small>
-        )} */}
-      </h2>
+    <div className="space-y-3.5">
+      {/* Brand + Category */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {product?.brand_id?.brand_name && (
+          <span className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
+            {product.brand_id.brand_name}
+          </span>
+        )}
+        {product?.category_id?.category_slug && (
+          <Link
+            href={`/category/${product.category_id.category_slug}`}
+            className="text-[11px] text-primary hover:underline"
+          >
+            {product.category_id.category_name}
+          </Link>
+        )}
+        {product?.trending_product && (
+          <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <FiAward size={10} /> Trending
+          </span>
+        )}
+      </div>
 
-      {/* Heading section */}
-      {/* <section className=" flex items-center gap-1 mt-4 mb-3 text-sm ">
-        {averageRatingStar(rating)}
-        <span className="text-gray-500 mr-1">{product?.rating}</span>
-        <span className="text-gray-500 mr-1">
-          {" "}
-          {product?.total_review_ratting} Reviews |
-        </span>
-        <span className="text-gray-500 mr-2">
-          {" "}
-          {product?.total_order_count} Sold
-        </span>
-      </section> */}
+      {/* Name */}
+      <h1 className="text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+        {product?.product_name}
+      </h1>
 
-      {/* Limited Offer */}
+      {/* Rating + Orders */}
+      {(product?.avarage_review_ratting > 0 ||
+        product?.total_review_ratting > 0) && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <StarRow rating={rating} />
+          <span className="text-xs font-semibold text-gray-600">{rating}</span>
+          <span className="text-xs text-gray-400">
+            ({product?.total_review_ratting || 0} reviews)
+          </span>
+          {product?.total_order_count > 0 && (
+            <>
+              <span className="text-gray-200">|</span>
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <MdVerified size={11} className="text-blue-500" />
+                {product.total_order_count} sold
+              </span>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Flash Sale / Campaign */}
       {(product?.flash_sale_details || product?.campaign_details) && (
         <Link
           href={`/campaign/${product?.campaign_details?._id}`}
-          className="flex justify-between items-center bg-primary my-3 px-3 py-1.5"
+          className="flex items-center justify-between bg-gradient-to-r from-red-500 to-red-600 px-4 py-2.5 rounded-xl"
         >
-          {product?.flash_sale_details ? (
-            <>
-              <h3 className="text-white font-semibold">
-                {product?.flash_sale_details?.flash_sale_title}
-              </h3>
-              <p className="text-slate-100 text-xs">
-                {" "}
-                Ends:{" "}
-                {EnglishDateWithTimeShort(
-                  product?.flash_sale_details?.flash_sale_end_time
-                )}
-              </p>
-            </>
-          ) : (
-            <>
-              {" "}
-              <h3 className="text-white font-semibold">
-                {product?.campaign_details?.campaign_title}
-              </h3>
-              <p className="text-slate-100 text-xs ">
-                {" "}
-                Ends:{" "}
-                {EnglishDateWithTimeShort(
-                  product?.campaign_details?.campaign_end_date
-                )}
-              </p>
-            </>
-          )}
+          <div className="flex items-center gap-2">
+            <IoTimeOutline className="text-white shrink-0" size={16} />
+            <span className="text-white font-semibold text-xs">
+              {product?.flash_sale_details?.flash_sale_title ||
+                product?.campaign_details?.campaign_title}
+            </span>
+          </div>
+          <span className="text-white/80 text-[10px] shrink-0">
+            Ends:{" "}
+            {EnglishDateWithTimeShort(
+              product?.flash_sale_details?.flash_sale_end_time ||
+                product?.campaign_details?.campaign_end_date,
+            )}
+          </span>
         </Link>
       )}
 
-      {/* Price section */}
-
-      <div className="flex items-center flex-wrap gap-3 mt-5 mb-4">
-        <div>
-          <span className="text-lg text-text-default font-semibold">
+      {/* Price */}
+      <div className="flex items-baseline gap-3 flex-wrap">
+        <span className="text-2xl md:text-3xl font-black text-gray-900">
+          {currencySymbol}
+          {productPrice}
+        </span>
+        {lineThoughPrice && lineThoughPrice > productPrice && (
+          <span className="text-base line-through text-gray-400">
             {currencySymbol}
-            {productPrice}
+            {lineThoughPrice}
           </span>
-
-          {lineThoughPrice && (
-            <span className="text-sm ml-2 line-through text-gray-400">
-              {currencySymbol} {lineThoughPrice}
-            </span>
-          )}
-        </div>
+        )}
+        {discountPct > 0 && (
+          <span className="text-xs font-bold bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded-full">
+            Save {discountPct}%
+          </span>
+        )}
       </div>
 
-      {/* List  */}
-      <div className="flex items-center my-2 gap-x-4 gap-16 flex-wrap">
-        <p className="text-sm text-gray-600">
-          Type:{" "}
-          <Link
-            className="text-primary"
-            href={`/category/${product?.category_id?.category_slug}`}
-          >
-            {product?.category_id?.category_name}
-          </Link>
+      {/* Short Description */}
+      {product?.product_short_description && (
+        <p className="text-sm text-gray-500 leading-relaxed">
+          {product.product_short_description}
         </p>
-        <div className="text-sm text-gray-600">
-          {product?.brand_id?.brand_name && (
-            <p>
-              Brand:{" "}
-              <span className="text-primary">
-                {" "}
-                {product?.brand_id?.brand_name}
+      )}
+
+      <div className="border-t border-gray-100" />
+
+      {/* Variations */}
+      {product?.is_variation &&
+        product?.attributes_details?.map((attr, i) => (
+          <div key={i} className="space-y-2">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              {attr?.attribute_name}:{" "}
+              <span className="text-primary normal-case font-bold">
+                {selectedVariations[attr?.attribute_name]
+                  ?.attribute_value_name || `Select ${attr?.attribute_name}`}
               </span>
             </p>
-          )}
-        </div>
-      </div>
-      {product?.is_variation &&
-        product?.attributes_details?.map((item, i) => (
-          <section
-            className="flex flex-col my-1.5 gap-x-4 gap-y-2 flex-wrap max-w-sm"
-            key={i}
-          >
-            <div className="text-sm text-gray-600">
-              <div className="flex flex-col flex-wrap gap-1.5">
-                {/* Attribute name: Example: Color: RED, GREEN */}
-                <p className="flex items-center gap-1.5 ">
-                  {/* Attribute Name : Example: Color */}
-                  <span className="capitalize"> {item?.attribute_name}:</span>
-                  {/* Selected Attribute Value: Example: RED */}
-                  <span className="text-primary">
-                    {" "}
-                    {selectedVariations[item?.attribute_name]
-                      ?.attribute_value_name
-                      ? selectedVariations[item?.attribute_name]
-                          ?.attribute_value_name
-                      : "Select " + item?.attribute_name}
-                  </span>
-                </p>
-                {/* Attribute values: Example: RED, GREEN */}
-                <span className="flex items-center gap-y-1  flex-wrap ">
-                  {item?.attribute_values?.map((value) => (
-                    <div key={value?._id} className="relative group">
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleSelectVariation(value, item?.attribute_name)
-                        }
-                        size="sm"
-                        className={`px-2 py-1 ml-1.5   flex flex-wrap duration-200 border
-                            ${
-                              selectedVariations[item?.attribute_name]
-                                ?.attribute_value_name ===
-                              value?.attribute_value_name
-                                ? "text-white bg-primary"
-                                : " hover:bg-primary hover:text-white text-primary"
-                            } 
-                             ${
-                               isHexColor(value?.attribute_value_code)
-                                 ? `w-8 h-8 rounded-full text-transparent hover:text-transparent `
-                                 : ""
-                             } 
-                             ${
-                               isHexColor(value?.attribute_value_code) &&
-                               selectedVariations[item?.attribute_name]
-                                 ?.attribute_value_name ===
-                                 value?.attribute_value_name
-                                 ? "border border-primary "
-                                 : " hover:border-primary hover:border"
-                             } 
-                           `}
-                        style={{
-                          backgroundColor: isHexColor(
-                            value?.attribute_value_code
-                          )
-                            ? value?.attribute_value_code
-                            : "",
-                          // color:
-                          // border:
-                          //   selectedVariations[item?.attribute_name]
-                          //     ?.attribute_value_name ===
-                          //   value?.attribute_value_name
-                          //     ? "3px solid  #AA0144" // Ensure primary color when selected
-                          //     : isHexColor(value?.attribute_value_code)
-                          //     ? value?.attribute_value_code
-                          //     : "",
-                        }}
-                      >
-                        {!isHexColor(value?.attribute_value_code) &&
-                          value?.attribute_value_name}
-                      </button>
-                      {isHexColor(value?.attribute_value_code) && (
-                        <span className="absolute left-1/2 -translate-x-1/2 -top-7 px-2 py-1 text-xs text-white bg-gray-700 rounded opacity-0 group-hover:opacity-100 transition duration-200 whitespace-nowrap" >
-                          {value?.attribute_value_name ||
-                            value?.attribute_value_code}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </span>
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {attr?.attribute_values?.map((val) => {
+                const selected =
+                  selectedVariations[attr?.attribute_name]
+                    ?.attribute_value_name === val?.attribute_value_name;
+                const isColor = isHexColor(val?.attribute_value_code);
+                return (
+                  <div key={val?._id} className="relative group/tip">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleSelectVariation(val, attr?.attribute_name)
+                      }
+                      className={`transition-all duration-150
+                      ${
+                        isColor
+                          ? `w-8 h-8 rounded-full border-2 ${selected ? "ring-2 ring-primary ring-offset-2 border-white scale-110" : "border-gray-300 hover:scale-105"}`
+                          : `px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${selected ? "bg-primary text-white border-primary shadow-md" : "border-gray-200 text-gray-700 hover:border-primary hover:text-primary"}`
+                      }`}
+                      style={{
+                        backgroundColor: isColor
+                          ? val?.attribute_value_code
+                          : undefined,
+                      }}
+                    >
+                      {!isColor && val?.attribute_value_name}
+                    </button>
+                    {isColor && (
+                      <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10">
+                        {val?.attribute_value_name}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          </section>
+          </div>
         ))}
 
+      {/* Size Chart */}
       {product?.size_chart && (
         <>
-          {" "}
           <button
-            className="text-base mt-2 text-text-primary underline underline-offset-4 hover:text-blue-600"
-            onClick={() => setShowChart(!showChart)}
             type="button"
+            onClick={() => setShowChart(!showChart)}
+            className="text-xs text-primary underline underline-offset-4 hover:opacity-80"
           >
-            Size Chart
+            📏 Size Chart
           </button>
           {showChart && (
             <ChartModal
@@ -244,162 +240,161 @@ const ProductHighlightSection = ({
         </>
       )}
 
-      {product?.is_variation ? (
-        <>
-          {stock > 0 ? (
-            <p className=" text-gray-800 mt-6 ">
-              Stocks :{" "}
-              <span className="text-gray-800 font-bold text-[18px]">
-                {stock}
-              </span>
-            </p>
-          ) : (
-            <p className=" text-secondary font-semibold mt-6 ">Out Of Stock</p>
-          )}
-        </>
-      ) : (
-        <p className=" text-gray-800 mt-2 ">
-          Stocks :{" "}
-          <span className="text-gray-800 font-bold text-[18px]">
-            {product?.product_quantity}
-          </span>
-        </p>
-      )}
+      {/* Stock */}
+      <div className="flex items-center gap-2">
+        {stock > 0 ? (
+          <>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs text-emerald-700 font-semibold">
+              In Stock
+              {stock <= 10 && (
+                <span className="text-amber-600 ml-1.5">
+                  · Only {stock} left!
+                </span>
+              )}
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="w-2 h-2 rounded-full bg-red-500" />
+            <span className="text-xs text-red-600 font-semibold">
+              Out of Stock
+            </span>
+          </>
+        )}
+      </div>
 
-      {/* <p className=" text-gray-800 mt-4 ">Stocks Available</p> */}
-      <div>
-        <div className="flex items-center my-4  gap-2.5 flex-wrap ">
-          {/* <div className="flex">
+      {/* Qty + Wishlist + Compare */}
+      {stock > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Qty stepper */}
+          <div className="flex items-center rounded-xl overflow-hidden border border-gray-200 bg-white">
             <button
               type="button"
-              className="px-2 py-1.5  hover:bg-gray-200 bg-[#F2F2F2] border border-gray-200"
               onClick={handleDecrement}
+              disabled={quantity <= 1}
+              className="px-3 py-2.5 bg-gray-50 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <HiMinus className="text-gray-700" />
+              <HiMinus size={13} className="text-gray-700" />
             </button>
             <input
               type="number"
-              className="border border-gray-200 outline-primary text-gray-800  text-xs  no-spin-buttons text-center w-14 "
+              readOnly
               value={quantity}
-              onChange={(e) => {
-                const newQuantity = parseInt(e.target.value);
-                // Ensure the value is between 1 and the available stock
-                if (!isNaN(newQuantity)) {
-                  setQuantity(newQuantity);
-                  // setQuantity(Math.max(1, Math.min(newQuantity, maxQuantity)));
-                }
-              }}
+              className="w-12 text-center py-2.5 text-sm font-bold text-gray-800 outline-none no-spin-buttons"
             />
             <button
               type="button"
-              className="px-2 py-1.5  hover:bg-gray-200 bg-[#F2F2F2]  border border-gray-200"
               onClick={handleIncrement}
+              disabled={quantity >= stock}
+              className="px-3 py-2.5 bg-gray-50 hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
-              <HiOutlinePlus className="text-gray-700" />
+              <HiOutlinePlus size={13} className="text-gray-700" />
             </button>
-          </div> */}
+          </div>
 
-          {stock > 0 && (
-            <div className="flex">
-              <button
-                type="button"
-                className="px-2 py-1.5  hover:bg-gray-200 bg-[#F2F2F2] border border-gray-200"
-                onClick={handleDecrement}
-              >
-                <HiMinus className="text-gray-700" />
-              </button>
-              <input
-                type="number"
-                className="border border-gray-200 outline-primary text-gray-800  text-xs  no-spin-buttons text-center w-14 "
-                value={quantity}
-                onChange={(e) => {
-                  const newQuantity = parseInt(e.target.value);
-                  // Ensure the value is between 1 and the available stock
-                  if (!isNaN(newQuantity)) {
-                    setQuantity(
-                      Math.max(1, Math.min(newQuantity, maxQuantity))
-                    );
-                  }
-                }}
-              />
-              <button
-                type="button"
-                className="px-2 py-1.5  hover:bg-gray-200 bg-[#F2F2F2]  border border-gray-200"
-                onClick={handleIncrement}
-              >
-                <HiOutlinePlus className="text-gray-700" />
-              </button>
-            </div>
-          )}
+          {/* Wishlist */}
           <button
             type="button"
-            className={`text-xs px-2.5 py-2  
-        ${isWishlisted ? "bg-primary text-white" : "bg-gray-100  "} 
-        hover:opacity-90 transition-all duration-300 `}
             onClick={handleWishlist}
+            className={`p-2.5 rounded-xl border-2 transition-all duration-200 ${isWishlisted ? "bg-primary border-primary text-white shadow-md shadow-primary/20" : "border-gray-200 text-gray-400 hover:border-primary hover:text-primary"}`}
           >
-            {isWishlisted ? <FaHeart size={16} /> : <FaRegHeart size={16} />}
+            {isWishlisted ? <FaHeart size={15} /> : <FaRegHeart size={15} />}
+          </button>
+
+          {/* Compare */}
+          <button
+            type="button"
+            onClick={handleAddToCompare}
+            title="Add to Compare"
+            className={`p-2.5 rounded-xl border-2 transition-all duration-200 ${isCompare ? "bg-slate-700 border-slate-700 text-white" : "border-gray-200 text-gray-400 hover:border-slate-500 hover:text-slate-600"}`}
+          >
+            <GoGitCompare size={15} />
           </button>
         </div>
-      </div>
+      )}
 
-      <div className="hidden  md:flex items-center gap-2  ">
-        {/* <Button size="lg" type="button" onClick={handleAddToCart}>
-          {" "}
-          <BsCart />
-          <span className="text-sm font-normal">Add To Cart</span>
-        </Button> */}
-
+      {/* Add to Cart — Desktop */}
+      <div className="hidden md:block">
         {stock <= 0 ? (
-          <Button
-            size="lg"
+          <button
             type="button"
             disabled
-            variant="secondary"
-            className="opacity-50 w-full cursor-not-allowed "
+            className="w-full py-3 flex items-center justify-center gap-2 bg-gray-100 text-gray-400 cursor-not-allowed rounded-xl text-sm font-semibold"
           >
-            <TbShoppingCartOff />
-            <span className="text-sm font-normal">Add To Cart</span>
-          </Button>
-        ) : (
-          <Button size="lg" type="button" onClick={handleAddToCart}>
-            {" "}
-            <BsCart />
-            <span className="text-sm font-normal">Add To Cart</span>
-          </Button>
-        )}
-      </div>
-      <div className="md:hidden flex items-center gap-2 fixed bottom-[60px] z-10 w-full right-0 px-4">
-        {/* <button
-          size="lg"
-          type="button"
-          onClick={handleAddToCart}
-          className="w-full flex items-center justify-center gap-2 bg-black text-white shadow hover:bg-primary/90 py-3  "
-        >
-          <BsCart />
-          <span className="text-sm ">Add To Cart</span>
-        </button> */}
-
-        {stock <= 0 ? (
-          <Button
-            size="lg"
-            type="button"
-            disabled
-            variant="secondary"
-            className="opacity-50 w-full cursor-not-allowed "
-          >
-            <TbShoppingCartOff />
-            <span className="text-sm font-normal">Add To Cart</span>
-          </Button>
+            <TbShoppingCartOff size={17} /> Out of Stock
+          </button>
         ) : (
           <button
-            size="lg"
             type="button"
-            onClick={handleAddToCart}
-            className="w-full flex items-center justify-center gap-2 bg-black text-white shadow hover:bg-primary/90 py-3  "
+            onClick={onCartClick}
+            className="w-full py-3 flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 active:scale-[0.98]"
           >
-            <BsCart />
-            <span className="text-sm ">Add To Cart</span>
+            {cartAnim ? (
+              <>
+                <BsCartCheckFill size={17} /> Added!
+              </>
+            ) : (
+              <>
+                <BsCart size={17} /> Add to Cart
+              </>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* Trust badges */}
+      <div className="grid grid-cols-3 gap-2 pt-1 border-t border-gray-100">
+        {[
+          {
+            icon: <MdLocalShipping size={16} className="text-blue-600" />,
+            label: "Fast Delivery",
+            bg: "bg-blue-50",
+          },
+          {
+            icon: (
+              <RiSecurePaymentLine size={16} className="text-emerald-600" />
+            ),
+            label: "Cash on Delivery",
+            bg: "bg-emerald-50",
+          },
+          {
+            icon: <TbTruckReturn size={16} className="text-amber-600" />,
+            label: "Easy Return",
+            bg: "bg-amber-50",
+          },
+        ].map((b, i) => (
+          <div
+            key={i}
+            className={`flex flex-col items-center gap-1 p-2 ${b.bg} rounded-lg text-center`}
+          >
+            {b.icon}
+            <span className="text-[9px] font-semibold text-gray-600 leading-tight">
+              {b.label}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Mobile Fixed Bottom CTA */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 px-4 pb-safe pt-2 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-xl">
+        {stock <= 0 ? (
+          <button
+            type="button"
+            disabled
+            className="w-full py-3.5 flex items-center justify-center gap-2 bg-gray-200 text-gray-400 cursor-not-allowed rounded-2xl text-sm font-semibold"
+          >
+            <TbShoppingCartOff size={17} /> Out of Stock
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={onCartClick}
+            className="w-full py-3.5 flex items-center justify-center gap-2 bg-primary text-white rounded-2xl text-sm font-bold shadow-lg shadow-primary/30 active:scale-[0.98] transition-transform"
+          >
+            <BsCart size={17} />
+            Add to Cart · {currencySymbol}
+            {productPrice}
           </button>
         )}
       </div>

@@ -5,46 +5,44 @@ import ProductPhotoSelect from "./productDetails/ProductPhotoSelect";
 import ProductHighlightSection from "./productHighLightSection/ProductHighlightSection";
 import ProductReviewAccordion from "./productReviewAccordion/ProductReviewAccordion";
 import ProductDescription from "./productDescription/ProductDescription";
-import RightSideShoppingSection from "./rightSideShoppingSection/RightSideShoppingSection";
+import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
+import RightSideProductSummary from "./rightSideShoppingSection/RightSideProductSummary";
 import RecentProducts from "./sellerProduct/RecentProducts";
 import RelatedProducts from "./relatedProducts/RelatedProducts";
-import QnAAccordion from "./qnaAccordion/QnAAccordion";
+import MobileDeliveryInfoAccordion from "./rightSideShoppingSection/MobileDeliveryInfoAccordion";
+import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion";
 import { useEffect, useState, useRef } from "react";
 import { updateRecentProducts } from "@/utils/helper";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { calculatePrice, singleProductPrice } from "@/utils/helper";
-import DeliveryInformation from "../checkout/DeliveryInformation";
 import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
-import { districts } from "@/data/districts";
-import RightSideProductSummary from "./rightSideShoppingSection/RightSideProductSummary";
 import { BASE_URL } from "@/components/utils/baseURL";
-import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
 import { useRouter } from "next/navigation";
-import "react-phone-number-input/style.css";
-import PhoneInput, {
+import {
   formatPhoneNumber,
   isPossiblePhoneNumber,
   isValidPhoneNumber,
 } from "react-phone-number-input";
-import MobileDeliveryInfoAccordion from "./rightSideShoppingSection/MobileDeliveryInfoAccordion";
-import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion";
 import useGetZoneData from "@/components/lib/getZoneData";
+import "react-phone-number-input/style.css";
 
-// ✅ Meta Pixel
+// ✅ Meta Pixel — all events intact
 import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
 import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
 
+import { BsBoxSeam } from "react-icons/bs";
+
 const SingleProduct = ({ product }) => {
+  // Track recent products
   useEffect(() => {
-    if (product) {
-      updateRecentProducts(product);
-    }
+    if (product) updateRecentProducts(product);
   }, [product]);
 
+  // Meta Pixel hooks
   const {
     trackViewContent,
     trackAddToCart,
@@ -55,7 +53,7 @@ const SingleProduct = ({ product }) => {
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const initiateCheckoutFired = useRef(false);
 
-  // ✅ ViewContent — product page open হলে একবার fire
+  // ✅ ViewContent — fires once on product page load
   useEffect(() => {
     if (!product?._id) return;
     const eventId = generateEventId();
@@ -78,14 +76,14 @@ const SingleProduct = ({ product }) => {
     });
   }, [product?._id]);
 
+  // Form
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
   } = useForm();
-  const { data: settingData, isLoading: settingLoading } = useGetSettingData();
-  const [districtsData, setDistrictsData] = useState([]);
+  const { data: settingData } = useGetSettingData();
   const [loading, setLoading] = useState(false);
   const [isAccordionOpen, setIsAccordionOpen] = useState(true);
   const navigate = useRouter();
@@ -94,7 +92,7 @@ const SingleProduct = ({ product }) => {
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
 
-  // ✅ InitiateCheckout — phone input করলে একবার fire
+  // ✅ InitiateCheckout — fires once when phone input starts
   const handlePhoneChangeWithTracking = (value) => {
     setUserPhone(value);
     if (!initiateCheckoutFired.current && value) {
@@ -120,27 +118,30 @@ const SingleProduct = ({ product }) => {
       });
     }
   };
+
   useEffect(() => {
-    if (userInfo?.data?.user_phone) {
+    if (userInfo?.data?.user_phone)
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
-    }
   }, [userInfo?.data?.user_phone]);
 
+  // Location state
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
   const [district, setDistrict] = useState();
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
+
+  // Price/order state
   const [totalDiscount, setTotalDiscount] = useState(0);
   const [shopSubtotals, setShopSubtotals] = useState(0);
   const [shopTotal, setShopTotal] = useState(0);
   const [shopGrandTotals, setShopGrandTotals] = useState(0);
-  const [selectedVariations, setSelectedVariations] = useState({});
 
-  const [slug, setSlug] = useState("");
+  // Variation state
+  const [selectedVariations, setSelectedVariations] = useState({});
   const [variationProduct, setVariationProduct] = useState(null);
   const [stock, setStock] = useState(
-    product?.is_variation === true
+    product?.is_variation
       ? product?.variations?.[0]?.variation_quantity
       : product?.product_quantity,
   );
@@ -163,8 +164,11 @@ const SingleProduct = ({ product }) => {
     refetch: refetchZone,
   } = useGetZoneData(divisionID);
 
+  // Initial product setup
   useEffect(() => {
+    // ✅ singleProductPrice handles flash sale / campaign / variation / regular price
     setProductPrice(singleProductPrice(product));
+
     if (
       product?.variations?.[0]?.variation_discount_price ||
       product?.product_discount_price
@@ -173,125 +177,103 @@ const SingleProduct = ({ product }) => {
         product?.variations?.[0]?.variation_price || product?.product_price,
       );
     }
-    if (product?.is_variation === true) {
-      setSlug(product?.variations?.[0]?.variation_name);
+    if (product?.is_variation) {
       setVariationProduct(product?.variations?.[0]);
       setStock(product?.variations?.[0]?.variation_quantity);
     } else {
       setStock(product?.product_quantity);
     }
-
     if (product?.is_variation && product?.attributes_details) {
-      const initialVariations = {};
-      product?.attributes_details?.forEach((item) => {
-        if (item?.attribute_values?.length > 0) {
-          initialVariations[item?.attribute_name] = item?.attribute_values?.[0];
-        }
+      const initial = {};
+      product.attributes_details.forEach((item) => {
+        if (item?.attribute_values?.length > 0)
+          initial[item.attribute_name] = item.attribute_values[0];
       });
-      setSelectedVariations(initialVariations);
-      const initialSlug = generateSlug(initialVariations);
-      const initialVariationProduct = findVariationDetails(initialSlug);
-      setSlug(initialSlug);
-      setVariationProduct(initialVariationProduct);
+      setSelectedVariations(initial);
+      const slug = generateSlug(initial);
+      const found = findVariation(slug);
+      setVariationProduct(found);
     }
   }, [product]);
 
+  const generateSlug = (vars) =>
+    Object.values(vars)
+      .map((v) => v.attribute_value_name)
+      .join("-");
+  const findVariation = (slug) =>
+    product?.variations?.find((v) => v.variation_name === slug);
+
+  // ✅ Variation select — proper price recalculation
   const handleSelectVariation = (value, attributeName) => {
-    const newVariations = { ...selectedVariations, [attributeName]: value };
-    setSelectedVariations(newVariations);
-    const newSlug = generateSlug(newVariations);
-    const newVariationProduct = findVariationDetails(newSlug);
-    setSlug(newSlug);
-    setVariationProduct(newVariationProduct);
+    const newVars = { ...selectedVariations, [attributeName]: value };
+    setSelectedVariations(newVars);
+    const slug = generateSlug(newVars);
+    const found = findVariation(slug);
+    setVariationProduct(found || null);
 
-    if (newVariationProduct) {
-      setStock(newVariationProduct?.variation_quantity);
+    if (found) {
+      setStock(found.variation_quantity);
+      setQuantity(1);
 
-      let price = newVariationProduct?.variation_discount_price
-        ? newVariationProduct?.variation_discount_price
-        : newVariationProduct?.variation_price;
+      // Base price: discount price if exists, else regular price
+      let price = found.variation_discount_price || found.variation_price;
 
-      if (product?.flash_sale_details) {
-        const flashProduct = product.flash_sale_details.flash_sale_product;
-        const priceType = flashProduct?.flash_price_type;
-        const discountPrice = flashProduct?.flash_sale_product_price;
-        const originalPrice = price;
-        if (priceType) {
-          price = calculatePrice(originalPrice, discountPrice, priceType);
-        }
-        setLineThoughPrice(newVariationProduct?.variation_price);
+      if (product?.flash_sale_details?.flash_sale_product) {
+        const fp = product.flash_sale_details.flash_sale_product;
+        if (fp?.flash_price_type)
+          price = calculatePrice(
+            price,
+            fp.flash_sale_product_price,
+            fp.flash_price_type,
+          );
+        setLineThoughPrice(found.variation_price);
       } else if (product?.campaign_details?.campaign_product) {
-        const campaignProduct = product.campaign_details.campaign_product;
-        const priceType = campaignProduct?.campaign_price_type;
-        const discountPrice = campaignProduct?.campaign_product_price;
-        const originalPrice = price;
-        if (priceType) {
-          price = calculatePrice(originalPrice, discountPrice, priceType);
-        }
-        setLineThoughPrice(newVariationProduct?.variation_price);
+        const cp = product.campaign_details.campaign_product;
+        if (cp?.campaign_price_type)
+          price = calculatePrice(
+            price,
+            cp.campaign_product_price,
+            cp.campaign_price_type,
+          );
+        setLineThoughPrice(found.variation_price);
       } else {
-        if (newVariationProduct?.variation_discount_price === 0) {
-          setLineThoughPrice(null);
-        } else {
-          setLineThoughPrice(newVariationProduct?.variation_price);
-        }
+        // ✅ Only set lineThoughPrice if there IS a discount price (and it's > 0)
+        setLineThoughPrice(
+          found.variation_discount_price > 0 ? found.variation_price : null,
+        );
       }
       setProductPrice(price);
     }
   };
 
-  const generateSlug = (variations) => {
-    return Object.values(variations)
-      .map((value) => value.attribute_value_name)
-      .join("-");
-  };
-
-  const findVariationDetails = (slug) => {
-    return product?.variations?.find((v) => v.variation_name === slug);
-  };
-
   const handleIncrement = () => {
-    if (quantity < stock) {
-      setQuantity(quantity + 1);
-    } else {
-      toast.error("Stock not available");
-      return;
-    }
+    if (quantity < stock) setQuantity(quantity + 1);
+    else toast.error("Stock limit reached");
   };
-
   const handleDecrement = () => {
-    if (quantity > 1) {
-      setQuantity(quantity - 1);
-    }
+    if (quantity > 1) setQuantity(quantity - 1);
   };
   const maxQuantity = stock || product?.product_quantity || 1;
 
+  // ✅ Add to Cart
   const handleAddToCart = () => {
     const cartItem = {
       productId: product?._id,
-      quantity: quantity,
-      variation_product_id: variationProduct ? variationProduct?._id : null,
+      quantity,
+      variation_product_id: variationProduct?._id || null,
     };
-    const productID = cartProducts.find(
-      (cartItem) => cartItem?.productId === product?._id,
+    const inCart = cartProducts.some((item) =>
+      variationProduct
+        ? item.productId === product?._id &&
+          item.variation_product_id === variationProduct?._id
+        : item.productId === product?._id && !item.variation_product_id,
     );
-    if (variationProduct) {
-      const variationID = cartProducts.find(
-        (cartItem) => cartItem?.variation_product_id === variationProduct?._id,
-      );
-      if (productID && variationID) {
-        toast.error("Already is added cart", { autoClose: 1500 });
-        return;
-      }
-    } else if (productID) {
-      toast.error("Already is added cart", { autoClose: 1500 });
+    if (inCart) {
+      toast.error("Already in cart", { autoClose: 1500 });
       return;
     }
-
     dispatch(addToCart(cartItem));
-    toast.success("Successfully added to cart", { autoClose: 1500 });
-
-    // ✅ AddToCart Meta Pixel event
+    toast.success("Added to cart!", { autoClose: 1500 });
     const eventId = generateEventId();
     trackAddToCart(product, variationProduct, quantity, eventId);
     sendServerEvent({
@@ -313,57 +295,51 @@ const SingleProduct = ({ product }) => {
     });
   };
 
+  // Wishlist
   useEffect(() => {
     try {
-      const existingWishlist =
-        JSON.parse(localStorage.getItem("wishlist")) || [];
-      const existingCompare = JSON.parse(localStorage.getItem("compare")) || [];
-      const productExists = existingWishlist.some(
-        (item) =>
-          item.productId === product?._id &&
-          item.variation_product_id ===
-            (variationProduct ? variationProduct?._id : null),
+      const w = JSON.parse(localStorage.getItem("wishlist")) || [];
+      const c = JSON.parse(localStorage.getItem("compare")) || [];
+      setIsWishlisted(
+        w.some(
+          (i) =>
+            i.productId === product?._id &&
+            i.variation_product_id === (variationProduct?._id || null),
+        ),
       );
-      const productExistsCompare = existingCompare.some(
-        (item) =>
-          item.productId === product?._id &&
-          item.variation_product_id ===
-            (variationProduct ? variationProduct?._id : null),
+      setIsCompare(
+        c.some(
+          (i) =>
+            i.productId === product?._id &&
+            i.variation_product_id === (variationProduct?._id || null),
+        ),
       );
-      setIsWishlisted(productExists);
-      setIsCompare(productExistsCompare);
-    } catch (error) {
-      console.error("Error parsing wishlist from localStorage", error);
-    }
+    } catch (e) {}
   }, [product?._id, variationProduct?._id]);
 
+  // ✅ Wishlist with Meta Pixel
   const handleWishlist = () => {
-    const wishListItem = {
+    const item = {
       productId: product?._id,
-      variation_product_id: variationProduct ? variationProduct?._id : null,
+      variation_product_id: variationProduct?._id || null,
     };
-    let existingWishlist = [];
+    let list = [];
     try {
-      existingWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-    } catch (error) {
-      console.error("Error parsing wishlist from localStorage", error);
-    }
-    const productIndex = existingWishlist.findIndex(
-      (item) =>
-        item.productId === product?._id &&
-        item.variation_product_id ===
-          (variationProduct ? variationProduct?._id : null),
+      list = JSON.parse(localStorage.getItem("wishlist")) || [];
+    } catch (e) {}
+    const idx = list.findIndex(
+      (i) =>
+        i.productId === product?._id &&
+        i.variation_product_id === (variationProduct?._id || null),
     );
-    if (productIndex !== -1) {
-      existingWishlist.splice(productIndex, 1);
+    if (idx !== -1) {
+      list.splice(idx, 1);
       setIsWishlisted(false);
-      toast.error("Product removed from your wishlist", { autoClose: 1500 });
+      toast.error("Removed from wishlist", { autoClose: 1500 });
     } else {
-      existingWishlist.push(wishListItem);
+      list.push(item);
       setIsWishlisted(true);
-      toast.success("Product added to your wishlist", { autoClose: 1500 });
-
-      // ✅ AddToWishlist Meta Pixel event
+      toast.success("Added to wishlist", { autoClose: 1500 });
       const eventId = generateEventId();
       trackAddToWishlist(product, variationProduct, eventId);
       sendServerEvent({
@@ -383,71 +359,62 @@ const SingleProduct = ({ product }) => {
         },
       });
     }
-    localStorage.setItem("wishlist", JSON.stringify(existingWishlist));
+    localStorage.setItem("wishlist", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));
   };
 
   const handleAddToCompare = () => {
-    const compareItem = {
+    const item = {
       productId: product?._id,
-      variation_product_id: variationProduct ? variationProduct?._id : null,
+      variation_product_id: variationProduct?._id || null,
     };
-    let existingCompare = [];
+    let list = [];
     try {
-      existingCompare = JSON.parse(localStorage.getItem("compare")) || [];
-    } catch (error) {
-      console.error("Error parsing compare from localStorage", error);
-    }
-    const productIndex = existingCompare.findIndex(
-      (item) =>
-        item.productId === product?._id &&
-        item.variation_product_id ===
-          (variationProduct ? variationProduct?._id : null),
+      list = JSON.parse(localStorage.getItem("compare")) || [];
+    } catch (e) {}
+    const idx = list.findIndex(
+      (i) =>
+        i.productId === product?._id &&
+        i.variation_product_id === (variationProduct?._id || null),
     );
-    if (productIndex !== -1) {
-      existingCompare.splice(productIndex, 1);
+    if (idx !== -1) {
+      list.splice(idx, 1);
       setIsCompare(false);
-      toast.error("Product removed from your compare", { autoClose: 1500 });
+      toast.error("Removed from compare", { autoClose: 1500 });
     } else {
-      existingCompare.push(compareItem);
+      list.push(item);
       setIsCompare(true);
-      toast.success("Product added to your compare", { autoClose: 1500 });
+      toast.success("Added to compare", { autoClose: 1500 });
     }
-    localStorage.setItem("compare", JSON.stringify(existingCompare));
+    localStorage.setItem("compare", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));
   };
 
+  // ✅ Order summary calculations
   useEffect(() => {
     const subtotal =
-      (lineThoughPrice === null ? productPrice : lineThoughPrice) * quantity;
-    setShopSubtotals(subtotal);
+      (lineThoughPrice != null ? lineThoughPrice : productPrice) * quantity;
     const total = productPrice * quantity;
-    setShopTotal(total);
-    const discount = subtotal - total;
-    setTotalDiscount(discount);
-    const grandTotal = total + shippingCharge;
-    setShopGrandTotals(grandTotal);
+    setShopSubtotals(subtotal || 0);
+    setShopTotal(total || 0);
+    setTotalDiscount(subtotal - total || 0);
+    setShopGrandTotals(total + shippingCharge || 0);
   }, [productPrice, quantity, lineThoughPrice, shippingCharge]);
 
   useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      setIsAccordionOpen(true);
-    }
+    if (Object.keys(errors).length > 0) setIsAccordionOpen(true);
   }, [errors]);
 
+  // ✅ Order submit with Purchase Pixel event
   const handleOrderProduct = async (data) => {
-    if (userPhoneLogin == false) {
+    if (!userPhoneLogin) {
       if (customer_phone) {
-        const formatPhoneNumberValueCheck = formatPhoneNumber(customer_phone);
-        const isPossiblePhoneNumberValueCheck =
-          isPossiblePhoneNumber(customer_phone);
-        const isValidPhoneNumberValueCheck = isValidPhoneNumber(customer_phone);
         if (
-          !formatPhoneNumberValueCheck ||
-          !isPossiblePhoneNumberValueCheck ||
-          !isValidPhoneNumberValueCheck
+          !formatPhoneNumber(customer_phone) ||
+          !isPossiblePhoneNumber(customer_phone) ||
+          !isValidPhoneNumber(customer_phone)
         ) {
-          toast.error("Mobile number not valid !", {
+          toast.error("Mobile number is not valid!", {
             position: "top-center",
             autoClose: 2000,
           });
@@ -456,215 +423,245 @@ const SingleProduct = ({ product }) => {
       }
     }
     if (!customer_phone) {
-      toast.error("Phone is required !", {
+      toast.error("Phone is required!", {
         position: "top-center",
         autoClose: 2000,
       });
       return;
     }
+    if (!district || !division || !divisionID || !districtId) {
+      toast.error("Please select a City and Zone.");
+      return;
+    }
+
     const today =
       new Date().toISOString().split("T")[0] +
       " " +
       new Date().toLocaleTimeString();
-    if (!district || !division || !divisionID || !districtId)
-      return toast.error("Please select a City and Zone.");
-
-    // ✅ Purchase event_id — browser + server deduplication
     const purchaseEventId = generateEventId();
 
     const sendData = {
       order_status: "pending",
       pending_time: today,
       customer_id: userInfo?.data?._id || null,
-      customer_phone: customer_phone ? customer_phone : data?.customer_phone,
+      customer_phone: customer_phone || data?.customer_phone,
       billing_country: "Bangladesh",
-      billing_city: district || userInfo?.data?.user_district,
-      billing_state: division || userInfo?.data?.user_division,
+      billing_city: district,
+      billing_state: division,
       billing_address: data?.address,
       user_name: data?.customer_name,
-      need_user_create: userInfo?.data?.user_phone ? false : true,
+      need_user_create: !userInfo?.data?.user_phone,
       shipping_location:
         division === "Dhaka"
-          ? ` Inside Dhaka, ${settingData?.data[0]?.inside_dhaka_shipping_days} Days`
+          ? `Inside Dhaka, ${settingData?.data[0]?.inside_dhaka_shipping_days} Days`
           : `Outside Dhaka, ${settingData?.data[0]?.outside_dhaka_shipping_days} Days`,
-      sub_total_amount: shopTotal ? shopTotal : 0,
+      sub_total_amount: shopTotal || 0,
       discount_amount: totalDiscount || 0,
       shipping_cost: shippingCharge || 0,
-      grand_total_amount: shopGrandTotals ? shopGrandTotals : 0,
+      grand_total_amount: shopGrandTotals || 0,
       coupon_id: null,
       pathao_city_id: parseInt(divisionID),
       pathao_city_name: division,
       pathao_zone_id: parseInt(districtId),
       pathao_zone_name: district,
-      purchase_event_id: purchaseEventId, // ✅ server side deduplication
-      order_products: [product]?.map((item) => {
-        return {
-          product_id: item._id,
-          variation_id: variationProduct?._id || null,
-          product_main_price: lineThoughPrice ? lineThoughPrice : productPrice,
-          product_main_discount_price:
-            variationProduct?.variation_discount_price
-              ? variationProduct?.variation_discount_price
-              : product?.product_discount_price
-                ? product?.product_discount_price
-                : 0,
-          product_unit_price: productPrice,
-          product_unit_final_price: productPrice,
-          product_quantity: quantity,
-          product_grand_total_price: productPrice * quantity || 0,
-          campaign_id: item?.campaign_details?._id || null,
-        };
-      }),
+      purchase_event_id: purchaseEventId,
+      order_products: [product].map((item) => ({
+        product_id: item._id,
+        variation_id: variationProduct?._id || null,
+        // ✅ Correct price mapping:
+        product_main_price: lineThoughPrice || productPrice, // original price before discount
+        product_main_discount_price:
+          variationProduct?.variation_discount_price ||
+          product?.product_discount_price ||
+          0,
+        product_unit_price: productPrice,
+        product_unit_final_price: productPrice,
+        product_quantity: quantity,
+        product_grand_total_price: productPrice * quantity,
+        campaign_id: item?.campaign_details?._id || null,
+      })),
     };
 
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/order/single_order`, {
+      const res = await fetch(`${BASE_URL}/order/single_order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(sendData),
       });
-      const result = await response.json();
-
+      const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        // ✅ Browser side Purchase event
         trackPurchase(sendData, purchaseEventId);
-
-        toast.success(result?.message || "Order created successfully", {
+        toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,
         });
-
-        const orderId = result?.data?.order_id;
-        const isGuest = !userInfo?.data?._id;
         const params = new URLSearchParams();
-        if (orderId) params.set("order_id", orderId);
-        if (isGuest) params.set("guest", "true");
-
-        // await new Promise((r) => setTimeout(r, 300));
+        if (result?.data?.order_id)
+          params.set("order_id", result.data.order_id);
+        if (!userInfo?.data?._id) params.set("guest", "true");
         navigate.push(`/orders/order-success?${params.toString()}`);
-        // loading false করো না — overlay থাকবে redirect পর্যন্ত
       } else {
         toast.error(result?.message || "Something went wrong", {
           autoClose: 1000,
         });
         setLoading(false);
       }
-    } catch (error) {
-      console.error("Error posting data:", error);
+    } catch (e) {
+      console.error(e);
       setLoading(false);
     }
   };
 
   return (
-    <Contain>
-      <div className="bg-white p-2 sm:p-5 relative">
-        {/* ✅ Order submit overlay — empty page flash বন্ধ */}
-        {loading && (
-          <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-600 font-medium">Placing your order...</p>
-          </div>
-        )}
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Loading overlay */}
+      {loading && (
+        <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
+          <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="text-gray-800 font-bold text-lg">
+            Placing your order...
+          </p>
+          <p className="text-gray-500 text-sm">
+            Please don't close this window
+          </p>
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit(handleOrderProduct)}>
-          <div className="grid  grid-cols-1 sm:grid-cols-3 md:grid-cols-7 lg:grid-cols-7  xl:grid-cols-8 xl:gap-4">
-            <div className="xl:col-span-2 lg:col-span-2 md:col-span-2 sm:col-span-1  col-span-1 ">
-              <ProductPhotoSelect
-                product={product}
-                variationProduct={variationProduct}
-              />
+      <Contain>
+        <div className="py-4 md:py-6 space-y-5">
+          {/* ===== MAIN PRODUCT CARD ===== */}
+          <form onSubmit={handleSubmit(handleOrderProduct)}>
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-0">
+                {/* Col 1 — Images (lg: 4/12) */}
+                <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
+                  <ProductPhotoSelect
+                    product={product}
+                    variationProduct={variationProduct}
+                  />
+                </div>
+
+                {/* Col 2 — Product Info (lg: 4/12) */}
+                <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
+                  <ProductHighlightSection
+                    product={product}
+                    productPrice={productPrice}
+                    lineThoughPrice={lineThoughPrice}
+                    stock={stock}
+                    quantity={quantity}
+                    setQuantity={setQuantity}
+                    handleIncrement={handleIncrement}
+                    handleDecrement={handleDecrement}
+                    isWishlisted={isWishlisted}
+                    isCompare={isCompare}
+                    handleAddToCompare={handleAddToCompare}
+                    handleWishlist={handleWishlist}
+                    handleSelectVariation={handleSelectVariation}
+                    selectedVariations={selectedVariations}
+                    maxQuantity={maxQuantity}
+                    handleAddToCart={handleAddToCart}
+                  />
+                </div>
+
+                {/* Col 3 — Order Form (lg: 4/12) */}
+                <div className="lg:col-span-4 p-4 md:p-5 bg-gray-50/40">
+                  {/* Header */}
+                  <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-100">
+                    <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm shadow-primary/20">
+                      <BsBoxSeam className="text-white" size={16} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-800">
+                        Order Now
+                      </p>
+                      <p className="text-[10px] text-gray-400">
+                        Cash on Delivery · Fast Shipping
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <RightSideDeliveryInfo
+                      register={register}
+                      userInfo={userInfo}
+                      errors={errors}
+                      setDivision={setDivision}
+                      setDistrictId={setDistrictId}
+                      setDivisionID={setDivisionID}
+                      division={division}
+                      district={district}
+                      setDistrict={setDistrict}
+                      setIsOpenDistrict={setIsOpenDistrict}
+                      isOpenDistrict={isOpenDistrict}
+                      watch={watch}
+                      loading={userGetLoading}
+                      isAccordionOpen={isAccordionOpen}
+                      setIsAccordionOpen={setIsAccordionOpen}
+                      customer_phone={customer_phone}
+                      setUserPhone={handlePhoneChangeWithTracking}
+                      setUserPhoneLogin={setUserPhoneLogin}
+                      refetchZone={refetchZone}
+                      zoneLoading={zoneLoading}
+                      zoneData={zoneData}
+                    />
+                    <RightSideProductSummary
+                      totalDiscount={totalDiscount}
+                      shippingCharge={shippingCharge}
+                      shopSubtotals={shopSubtotals}
+                      shopGrandTotals={shopGrandTotals}
+                      division={division}
+                      loading={loading}
+                      shopTotal={shopTotal}
+                      stock={stock}
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
+
+          {/* ===== DESCRIPTION / REVIEWS / POLICY + RECENT PRODUCTS ===== */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            {/* Left: Accordion sections */}
+            <div className="lg:col-span-2">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
+                <ProductDescription product={product} />
+                <ProductReviewAccordion product={product} />
+                <MobileDeliveryInfoAccordion
+                  product={product}
+                  settingData={settingData}
+                />
+                <ReturnPolicyAccordion />
+              </div>
             </div>
 
-            {/* Name price and buy add to cart section  */}
-            <div className="lg:col-span-3 md:col-span-3 sm:col-span-2 col-span-1 px-4 xl:col-span-4 ">
-              <ProductHighlightSection
-                product={product}
-                productPrice={productPrice}
-                lineThoughPrice={lineThoughPrice}
-                stock={stock}
-                quantity={quantity}
-                setQuantity={setQuantity}
-                handleIncrement={handleIncrement}
-                handleDecrement={handleDecrement}
-                isWishlisted={isWishlisted}
-                isCompare={isCompare}
-                handleAddToCompare={handleAddToCompare}
-                handleWishlist={handleWishlist}
-                handleSelectVariation={handleSelectVariation}
-                selectedVariations={selectedVariations}
-                maxQuantity={maxQuantity}
-                handleAddToCart={handleAddToCart}
-              />
-            </div>
-
-            {/*--------- right sidebar -------- */}
-            <div className="lg:col-span-2 md:col-span-2 sm:col-span-3  col-span-1 ">
-              <RightSideDeliveryInfo
-                register={register}
-                userInfo={userInfo}
-                errors={errors}
-                setDivision={setDivision}
-                setDistrictId={setDistrictId}
-                setDivisionID={setDivisionID}
-                division={division}
-                district={district}
-                setDistrict={setDistrict}
-                setIsOpenDistrict={setIsOpenDistrict}
-                isOpenDistrict={isOpenDistrict}
-                districtsData={districtsData}
-                watch={watch}
-                loading={userGetLoading}
-                isAccordionOpen={isAccordionOpen}
-                setIsAccordionOpen={setIsAccordionOpen}
-                customer_phone={customer_phone}
-                setUserPhone={handlePhoneChangeWithTracking}
-                setUserPhoneLogin={setUserPhoneLogin}
-                refetchZone={refetchZone}
-                zoneLoading={zoneLoading}
-                zoneData={zoneData}
-              />
-              <RightSideProductSummary
-                totalDiscount={totalDiscount}
-                shippingCharge={shippingCharge}
-                shopSubtotals={shopSubtotals}
-                shopGrandTotals={shopGrandTotals}
-                division={division}
-                loading={loading}
-                shopTotal={shopTotal}
-                stock={stock}
-              />
-              {/* <RightSideShoppingSection
-                product={product}
-                settingData={settingData}
-              /> */}
+            {/* Right: Recently Viewed */}
+            <div className="lg:col-span-1">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-4">
+                <RecentProducts
+                  productId={product?._id}
+                  product_slug={product?.product_slug}
+                />
+              </div>
             </div>
           </div>
-        </form>
 
-        <div className="grid lg:grid-cols-7 md:grid-5 grid-cols-1 gap-2 my-10">
-          <div className="lg:col-span-5 md:col-span-3 col-span-1">
-            <ProductDescription product={product} />
-            <ProductReviewAccordion product={product} />
-            <MobileDeliveryInfoAccordion
-              product={product}
-              settingData={settingData}
-            />
-            <ReturnPolicyAccordion />
-          </div>
-          <div className="lg:col-span-2 md:col-span-2 col-span-1">
-            <RecentProducts
-              productId={product?._id}
-              product_slug={product?.product_slug}
-            />
+          {/* ===== RELATED PRODUCTS ===== */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
+            <div className="flex items-center gap-3 mb-5">
+              <div className="w-1 h-6 bg-primary rounded-full" />
+              <h2 className="text-base font-bold text-gray-800">
+                Related Products
+              </h2>
+            </div>
+            <RelatedProducts product_slug={product?.product_slug} />
           </div>
         </div>
-      </div>
+      </Contain>
 
-      <div className=" mt-16 mb-4  bg-white p-4">
-        <p className="text-primary text-lg font-bold mb-4">RELATED PRODUCT</p>
-        <RelatedProducts product_slug={product?.product_slug} />
-      </div>
-    </Contain>
+      {/* Mobile bottom padding for fixed CTA */}
+      <div className="h-20 md:h-0" />
+    </div>
   );
 };
 

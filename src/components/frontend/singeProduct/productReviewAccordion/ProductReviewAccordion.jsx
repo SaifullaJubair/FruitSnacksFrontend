@@ -1,139 +1,175 @@
 "use client";
-
 import { useState } from "react";
-import { FaChevronDown, FaChevronUp, FaRegStar, FaStar } from "react-icons/fa";
+import { FaStar, FaRegStar, FaStarHalfAlt } from "react-icons/fa";
+import { FiChevronDown, FiMessageSquare } from "react-icons/fi";
 import Skeleton from "react-loading-skeleton";
 import "react-loading-skeleton/dist/skeleton.css";
 import ReviewAndReply from "./ReviewAndReply";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useQuery } from "@tanstack/react-query";
 import PaginationWithPageBtn from "@/components/common/paginationWithPageBtn/PaginationWithPageBtn";
-import { averageRatingStar } from "@/utils/average";
+
+// Star renderer
+const StarRating = ({ rating, size = 14 }) => {
+  const full = Math.floor(rating);
+  const half = rating % 1 >= 0.5;
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className="text-amber-400">
+          {i <= full ? (
+            <FaStar size={size} />
+          ) : half && i === full + 1 ? (
+            <FaStarHalfAlt size={size} />
+          ) : (
+            <FaRegStar size={size} className="text-gray-300" />
+          )}
+        </span>
+      ))}
+    </div>
+  );
+};
+
+// Rating bar
+const RatingBar = ({ label, count, total }) => {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-12 text-right text-gray-500">{label}</span>
+      <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-amber-400 rounded-full transition-all duration-500"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className="w-6 text-gray-400">{count}</span>
+    </div>
+  );
+};
 
 const ProductReviewAccordion = ({ product }) => {
   const productId = product?._id;
   const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(5);
+  const [limit] = useState(5);
+  const [open, setOpen] = useState(false);
 
-  // Fetch product reviews using React Query
-  const { data: reviewsData = [], isLoading: isLoadingReviews } = useQuery({
+  const { data: reviewsData, isLoading } = useQuery({
     queryKey: [`/api/v1/review/${productId}?page=${page}&limit=${limit}`],
     queryFn: async () => {
       if (!productId) return [];
-      try {
-        const res = await fetch(
-          `${BASE_URL}/review/${productId}?page=${page}&limit=${limit}`,
-          {
-            credentials: "include",
-          }
-        );
-
-        if (!res.ok) {
-          const errorData = await res.text();
-          throw new Error(
-            `Error: ${res.status} ${res.statusText} - ${errorData}`
-          );
-        }
-
-        const data = await res.json();
-        return data;
-      } catch (error) {
-        console.error("Fetch error:", error);
-        throw error;
-      }
+      const res = await fetch(
+        `${BASE_URL}/review/${productId}?page=${page}&limit=${limit}`,
+        { credentials: "include" },
+      );
+      if (!res.ok) throw new Error("Failed to fetch reviews");
+      return res.json();
     },
     enabled: !!productId,
   });
 
   const rating = parseFloat(product?.avarage_review_ratting || 0).toFixed(1);
-  const [reviewsOpen, setReviewsOpen] = useState(false);
+  const totalReviews =
+    reviewsData?.totalData || product?.total_review_ratting || 0;
 
   return (
-    <div className="my-4">
-      <div className="border-y  ">
-        {/* Accordion Header */}
-        <div
-          className=" px-3 flex items-center justify-between py-2 cursor-pointer"
-          onClick={() => setReviewsOpen(!reviewsOpen)}
-        >
-          <p className="flex items-center font-semibold text-gray-700">
-            {/* <span className="text-[20px] mr-2">
-              <FaRegStar className="text-[18px] text-primary" />
-            </span>{" "} */}
-            Reviews
-          </p>
-          {reviewsOpen ? (
-            <FaChevronUp className="text-[20px] font-light text-gray-600" />
-          ) : (
-            <FaChevronDown className="text-[20px] font-light text-gray-600" />
+    <div className="border-b border-gray-100 last:border-b-0">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50/80 transition-colors text-left group"
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${open ? "bg-primary text-white" : "bg-gray-100 text-gray-500 group-hover:bg-gray-200"}`}
+          >
+            <FiMessageSquare size={13} />
+          </div>
+          <span
+            className={`text-sm font-semibold transition-colors ${open ? "text-primary" : "text-gray-700"}`}
+          >
+            Customer Reviews
+          </span>
+          {totalReviews > 0 && (
+            <span className="bg-amber-50 text-amber-700 text-[10px] font-semibold px-2 py-0.5 rounded-full border border-amber-200">
+              ★ {rating} · {totalReviews}
+            </span>
           )}
         </div>
-
-        {/* Accordion Body */}
         <div
-          className={`grid overflow-hidden transition-all duration-500 ease-in-out ${
-            reviewsOpen
-              ? "grid-rows-[1fr] opacity-100"
-              : "grid-rows-[0fr] opacity-0"
-          }`}
+          className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${open ? "bg-primary/10 rotate-180" : "bg-gray-100"}`}
         >
-          <div className="overflow-hidden">
-            <div className="p-6">
-              {isLoadingReviews ? (
-                // Show Skeleton while loading
-                <div>
-                  <Skeleton height={20} width={200} className="mb-2" />
-                  <Skeleton height={30} width={100} className="mb-2" />
-                  <div className="flex gap-1">
-                    <Skeleton width={24} height={24} circle />
-                    <Skeleton width={24} height={24} circle />
-                    <Skeleton width={24} height={24} circle />
-                    <Skeleton width={24} height={24} circle />
-                    <Skeleton width={24} height={24} circle />
-                  </div>
-                  <Skeleton height={15} width={250} className="mt-2" />
-                  <Skeleton height={50} className="mt-4" />
-                  <Skeleton height={50} className="mt-2" />
-                  <Skeleton height={50} className="mt-2" />
-                </div>
-              ) : (
-                // Show actual content when loaded
-                <>
-                  <p className="text-gray-700 mb-2 text-sm font-semibold">
-                    Customer Reviews ({reviewsData?.totalData || 0} )
-                  </p>
+          <FiChevronDown
+            size={13}
+            className={open ? "text-primary" : "text-gray-500"}
+          />
+        </div>
+      </button>
 
-                  <div className="flex flex-wrap w-full">
-                    <div className="w-full md:w-1/2">
-                      <h1 className="py-1.5">{rating} / 5</h1>
-                      <div className="flex items-center gap-1 md:text-3xl sm:text-2xl text-xl">
-                        {averageRatingStar(rating)}
-                      </div>
-                      <p className="text-sm my-2 text-gray-500">
-                        All reviews come from verified purchasers
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <p className="border-y pl-1 py-2 text-sm font-semibold text-gray-900">
-                      Product Reviews
-                    </p>
-                    <ReviewAndReply reviewsData={reviewsData} />
-                    {reviewsData?.totalData > limit && (
-                      <PaginationWithPageBtn
-                        page={page}
-                        setPage={setPage}
-                        rows={limit}
-                        setRows={setLimit}
-                        totalData={reviewsData?.totalData}
-                      />
-                    )}
-                  </div>
-                </>
-              )}
+      <div
+        className={`overflow-hidden transition-all duration-400 ease-in-out ${open ? "max-h-[3000px] opacity-100" : "max-h-0 opacity-0"}`}
+      >
+        <div className="px-5 pb-5">
+          {isLoading ? (
+            <div className="space-y-2">
+              <Skeleton height={60} />
+              <Skeleton height={60} />
+              <Skeleton height={60} />
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Summary */}
+              <div className="flex gap-6 items-center py-4 bg-amber-50/50 rounded-xl px-4 mb-5 border border-amber-100">
+                <div className="text-center shrink-0">
+                  <div className="text-4xl font-black text-gray-800">
+                    {rating}
+                  </div>
+                  <StarRating rating={parseFloat(rating)} size={12} />
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    {totalReviews} reviews
+                  </p>
+                </div>
+                <div className="flex-1 space-y-1">
+                  {[5, 4, 3, 2, 1].map((star) => {
+                    const count =
+                      reviewsData?.data?.filter(
+                        (r) => Math.round(r.review_rating) === star,
+                      )?.length || 0;
+                    return (
+                      <RatingBar
+                        key={star}
+                        label={`${star} ★`}
+                        count={count}
+                        total={reviewsData?.data?.length || 1}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Review list */}
+              {reviewsData?.data?.length > 0 ? (
+                <>
+                  <ReviewAndReply reviewsData={reviewsData} />
+                  {reviewsData?.totalData > limit && (
+                    <PaginationWithPageBtn
+                      page={page}
+                      setPage={setPage}
+                      rows={limit}
+                      totalData={reviewsData?.totalData}
+                    />
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8 text-gray-400">
+                  <FiMessageSquare
+                    size={32}
+                    className="mx-auto mb-2 opacity-30"
+                  />
+                  <p className="text-sm">No reviews yet. Be the first!</p>
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
