@@ -22,13 +22,6 @@ import {
   FaMoneyBillWave,
   FaTag,
   FaShippingFast,
-  FaStore,
-  FaBoxes,
-  FaRoad,
-  FaHourglassHalf,
-  FaCheckDouble,
-  FaExclamationTriangle,
-  FaGlobe,
 } from "react-icons/fa";
 import {
   FiPackage,
@@ -36,12 +29,9 @@ import {
   FiCheckCircle,
   FiClock,
   FiXCircle,
-  FiAlertCircle,
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 
-// Status configurations
 const STATUS_LABEL = {
   in_review: "In Review",
   pending: "Pickup Pending",
@@ -68,64 +58,6 @@ const STATUS_GRADIENT = {
   unknown: "from-gray-400 to-gray-500",
   processing: "from-blue-400 to-indigo-500",
   shipped: "from-cyan-500 to-blue-500",
-};
-
-// Courier status configurations
-const COURIER_STATUS_CONFIG = {
-  steadfast: {
-    label: {
-      in_review: "In Review",
-      pending: "Pickup Pending",
-      hold: "On Hold",
-      delivered: "Delivered",
-      partial_delivered: "Partially Delivered",
-      cancelled: "Cancelled",
-      delivered_approval_pending: "Delivery Pending",
-      partial_delivered_approval_pending: "Partial Delivery Pending",
-      cancelled_approval_pending: "Cancellation Pending",
-      unknown_approval_pending: "Unknown — Pending",
-      unknown: "Unknown",
-    },
-    color: {
-      delivered: "bg-emerald-100 text-emerald-700",
-      partial_delivered: "bg-amber-100 text-amber-700",
-      cancelled: "bg-red-100 text-red-700",
-      in_review: "bg-blue-100 text-blue-700",
-      pending: "bg-orange-100 text-orange-700",
-      hold: "bg-purple-100 text-purple-700",
-      unknown: "bg-gray-100 text-gray-500",
-    },
-  },
-  pathao: {
-    label: {
-      Delivered: "Delivered",
-      "Partial Delivery": "Partial Delivery",
-      Cancelled: "Cancelled",
-      "In Transit": "In Transit",
-      "Out for Delivery": "Out for Delivery",
-      Return: "Return",
-      "Delivery Failed": "Delivery Failed",
-      "On Hold": "On Hold",
-      "Pickup Requested": "Pickup Requested",
-      "Pickup Scheduled": "Pickup Scheduled",
-      "Picked Up": "Picked Up",
-      "Arrived at Hub": "Arrived at Hub",
-    },
-    color: {
-      Delivered: "bg-emerald-100 text-emerald-700",
-      "Partial Delivery": "bg-amber-100 text-amber-700",
-      Cancelled: "bg-red-100 text-red-700",
-      "In Transit": "bg-purple-100 text-purple-700",
-      "Out for Delivery": "bg-orange-100 text-orange-700",
-      Return: "bg-red-50 text-red-500",
-      "Delivery Failed": "bg-red-50 text-red-500",
-      "On Hold": "bg-purple-50 text-purple-500",
-      "Pickup Requested": "bg-blue-100 text-blue-700",
-      "Pickup Scheduled": "bg-blue-100 text-blue-700",
-      "Picked Up": "bg-indigo-100 text-indigo-700",
-      "Arrived at Hub": "bg-indigo-100 text-indigo-700",
-    },
-  },
 };
 
 const TimelineStep = ({ label, time, icon, isLast = false }) => {
@@ -181,30 +113,13 @@ const TrackingCard = ({ title, children, icon, className = "" }) => (
   </motion.div>
 );
 
-const StatusBadge = ({ status, size = "md", type = "order" }) => {
+const StatusBadge = ({ status, size = "md" }) => {
   const sizeClasses = {
     sm: "px-2 py-1 text-xs",
     md: "px-3 py-1.5 text-sm",
     lg: "px-4 py-2 text-base",
   };
 
-  // For courier statuses
-  if (type === "courier") {
-    return (
-      <motion.span
-        initial={{ scale: 0.9 }}
-        animate={{ scale: 1 }}
-        className={`inline-block rounded-full font-medium ${sizeClasses[size]} ${
-          COURIER_STATUS_CONFIG[type]?.color[status] ||
-          "bg-gray-100 text-gray-700"
-        }`}
-      >
-        {COURIER_STATUS_CONFIG[type]?.label[status] || status}
-      </motion.span>
-    );
-  }
-
-  // For order statuses
   return (
     <motion.span
       initial={{ scale: 0.9 }}
@@ -219,134 +134,13 @@ const StatusBadge = ({ status, size = "md", type = "order" }) => {
   );
 };
 
-const CourierTrackingCard = ({ order }) => {
-  const isSteadfast = order?.courier_type === "steadfast";
-  const isPathao = order?.courier_type === "pathao";
-
-  if (!isSteadfast && !isPathao) return null;
-
-  const getCourierIcon = () => {
-    if (isSteadfast) return <FaTruck className="text-orange-500" />;
-    if (isPathao) return <FaRoad className="text-blue-500" />;
-    return <FaTruck />;
-  };
-
-  const getCourierColor = () => {
-    if (isSteadfast) return "orange";
-    if (isPathao) return "blue";
-    return "primary";
-  };
-
-  const getTrackingUrl = () => {
-    if (isSteadfast && order?.steadfast_tracking_code) {
-      return `https://steadfast.com.bd/t/${order?.steadfast_tracking_code}`;
-    }
-    if (isPathao && order?.pathao_tracking_code) {
-      return `https://pathao.com/track/${order?.pathao_tracking_code}`;
-    }
-    return null;
-  };
-
-  const color = getCourierColor();
-  const trackingUrl = getTrackingUrl();
-
-  return (
-    <motion.section
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className={`bg-gradient-to-r from-${color}-50 to-amber-50 rounded-2xl shadow-xl p-6 border-l-4 border-${color}-400`}
-    >
-      <div className="flex items-center gap-3 mb-6">
-        <div className={`p-3 bg-${color}-500 rounded-xl text-white`}>
-          {getCourierIcon()}
-        </div>
-        <h3 className="font-bold text-gray-800 text-lg">
-          Courier Tracking -{" "}
-          {order?.courier_type?.charAt(0).toUpperCase() +
-            order?.courier_type?.slice(1)}
-        </h3>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white/60 backdrop-blur rounded-xl p-4">
-          <p className="text-xs text-gray-500 mb-2">Current Status</p>
-          <StatusBadge
-            status={
-              isSteadfast ? order?.steadfast_status : order?.pathao_status
-            }
-            type="courier"
-            size="md"
-          />
-        </div>
-
-        <div className="bg-white/60 backdrop-blur rounded-xl p-4">
-          <p className="text-xs text-gray-500 mb-2">Consignment ID</p>
-          <p className="font-mono font-bold text-gray-800 text-lg">
-            {isSteadfast
-              ? order?.steadfast_consignment_id
-              : order?.pathao_consignment_id || "-"}
-          </p>
-        </div>
-
-        <div className="bg-white/60 backdrop-blur rounded-xl p-4">
-          <p className="text-xs text-gray-500 mb-2">Tracking Code</p>
-          <p className="font-mono font-bold text-gray-800 text-lg break-all">
-            {isSteadfast
-              ? order?.steadfast_tracking_code
-              : order?.pathao_tracking_code || "-"}
-          </p>
-        </div>
-      </div>
-
-      {/* Pathao specific delivery info */}
-      {isPathao && order?.pathao_delivery_fee && (
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div className="bg-blue-50 rounded-lg p-3">
-            <p className="text-xs text-blue-600 mb-1">Delivery Fee</p>
-            <p className="font-medium text-gray-800">
-              ৳{order.pathao_delivery_fee}
-            </p>
-          </div>
-          {order?.pathao_delivery_time && (
-            <div className="bg-blue-50 rounded-lg p-3">
-              <p className="text-xs text-blue-600 mb-1">Est. Delivery</p>
-              <p className="font-medium text-gray-800">
-                {order.pathao_delivery_time}
-              </p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {trackingUrl && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mt-4 flex justify-end"
-        >
-          <motion.a
-            whileHover={{ x: 5 }}
-            href={trackingUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={`inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg text-${color}-600 hover:text-${color}-700 font-medium shadow-sm`}
-          >
-            Track on{" "}
-            {order?.courier_type?.charAt(0).toUpperCase() +
-              order?.courier_type?.slice(1)}{" "}
-            <FaExternalLinkAlt size={12} />
-          </motion.a>
-        </motion.div>
-      )}
-    </motion.section>
-  );
-};
-
 const MyOrderTracking = ({ order, productOrder }) => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [expandedSections, setExpandedSections] = useState({
     summary: true,
   });
+
+  const isSteadfast = order?.courier_type === "steadfast";
 
   useEffect(() => {
     const total = productOrder?.reduce(
@@ -363,11 +157,13 @@ const MyOrderTracking = ({ order, productOrder }) => {
     }));
   };
 
+  // Format date for display
   const formatOrderDate = (dateString) => {
     if (!dateString) return "N/A";
     return EnglishDateWithTimeShort(dateString);
   };
 
+  // Get shipping location display
   const getShippingLocation = () => {
     if (order?.pathao_city_name && order?.pathao_zone_name) {
       return `${order.pathao_zone_name}, ${order.pathao_city_name}`;
@@ -375,7 +171,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
     return order?.shipping_location || "Standard Delivery";
   };
 
-  // Hero Section
+  // Hero Section with Order Status
   const HeroSection = () => (
     <motion.div
       initial={{ opacity: 0, y: -20 }}
@@ -410,75 +206,70 @@ const MyOrderTracking = ({ order, productOrder }) => {
     </motion.div>
   );
 
-  // Delivery Address Card
+  // Delivery Address Card with actual data
   const DeliveryAddress = () => (
-    <TrackingCard title="Delivery Address" icon={<FaMapMarkerAlt size={18} />}>
+    <TrackingCard title="Delivery Address" icon={<FaMapMarkerAlt />}>
       <div className="space-y-4">
         <div className="flex items-start gap-3">
-          <FaUser className="text-gray-400 mt-1 flex-shrink-0" />
+          <FaUser className="text-gray-400 mt-1" />
           <div>
             <p className="font-medium text-gray-800">
               {order?.customer_id?.user_name || "Customer"}
+            </p>
+            <p className="text-sm text-gray-500">
+              {order?.billing_address || "No address provided"}
             </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="col-span-2">
-            <div className="flex items-center gap-2">
-              <FaPhone className="text-gray-400 flex-shrink-0" size={14} />
-              <span className="text-sm text-gray-600">
-                {order?.customer_phone || order?.customer_id?.user_phone}
-              </span>
-            </div>
+          <div className="flex items-center gap-2">
+            <FaPhone className="text-gray-400" />
+            <span className="text-sm text-gray-600">
+              {order?.customer_phone || order?.customer_id?.user_phone}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <FaMapPin className="text-gray-400 flex-shrink-0" size={14} />
-            <div>
-              <span className="text-[10px] text-gray-400 block leading-tight">
-                District
-              </span>
-              <span className="text-sm text-gray-600">
-                {order?.billing_state || "N/A"}
-              </span>
-            </div>
+            <FaCity className="text-gray-400" />
+            <span className="text-sm text-gray-600">
+              {order?.billing_city || "N/A"}
+            </span>
           </div>
 
           <div className="flex items-center gap-2">
-            <FaCity className="text-gray-400 flex-shrink-0" size={14} />
-            <div>
-              <span className="text-[10px] text-gray-400 block leading-tight">
-                Thana/Upazila
-              </span>
-              <span className="text-sm text-gray-600">
-                {order?.billing_city || "N/A"}
-              </span>
-            </div>
+            <FaMapPin className="text-gray-400" />
+            <span className="text-sm text-gray-600">
+              {order?.billing_state || "N/A"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <FaGlobe className="text-gray-400" />
+            <span className="text-sm text-gray-600">
+              {order?.billing_country || "Bangladesh"}
+            </span>
           </div>
         </div>
 
-        {/* Pathao Zone Info with Full Address */}
-
-        <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100">
-          <p className="text-xs text-blue-600 font-medium mb-2 flex items-center gap-1">
-            <FaRoad size={12} />
-            Full Address
-          </p>
-          <p className="text-sm text-gray-700 font-medium leading-relaxed">
-            {order.pathao_zone_name}
-          </p>
-        </div>
+        {/* Pathao Location Info if available */}
+        {/* {order?.pathao_city_name && order?.pathao_zone_name && (
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg">
+            <p className="text-xs text-blue-600 font-medium mb-1">
+              Delivery Zone (Pathao)
+            </p>
+            <p className="text-sm text-gray-700">
+              {order.pathao_zone_name}, {order.pathao_city_name}
+            </p>
+          </div>
+        )} */}
       </div>
     </TrackingCard>
   );
 
   // Payment Info Card
   const PaymentInfo = () => (
-    <TrackingCard
-      title="Payment Information"
-      icon={<FaRegCreditCard size={18} />}
-    >
+    <TrackingCard title="Payment Information" icon={<FaRegCreditCard />}>
       <div className="space-y-4">
         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
           <span className="text-gray-600 flex items-center gap-2">
@@ -504,13 +295,14 @@ const MyOrderTracking = ({ order, productOrder }) => {
           </motion.span>
         </div>
 
+        {/* Coupon Info if available */}
         {order?.coupon_id && (
           <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-            <span className="text-sm text-gray-600 flex items-center gap-2">
+            <span className="text-gray-600 flex items-center gap-2">
               <FaTag className="text-green-500" />
               Coupon Applied
             </span>
-            <span className="text-xs font-medium text-green-600">
+            <span className="font-medium text-green-600">
               {order.coupon_id}
             </span>
           </div>
@@ -521,15 +313,12 @@ const MyOrderTracking = ({ order, productOrder }) => {
 
   // Shipping Info Card
   const ShippingInfo = () => (
-    <TrackingCard
-      title="Shipping Information"
-      icon={<FaShippingFast size={18} />}
-    >
+    <TrackingCard title="Shipping Information" icon={<FaShippingFast />}>
       <div className="space-y-4">
         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
           <span className="text-gray-600">Shipping Method</span>
           <span className="font-medium text-gray-800">
-            {getShippingLocation()}
+            {order?.shipping_location || "Standard Delivery"}
           </span>
         </div>
 
@@ -543,15 +332,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
         {order?.courier_type && (
           <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
             <span className="text-gray-600">Courier Service</span>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-medium ${
-                order.courier_type === "steadfast"
-                  ? "bg-orange-100 text-orange-700"
-                  : "bg-blue-100 text-blue-700"
-              }`}
-            >
-              {order.courier_type === "steadfast" ? "Steadfast" : "Pathao"}
-            </span>
+            <StatusBadge status={order.courier_type} size="sm" />
           </div>
         )}
       </div>
@@ -562,7 +343,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
     <div className="max-w-7xl mx-auto my-8 px-4 sm:px-6 lg:px-8 space-y-6">
       <HeroSection />
 
-      {/* Stepper */}
+      {/* Stepper with Enhanced UI */}
       <motion.section
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -574,8 +355,62 @@ const MyOrderTracking = ({ order, productOrder }) => {
         <Stepper order={order} />
       </motion.section>
 
-      {/* Courier Tracking Card */}
-      <CourierTrackingCard order={order} />
+      {/* Steadfast Tracking - Enhanced with actual data */}
+      {isSteadfast && order?.steadfast_consignment_id && (
+        <motion.section
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl shadow-xl p-6 border-l-4 border-orange-400"
+        >
+          <div className="flex items-center gap-3 mb-6">
+            <div className="p-3 bg-orange-500 rounded-xl text-white">
+              <FaTruck size={20} />
+            </div>
+            <h3 className="font-bold text-gray-800 text-lg">
+              Courier Tracking - Steadfast
+            </h3>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4">
+              <p className="text-xs text-gray-500 mb-2">Current Status</p>
+              <StatusBadge status={order?.steadfast_status} size="md" />
+            </div>
+
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4">
+              <p className="text-xs text-gray-500 mb-2">Consignment ID</p>
+              <p className="font-mono font-bold text-gray-800 text-lg">
+                {order?.steadfast_consignment_id || "-"}
+              </p>
+            </div>
+
+            <div className="bg-white/60 backdrop-blur rounded-xl p-4">
+              <p className="text-xs text-gray-500 mb-2">Tracking Code</p>
+              <p className="font-mono font-bold text-gray-800 text-lg break-all">
+                {order?.steadfast_tracking_code || "-"}
+              </p>
+            </div>
+          </div>
+
+          {order?.steadfast_tracking_code && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-4 flex justify-end"
+            >
+              <motion.a
+                whileHover={{ x: 5 }}
+                href={`https://steadfast.com.bd/t/${order?.steadfast_tracking_code}`}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-lg text-orange-600 hover:text-orange-700 font-medium shadow-sm"
+              >
+                Track on Steadfast <FaExternalLinkAlt size={12} />
+              </motion.a>
+            </motion.div>
+          )}
+        </motion.section>
+      )}
 
       {/* Address, Payment and Shipping Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -584,8 +419,8 @@ const MyOrderTracking = ({ order, productOrder }) => {
         <ShippingInfo />
       </div>
 
-      {/* Timeline */}
-      <TrackingCard title="Order Timeline" icon={<FiClock size={18} />}>
+      {/* Enhanced Timeline */}
+      <TrackingCard title="Order Timeline" icon={<FiClock />}>
         <div className="space-y-2">
           <TimelineStep
             label="Order Placed"
@@ -621,8 +456,8 @@ const MyOrderTracking = ({ order, productOrder }) => {
         </div>
       </TrackingCard>
 
-      {/* Order Summary */}
-      <TrackingCard title="Order Summary" icon={<FiPackage size={18} />}>
+      {/* Order Summary with Animation */}
+      <TrackingCard title="Order Summary" icon={<FiPackage />}>
         <div className="space-y-4">
           <button
             onClick={() => toggleSection("summary")}
@@ -703,7 +538,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
         </div>
       </TrackingCard>
 
-      {/* Price Details */}
+      {/* Price Details with Enhanced UI */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -757,5 +592,8 @@ const MyOrderTracking = ({ order, productOrder }) => {
     </div>
   );
 };
+
+// Add missing FaGlobe icon import
+import { FaGlobe } from "react-icons/fa";
 
 export default MyOrderTracking;

@@ -8,7 +8,7 @@ import MyOrderTracking from "@/components/orderTracking/MyOrderTracking";
 import { FaTruck } from "react-icons/fa";
 import { toast } from "react-toastify";
 
-const DashboardOrderTrack = () => {
+const OrderTrackingPage = () => {
   const { id } = useParams(); // invoice_id
 
   const [order, setOrder] = useState(null);
@@ -25,7 +25,7 @@ const DashboardOrderTrack = () => {
       setLoading(true);
       setError(null);
 
-      // ১. invoice_id দিয়ে order আনো (existing backend route)
+      // ১. invoice_id দিয়ে order আনো
       const res = await fetch(`${BASE_URL}/order/order_tracking`, {
         method: "POST",
         credentials: "include",
@@ -42,34 +42,67 @@ const DashboardOrderTrack = () => {
       const orderInfo = result?.data?.order_info;
       const orderProducts = result?.data?.order_products;
 
-      // ২. Steadfast order হলে real-time status sync করো
-      if (
-        orderInfo?.courier_type === "steadfast" &&
-        orderInfo?.steadfast_consignment_id
-      ) {
+      // ২. Courier status sync based on courier type
+      if (orderInfo?.courier_type) {
         try {
-          const syncRes = await fetch(
-            `${BASE_URL}/courier/steadfast/sync/${orderInfo?._id}`,
-            {
-              method: "PATCH",
-              credentials: "include",
-              headers: { "Content-Type": "application/json" },
-            },
-          );
-          const syncData = await syncRes.json();
+          let syncRes;
 
-          // sync সফল হলে updated status merge করো
-          if (syncData?.success) {
-            orderInfo.steadfast_status = syncData?.data?.steadfast_status;
-            orderInfo.order_status = syncData?.data?.order_status;
+          if (
+            orderInfo.courier_type === "steadfast" &&
+            orderInfo?.steadfast_consignment_id
+          ) {
+            // Steadfast sync
+            syncRes = await fetch(
+              `${BASE_URL}/courier/steadfast/sync/${orderInfo?._id}`,
+              {
+                method: "PATCH",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
+          } else if (
+            orderInfo.courier_type === "pathao" &&
+            orderInfo?.pathao_consignment_id
+          ) {
+            // Pathao sync
+            syncRes = await fetch(
+              `${BASE_URL}/courier/pathao/sync/${orderInfo?._id}`,
+              {
+                method: "PATCH",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+              },
+            );
           }
-        } catch {
+
+          if (syncRes) {
+            const syncData = await syncRes.json();
+
+            // sync সফল হলে updated status merge করো
+            if (syncData?.success) {
+              if (orderInfo.courier_type === "steadfast") {
+                orderInfo.steadfast_status = syncData?.data?.steadfast_status;
+              } else if (orderInfo.courier_type === "pathao") {
+                orderInfo.pathao_status = syncData?.data?.pathao_status;
+                orderInfo.pathao_tracking_code =
+                  syncData?.data?.pathao_tracking_code;
+                orderInfo.pathao_delivery_fee =
+                  syncData?.data?.pathao_delivery_fee;
+                orderInfo.pathao_delivery_time =
+                  syncData?.data?.pathao_delivery_time;
+              }
+              orderInfo.order_status = syncData?.data?.order_status;
+            }
+          }
+        } catch (syncError) {
+          console.error("Courier sync failed:", syncError);
           // sync fail হলে পুরনো data দিয়েই চলবে, error দেখাবে না
         }
       }
 
       setOrder({ order_info: orderInfo, order_products: orderProducts });
     } catch (err) {
+      console.error("Error fetching order:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -116,4 +149,4 @@ const DashboardOrderTrack = () => {
   );
 };
 
-export default DashboardOrderTrack;
+export default OrderTrackingPage;
