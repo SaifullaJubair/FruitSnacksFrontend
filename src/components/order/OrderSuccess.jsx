@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FaCheckCircle, FaFileInvoice } from "react-icons/fa";
 import { MdLockReset } from "react-icons/md";
+import Contain from "../common/Contain";
 
 const OrderSuccessContent = () => {
   const router = useRouter();
