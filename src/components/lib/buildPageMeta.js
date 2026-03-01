@@ -3,8 +3,6 @@
 import { getPageSeoData } from "./getPageSeo";
 import { getSeoConfig } from "./getSeoConfig";
 
-// import { getSeoConfig } from "@/components/lib/getSeoConfig";
-// import { getPageSeoData } from "@/components/lib/getPageSeo";
 import { PAGE_SEO } from "@/components/utils/pageSeo";
 
 // page_key দিয়ে call করো — DB থেকে নেবে, না থাকলে pageSeo.js fallback

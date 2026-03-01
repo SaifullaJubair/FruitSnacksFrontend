@@ -1,7 +1,8 @@
-"use client";
 
 import WishList from "@/components/frontend/wishList/WishList";
-
+export async function generateMetadata() {
+  return buildPageMeta("wishlist");
+}
 const WishListPage = () => {
   return (
     <div>

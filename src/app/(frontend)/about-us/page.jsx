@@ -1,10 +1,9 @@
 // src/app/(frontend)/about-us/page.jsx
 // seo
-import { buildPageMeta } from "@/components/lib/buildPageMeta";
-import { PAGE_SEO } from "@/components/utils/pageSeo";
 import AboutUs from "@/components/frontend/FooterSection/AboutUs";
+import { buildPageMeta } from "@/components/lib/buildPageMeta";
 export async function generateMetadata() {
-  return buildPageMeta(PAGE_SEO.aboutUs);
+  return buildPageMeta("aboutUs");
 }
 const AboutUsPage = () => {
   return (

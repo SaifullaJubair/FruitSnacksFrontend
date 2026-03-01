@@ -11,7 +11,8 @@ export const PAGE_SEO = {
     path: "",
   },
   allProducts: {
-    title: "All Products | Shop All Genuine Leather Products | Wallets, Bags & Belts",
+    title:
+      "All Products | Shop All Genuine Leather Products | Wallets, Bags & Belts",
     description:
       "আমাদের সব এক্সক্লুসিভ লেদার কালেকশন। প্রিমিয়াম মানিব্যাগ, ফ্যাশনেবল লেডিস ব্যাগ ও টেকসই লেদার বেল্ট কিনুন সেরা দামে। সারা বাংলাদেশে হোম ডেলিভারি।",
     path: "all-products",
@@ -150,3 +151,21 @@ export const PAGE_SEO = {
     noIndex: true,
   },
 };
+
+/**
+ * Need to add more pages
+ * all-brands page
+ * all-brands/brand-product
+ * all-brands/brand-product/[id]
+ * all-ecommerce-product
+ * campaign
+ * campaign/[id]
+ * checkout
+ * compare
+ * offer/[id]
+ * offer-orders/[userId]/[offerId]
+ * orders/order-tracking/page.js
+ * orders/order-tracking/[id]/page.jsx
+ * verify  Page
+ * src/app/(user-profile)/user-profile/page.jsx
+ */

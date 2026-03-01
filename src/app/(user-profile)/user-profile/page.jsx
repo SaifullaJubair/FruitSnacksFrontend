@@ -1,3 +1,4 @@
+// src/app/(user-profile)/user-profile/page.jsx
 import UserProfile from "@/components/allUserProfile/userProfile/UserProfile"
 
 
