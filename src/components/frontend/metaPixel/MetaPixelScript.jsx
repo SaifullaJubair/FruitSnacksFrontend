@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 
-const PIXEL_ID = 2005136360413188;
+const PIXEL_ID = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
 // Route change এ PageView track করো
 const PageViewTracker = () => {

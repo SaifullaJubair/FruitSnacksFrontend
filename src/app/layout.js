@@ -41,14 +41,14 @@ export async function generateMetadata() {
 
     // ── 3. Verification ───────────────────────────────────
     verification: {
-      google: "your-google-verification-code", // ⚠️ Search Console থেকে replace করো
+      google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
     },
 
     // ── 4. Icons ──────────────────────────────────────────
     icons: {
       icon: seo.favicon || "/favicon.ico",
       shortcut: seo.favicon || "/favicon.ico",
-      apple: "/apple-touch-icon.png", // ✅ /public এ 180x180px PNG রাখো
+      apple: "/apple-touch-icon.png", 
     },
 
     // ── 5. Format Detection ───────────────────────────────
@@ -92,9 +92,7 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="bn">
-      <head>
-        <link rel="icon" href={seo.favicon} type="image/x-icon" />
-      </head>
+    
       <body className={bodyFont.className}>
         <script
           type="application/ld+json"

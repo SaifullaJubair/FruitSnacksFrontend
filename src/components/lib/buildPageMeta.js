@@ -1,12 +1,28 @@
 // src/components/lib/buildPageMeta.js
 
+import { getPageSeoData } from "./getPageSeo";
 import { getSeoConfig } from "./getSeoConfig";
 
-export async function buildPageMeta(pageSeoConfig) {
-  const seo = await getSeoConfig();
-  const { title, description, path, noIndex = false } = pageSeoConfig;
+// import { getSeoConfig } from "@/components/lib/getSeoConfig";
+// import { getPageSeoData } from "@/components/lib/getPageSeo";
+import { PAGE_SEO } from "@/components/utils/pageSeo";
 
-  // ✅ Private pages — noindex, বাকি কিছু দরকার নেই
+// page_key দিয়ে call করো — DB থেকে নেবে, না থাকলে pageSeo.js fallback
+export async function buildPageMeta(page_key) {
+  const [seo, dbPage] = await Promise.all([
+    getSeoConfig(),
+    getPageSeoData(page_key),
+  ]);
+
+  // DB তে data আছে → সেটা use করো
+  // না থাকলে → pageSeo.js এর hardcoded value fallback
+  const fallback = PAGE_SEO[page_key] || {};
+  const title = dbPage?.title ?? fallback.title ?? "";
+  const description = dbPage?.description ?? fallback.description ?? "";
+  const path = dbPage?.path ?? fallback.path ?? "";
+  const noIndex = dbPage?.noIndex ?? fallback.noIndex ?? false;
+
+  // Private / noindex page
   if (noIndex) {
     return {
       title,
@@ -20,9 +36,6 @@ export async function buildPageMeta(pageSeoConfig) {
     title,
     description,
     alternates: { canonical: url },
-
-    // ✅ পুরো openGraph — locale, siteName, images সব আছে
-    // page level এ replace হলেও কিছু miss হবে না
     openGraph: {
       type: "website",
       locale: "bn_BD",
@@ -30,17 +43,8 @@ export async function buildPageMeta(pageSeoConfig) {
       url,
       title,
       description,
-      images: [
-        {
-          url: seo.logo,
-          width: 1200,
-          height: 630,
-          alt: seo.siteName,
-        },
-      ],
+      images: [{ url: seo.logo, width: 1200, height: 630, alt: seo.siteName }],
     },
-
-    // ✅ পুরো twitter card
     twitter: {
       card: "summary_large_image",
       title,
