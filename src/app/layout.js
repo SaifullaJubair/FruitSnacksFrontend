@@ -1,4 +1,3 @@
-// src/app/layout.js
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
 import Providers from "@/components/providers/Providers";
 import QueryProviders from "@/components/providers/QueryProviders";
@@ -9,12 +8,16 @@ import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
+import AnalyticsAdvancedMatching from "@/components/analyticsScripts/utils/AnalyticsAdvancedMatching";
+import MicrosoftClarity from "@/components/analyticsScripts/microsoftClarity/Microsoftclarity";
+import TikTokPixelScript from "@/components/analyticsScripts/tiktokPixel/TikTokPixelScript";
 import MetaPixelScript from "@/components/analyticsScripts/metaPixel/MetaPixelScript";
-import GoogleTagManager, { GoogleTagManagerNoScript } from "@/components/analyticsScripts/googleAnalytics/GoogleTagManager";
+import GoogleTagManager, {
+  GoogleTagManagerNoScript,
+} from "@/components/analyticsScripts/googleAnalytics/GoogleTagManager";
 
 export async function generateMetadata() {
   const seo = await getSeoConfig();
-
   return {
     // ── 1. Basic ──────────────────────────────────────────
     metadataBase: new URL(seo.siteUrl),
@@ -103,11 +106,21 @@ export default async function RootLayout({ children }) {
             __html: JSON.stringify(organizationJsonLd),
           }}
         />
-        <GoogleTagManagerNoScript />
-        {/* <MicrosoftClarity /> */}
+
+        {seo.gtmId && <GoogleTagManagerNoScript gtmId={seo.gtmId} />}
+
+        {/* ✅ Pixel scripts — Providers এর বাইরে, Redux নেই এখানে */}
+        {seo.metaPixelId && <MetaPixelScript pixelId={seo.metaPixelId} />}
+        {seo.tiktokPixelId && <TikTokPixelScript pixelId={seo.tiktokPixelId} />}
+        {seo.clarityId && <MicrosoftClarity clarityId={seo.clarityId} />}
+
         <Providers>
           <QueryProviders>
-            <MetaPixelScript />
+            {/* ✅ AdvancedMatching — Providers এর ভেতরে, Redux কাজ করবে */}
+            <AnalyticsAdvancedMatching
+              metaPixelId={seo.metaPixelId}
+              tiktokPixelId={seo.tiktokPixelId}
+            />
             <main>
               {children}
               <ToastContainer

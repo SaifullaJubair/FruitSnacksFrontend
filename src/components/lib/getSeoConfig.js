@@ -49,5 +49,10 @@ export async function getSeoConfig() {
     favicon: s?.favicon || "/favicon.ico",
     facebook: s?.facebook || "",
     instagram: s?.instagram || "",
+    // ✅ Analytics — একবারই fetch, সব এখান থেকে
+    metaPixelId: s?.meta_pixel_enabled ? s?.meta_pixel_id : null,
+    tiktokPixelId: s?.tiktok_pixel_enabled ? s?.tiktok_pixel_id : null,
+    gtmId: s?.gtm_enabled ? s?.gtm_id : null,
+    clarityId: s?.clarity_enabled ? s?.clarity_id : null,
   };
 }
