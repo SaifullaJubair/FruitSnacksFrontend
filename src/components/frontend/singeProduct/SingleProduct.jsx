@@ -31,8 +31,10 @@ import useGetZoneData from "@/components/lib/getZoneData";
 import "react-phone-number-input/style.css";
 
 // ✅ Meta Pixel — all events intact
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 
 import { BsBoxSeam } from "react-icons/bs";
 
@@ -129,6 +131,7 @@ const SingleProduct = ({ product }) => {
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
   const [district, setDistrict] = useState();
+  F;
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
 
   // Price/order state

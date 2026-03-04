@@ -20,8 +20,10 @@ import WishlistTableSkeleton from "@/components/shared/loader/WishlistTableSkele
 import { CART_QUERY_KEY } from "../cart/AddToCart";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 
 // Wishlist এর আলাদা query key

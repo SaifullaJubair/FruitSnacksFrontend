@@ -9,7 +9,8 @@ import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
-import MetaPixelScript from "@/components/frontend/metaPixel/MetaPixelScript";
+import MetaPixelScript from "@/components/analyticsScripts/metaPixel/MetaPixelScript";
+import GoogleTagManager, { GoogleTagManagerNoScript } from "@/components/analyticsScripts/googleAnalytics/GoogleTagManager";
 
 export async function generateMetadata() {
   const seo = await getSeoConfig();
@@ -48,7 +49,7 @@ export async function generateMetadata() {
     icons: {
       icon: seo.favicon || "/favicon.ico",
       shortcut: seo.favicon || "/favicon.ico",
-      apple: "/apple-touch-icon.png", 
+      apple: "/apple-touch-icon.png",
     },
 
     // ── 5. Format Detection ───────────────────────────────
@@ -92,7 +93,9 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="bn">
-    
+      <head>
+        <GoogleTagManager />
+      </head>
       <body className={bodyFont.className}>
         <script
           type="application/ld+json"
@@ -100,6 +103,8 @@ export default async function RootLayout({ children }) {
             __html: JSON.stringify(organizationJsonLd),
           }}
         />
+        <GoogleTagManagerNoScript />
+        {/* <MicrosoftClarity /> */}
         <Providers>
           <QueryProviders>
             <MetaPixelScript />

@@ -4,6 +4,7 @@ import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
+import { redirect, notFound } from "next/navigation";
 
 export async function generateMetadata({ params }) {
   const { slug } = params;
@@ -21,13 +22,20 @@ export async function generateMetadata({ params }) {
   }
 
   const productData = await res.json();
+
+  // ✅ পুরনো slug — metadata বানানোর দরকার নেই, page redirect করবে
+  if (productData?.data?.redirect_slug) {
+    return {
+      robots: { index: false },
+    };
+  }
+
   const product = productData?.data;
   const price = product?.product_discount_price || product?.product_price;
   const description =
     product?.meta_description ||
     `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
 
-  // ✅ Fallback image
   const productImage = product?.main_image || seo.logo;
 
   return {
@@ -64,7 +72,6 @@ export async function generateMetadata({ params }) {
 const ProductDetailsPage = async ({ params }) => {
   const { slug } = params;
 
-  // ✅ getSeoConfig আর product fetch একসাথে — দুইবার call না
   const [seoResult, productRes] = await Promise.all([
     getSeoConfig(),
     fetch(`${BASE_URL}/product/${slug}`, { next: { revalidate: 3600 } }),
@@ -72,6 +79,14 @@ const ProductDetailsPage = async ({ params }) => {
 
   const seo = seoResult;
   const data = await productRes.json();
+
+  // ✅ পুরনো slug — নতুন slug এ 301 redirect
+  if (data?.data?.redirect_slug) {
+    redirect(`/products/${data.data.redirect_slug}`);
+    // Next.js এ redirect() automatically 308 করে server component এ
+    // কিন্তু SEO এর জন্য আমরা backend থেকে 301 পাঠাচ্ছি — সেটাই Google দেখবে
+  }
+
   const product = data?.data;
 
   if (!product) {
@@ -136,7 +151,6 @@ const ProductDetailsPage = async ({ params }) => {
 
   return (
     <section className="bg-[#F4F4F4] py-6">
-      {/* ✅ JSON-LD সরাসরি script tag এ */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}

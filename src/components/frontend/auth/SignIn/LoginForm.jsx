@@ -20,9 +20,15 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 import { LoaderOverlay } from "@/components/shared/loader/LoaderOverlay";
+
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
+
+// ✅ GTM
+import { useGTM } from "@/utils/useGTM";
 
 const LoginForm = () => {
   const [user_phone, setUserPhone] = useState();
@@ -33,6 +39,10 @@ const LoginForm = () => {
   const dispatch = useDispatch();
   const { products: cartProducts } = useSelector((state) => state.cart);
   const { trackLogin } = useMetaPixel();
+
+  // ✅ GTM
+  const { trackLogin: gtmLogin } = useGTM();
+
   const {
     register,
     handleSubmit,
@@ -60,7 +70,6 @@ const LoginForm = () => {
           return;
         }
       }
-
       if (!user_phone) {
         toast.error("Phone is required !", {
           position: "top-center",
@@ -69,11 +78,7 @@ const LoginForm = () => {
         return;
       }
 
-      const sendData = {
-        user_phone: user_phone,
-        user_password: data?.user_password,
-      };
-
+      const sendData = { user_phone, user_password: data?.user_password };
       const res = await userLogin(sendData);
       // if (res?.data?.statusCode === 200 && res?.data?.success === true) {
       //   toast.success(res?.data?.message, {
@@ -90,18 +95,18 @@ const LoginForm = () => {
         toast.success(res?.data?.message, { autoClose: 2000 });
         reset();
 
-        // ✅ Login Meta Pixel event
+        // ✅ Login — Meta Pixel
         const eventId = generateEventId();
         trackLogin(eventId);
         sendServerEvent({
           event_name: "Login",
           event_id: eventId,
-          user_data: {
-            ph: user_phone,
-          },
+          user_data: { ph: user_phone },
         });
 
-        // Cart sync করো
+        // ✅ login — GTM / GA4
+        gtmLogin("phone");
+
         await syncCartAfterLogin(cartProducts, dispatch);
 
         if (successRedirect) {
@@ -124,11 +129,10 @@ const LoginForm = () => {
   return (
     <div className="">
       <div className="sm:grid sm:grid-cols-2 sm:gap-6 md:gap-8 lg:gap-12">
-        <div className="bg-primary sm:flex sm:justify-center sm:items-center hidden ">
+        <div className="bg-primary sm:flex sm:justify-center sm:items-center hidden">
           <Image src={signupImage} alt="signupImage" width={500} height={500} />
         </div>
-
-        <div className="min-h-screen lg:w-[500px] md:w-[380px] sm:w-[300px] w-[95%] sm:mx-0 mx-auto flex items-center ">
+        <div className="min-h-screen lg:w-[500px] md:w-[380px] sm:w-[300px] w-[95%] sm:mx-0 mx-auto flex items-center">
           <div className="w-full">
             <div className="mb-8">
               <FaShoppingBag size={35} className="text-primary" />
@@ -136,30 +140,27 @@ const LoginForm = () => {
               <p>Login To Your Account</p>
             </div>
             <form className="space-y-5" onSubmit={handleSubmit(submitForm)}>
-              <div className="">
-                <div>
-                  <label htmlFor="user_phone" className="font-medium">
-                    Phone
-                  </label>
-                  <PhoneInput
-                    className="custom-phone-input w-full border border-white-light bg-white px-4 py-2 text-sm text-black placeholder:text-white-dark"
-                    placeholder="Enter phone number"
-                    id="user_phone"
-                    value={user_phone}
-                    defaultCountry="BD"
-                    international
-                    countryCallingCodeEditable={false}
-                    onChange={setUserPhone}
-                    error={
-                      user_phone
-                        ? !isValidPhoneNumber(user_phone) &&
-                          "Invalid phone number"
-                        : "Phone number required"
-                    }
-                  />
-                </div>
+              <div>
+                <label htmlFor="user_phone" className="font-medium">
+                  Phone
+                </label>
+                <PhoneInput
+                  className="custom-phone-input w-full border border-white-light bg-white px-4 py-2 text-sm text-black placeholder:text-white-dark"
+                  placeholder="Enter phone number"
+                  id="user_phone"
+                  value={user_phone}
+                  defaultCountry="BD"
+                  international
+                  countryCallingCodeEditable={false}
+                  onChange={setUserPhone}
+                  error={
+                    user_phone
+                      ? !isValidPhoneNumber(user_phone) &&
+                        "Invalid phone number"
+                      : "Phone number required"
+                  }
+                />
               </div>
-
               <div>
                 <label htmlFor="Password" className="font-medium">
                   Password

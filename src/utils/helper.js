@@ -24,8 +24,8 @@ export const productPrice = (product) => {
         ? product?.variations?.variation_discount_price
         : product?.variations?.variation_price
       : product?.product_discount_price
-      ? product?.product_discount_price
-      : product?.product_price;
+        ? product?.product_discount_price
+        : product?.product_price;
   if (product?.flash_sale_details?.flash_sale_product) {
     const flashProduct = product?.flash_sale_details.flash_sale_product;
     const priceType = flashProduct?.flash_price_type;
@@ -63,20 +63,39 @@ export const productPrice = (product) => {
     : product?.product_price;
 };
 
-export const lineThroughPrice = (product) => {
-  if (
-    product?.variations?.variation_discount_price ||
-    product?.product_discount_price
-  ) {
-    return product?.variations?.variation_price || product?.product_price;
-  }
-  return null;
-};
+// export const lineThroughPrice = (product) => {
+//   if (
+//     product?.variations?.variation_discount_price ||
+//     product?.product_discount_price
+//   ) {
+//     return product?.variations?.variation_price || product?.product_price;
+//   }
+//   return null;
+// };
 
+// এই function টা replace করো
+// export const lineThroughPrice = (product) => {
+//   // Flash sale active থাকলে
+//   if (product?.flash_sale_details?.flash_sale_product) {
+//     return product?.variations?.[0]?.variation_price || product?.product_price;
+//   }
+//   // Campaign active থাকলে
+//   if (product?.campaign_details?.campaign_product) {
+//     return product?.variations?.[0]?.variation_price || product?.product_price;
+//   }
+//   // Normal discount থাকলে
+//   if (
+//     product?.variations?.[0]?.variation_discount_price ||
+//     product?.product_discount_price
+//   ) {
+//     return product?.variations?.[0]?.variation_price || product?.product_price;
+//   }
+//   return null;
+// };
 export const calculatePrice = (originalPrice, discount, type) => {
   if (type === "percent") {
     const roundPrice = Math.round(
-      originalPrice - (originalPrice * discount) / 100
+      originalPrice - (originalPrice * discount) / 100,
     );
     return roundPrice;
   } else if (type === "fixed") {
@@ -99,8 +118,8 @@ export const singleProductPrice = (product) => {
           ? product?.variations?.[0]?.variation_discount_price
           : product?.variations?.[0]?.variation_price
         : product?.product_discount_price
-        ? product?.product_discount_price
-        : product?.product_price;
+          ? product?.product_discount_price
+          : product?.product_price;
 
     if (priceType) {
       return calculatePrice(originalPrice, discountPrice, priceType);
@@ -119,8 +138,8 @@ export const singleProductPrice = (product) => {
           ? product?.variations?.[0]?.variation_discount_price
           : product?.variations?.[0]?.variation_price
         : product?.product_discount_price
-        ? product?.product_discount_price
-        : product?.product_price;
+          ? product?.product_discount_price
+          : product?.product_price;
 
     if (priceType) {
       return calculatePrice(originalPrice, discountPrice, priceType);
@@ -147,7 +166,7 @@ export const updateRecentProducts = (product) => {
     JSON.parse(localStorage.getItem("recent-products")) || [];
   // Remove existing product if it already exists
   recentProducts = recentProducts.filter(
-    (item) => item?.product_slug !== product?.product_slug
+    (item) => item?.product_slug !== product?.product_slug,
   );
   // const productExistsIndex = recentProducts.findIndex(
   //   (item) => item?.product_slug === product?.product_slug
@@ -184,43 +203,43 @@ export const useCartCalculations = ({
   shippingCharge,
 }) => {
   // Calculate price after applying coupon to a single product
- const calculationCouponProductPrice = useCallback(
-   (price, productId, variationId = null) => {
-     if (!couponData || !price) return price;
+  const calculationCouponProductPrice = useCallback(
+    (price, productId, variationId = null) => {
+      if (!couponData || !price) return price;
 
-     // Check if product is eligible for specific coupon
-     const isSpecificProduct =
-       couponData.coupon_product_type === "specific" &&
-       couponData.coupon_specific_product?.some((item) =>
-         variationId
-           ? item.product_id === productId // For variations, check against parent product ID
-           : item.product_id === productId
-       );
+      // Check if product is eligible for specific coupon
+      const isSpecificProduct =
+        couponData.coupon_product_type === "specific" &&
+        couponData.coupon_specific_product?.some((item) =>
+          variationId
+            ? item.product_id === productId // For variations, check against parent product ID
+            : item.product_id === productId,
+        );
 
-     // Only apply coupon if it's for all products or this specific product/variation
-     if (couponData.coupon_product_type === "specific" && !isSpecificProduct) {
-       return price;
-     }
+      // Only apply coupon if it's for all products or this specific product/variation
+      if (couponData.coupon_product_type === "specific" && !isSpecificProduct) {
+        return price;
+      }
 
-     // Fixed amount coupon
-     if (couponData.coupon_type === "fixed") {
-       return Math.max(price - couponData.coupon_amount, 0);
-     }
+      // Fixed amount coupon
+      if (couponData.coupon_type === "fixed") {
+        return Math.max(price - couponData.coupon_amount, 0);
+      }
 
-     // Percentage coupon
-     if (couponData.coupon_type === "percent") {
-       const discountAmount = Math.round(
-         (price * couponData.coupon_amount) / 100
-       );
-       const maxDiscount = couponData.coupon_max_amount || Infinity;
-       const finalDiscount = Math.min(discountAmount, maxDiscount);
-       return Math.max(price - finalDiscount, 0);
-     }
+      // Percentage coupon
+      if (couponData.coupon_type === "percent") {
+        const discountAmount = Math.round(
+          (price * couponData.coupon_amount) / 100,
+        );
+        const maxDiscount = couponData.coupon_max_amount || Infinity;
+        const finalDiscount = Math.min(discountAmount, maxDiscount);
+        return Math.max(price - finalDiscount, 0);
+      }
 
-     return price;
-   },
-   [couponData]
- );
+      return price;
+    },
+    [couponData],
+  );
 
   // Calculate grand total after applying cart-level coupons
   const calculateShopGrandTotals = useCallback(
@@ -237,7 +256,7 @@ export const useCartCalculations = ({
       // Percentage coupon for all products
       if (couponData.coupon_type === "percent") {
         const discountAmount = Math.round(
-          (subTotal * couponData.coupon_amount) / 100
+          (subTotal * couponData.coupon_amount) / 100,
         );
         const maxDiscount = couponData.coupon_max_amount || Infinity;
         const finalDiscount = Math.min(discountAmount, maxDiscount);
@@ -246,7 +265,7 @@ export const useCartCalculations = ({
 
       return subTotal;
     },
-    [couponData]
+    [couponData],
   );
 
   return useMemo(() => {
@@ -266,14 +285,14 @@ export const useCartCalculations = ({
           (item) =>
             item?.productId === product?._id &&
             (!product?.variations?._id ||
-              item?.variation_product_id === product?.variations?._id)
+              item?.variation_product_id === product?.variations?._id),
         )?.quantity || 1;
       return price * quantity;
     };
 
     const initialSubtotal = cartData.reduce(
       (sum, product) => sum + calculateInitialSubtotal(product),
-      0
+      0,
     );
 
     // Calculate adjusted prices and subtotal with product-level coupons
@@ -287,7 +306,7 @@ export const useCartCalculations = ({
           (item) =>
             item?.productId === product?._id &&
             (!product?.variations?._id ||
-              item?.variation_product_id === product?.variations?._id)
+              item?.variation_product_id === product?.variations?._id),
         )?.quantity || 1;
 
       // Create unique key for each product/variation combination
@@ -299,7 +318,7 @@ export const useCartCalculations = ({
       const finalPrice = calculationCouponProductPrice(
         originalPrice,
         product._id,
-        product?.variations?._id
+        product?.variations?._id,
       );
 
       adjustedPrices[priceKey] = finalPrice;
@@ -310,7 +329,7 @@ export const useCartCalculations = ({
     const grandTotals = calculateShopGrandTotals(
       couponData?.coupon_product_type === "specific"
         ? subtotalWithProductCoupons
-        : initialSubtotal
+        : initialSubtotal,
     );
 
     const totalDiscount = initialSubtotal - grandTotals;

@@ -28,9 +28,14 @@ import { calculatePrice, isHexColor, singleProductPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+
+// ✅ GTM
+import { useGTM } from "@/utils/useGTM";
 
 const Overlay = ({ onClick }) => (
   <motion.div
@@ -52,6 +57,13 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     useMetaPixel();
   const { data: userInfo } = useUserInfoQuery();
   const modalRef = useRef(null);
+
+  // ✅ GTM hook
+  const {
+    trackViewItem,
+    trackAddToCart: gtmAddToCart,
+    trackAddToWishlist: gtmAddToWishlist,
+  } = useGTM();
 
   // Full product details
   const [product, setProduct] = useState(null);
@@ -101,16 +113,12 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
 
     fetch(`${BASE_URL}/product/${listProduct.product_slug}`)
       .then((r) => {
-        if (!r.ok) {
-          throw new Error("Network response was not ok");
-        }
+        if (!r.ok) throw new Error("Network response was not ok");
         return r.json();
       })
       .then((data) => {
         const p = data?.data;
-        if (!p) {
-          throw new Error("Product data not found");
-        }
+        if (!p) throw new Error("Product data not found");
 
         setProduct(p);
         setFetchError(false);
@@ -135,7 +143,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             }
           });
         }
-
         setGalleryImages(images.filter(Boolean));
 
         // ✅ ViewContent event
@@ -158,6 +165,15 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           },
         });
 
+        // ✅ view_item — GTM / GA4
+        trackViewItem({
+          _id: p._id,
+          product_name: p.product_name,
+          price: p.product_discount_price || p.product_price,
+          brand: p.product_brand || "",
+          category: p.product_category || "",
+        });
+
         // Initial price & stock set
         if (p?.is_variation && p?.variations?.length > 0) {
           const firstVariation = p.variations[0];
@@ -167,9 +183,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             firstVariation.variation_discount_price ||
             firstVariation.variation_price;
           setProductPrice(price);
-          if (firstVariation.variation_discount_price) {
+          if (firstVariation.variation_discount_price)
             setLineThoughPrice(firstVariation.variation_price);
-          }
           setActiveImage(firstVariation.variation_image || p.main_image);
 
           // Initial variation selections
@@ -315,7 +330,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     toast.success("Added to cart!", { autoClose: 1500 });
     setTimeout(() => setAddedToCart(false), 1500);
 
-    // ✅ AddToCart Meta Pixel event
+    // ✅ AddToCart — Meta Pixel
     const eventId = generateEventId();
     trackAddToCart(product, variationProduct, quantity, eventId);
     sendServerEvent({
@@ -335,6 +350,18 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         num_items: quantity,
       },
     });
+
+    // ✅ add_to_cart — GTM / GA4
+    gtmAddToCart(
+      {
+        _id: variationProduct?._id || product._id,
+        product_name: product.product_name,
+        price: productPrice,
+        brand: product.product_brand || "",
+        category: product.product_category || "",
+      },
+      quantity,
+    );
   }, [
     product,
     variationProduct,
@@ -344,6 +371,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     userInfo,
     productPrice,
     isInCart,
+    gtmAddToCart,
   ]);
 
   // Wishlist handler
@@ -400,11 +428,25 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           value: productPrice,
         },
       });
+
+      // ✅ add_to_wishlist — GTM / GA4
+      gtmAddToWishlist({
+        _id: variationProduct?._id || product._id,
+        product_name: product.product_name,
+        price: productPrice,
+      });
     }
 
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
-  }, [product, variationProduct, productPrice, trackAddToWishlist, userInfo]);
+  }, [
+    product,
+    variationProduct,
+    productPrice,
+    trackAddToWishlist,
+    userInfo,
+    gtmAddToWishlist,
+  ]);
 
   // Quantity handlers
   const handleIncrement = () => {
@@ -422,7 +464,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         onClose();
       }
     };
-
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
@@ -500,10 +541,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
             onClick={onClose}
-            className=" absolute -top-2 right-2 z-50 bg-white/90 border backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
-            style={{
-              top: "max(0.5rem, env(safe-area-inset-top))",
-            }}
+            className="absolute -top-2 right-2 z-50 bg-white/90 border backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-white transition-all"
+            style={{ top: "max(0.5rem, env(safe-area-inset-top))" }}
           >
             <IoClose size={20} className="text-gray-600" />
           </motion.button>
@@ -840,16 +879,9 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           type="button"
                           onClick={handleAddToCart}
                           disabled={stock <= 0 || isInCart}
-                          className={`
-     flex-1   py-2 sm:py-3 flex items-center justify-center gap-2 
-      transition text-xs sm:text-sm font-medium rounded-lg
-      ${
-        isInCart
-          ? "bg-green-500 text-white cursor-not-allowed"
-          : "bg-primary text-white hover:bg-primary/90"
-      }
-      disabled:opacity-50 disabled:cursor-not-allowed
-    `}
+                          className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
+                            ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
+                            disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           {isInCart ? (
                             <>
@@ -873,18 +905,15 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                         <Link
                           href={`/products/${product.product_slug}`}
                           onClick={onClose}
-                          className="flex-1 "
+                          className="flex-1"
                         >
                           <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             type="button"
-                            className="w-full py-2 sm:py-3 flex items-center justify-center gap-2
-                 text-xs sm:text-sm font-medium rounded-lg
-                 border border-primary text-primary hover:bg-primary/5 transition"
+                            className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
                           >
-                            View Details
-                            <FiArrowUpRight size={14} />
+                            View Details <FiArrowUpRight size={14} />
                           </motion.button>
                         </Link>
 
@@ -894,8 +923,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           whileTap={{ scale: 0.95 }}
                           type="button"
                           onClick={handleWishlist}
-                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary 
-               rounded-lg transition-all shrink-0"
+                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
                         >
                           {isWishlisted ? (
                             <BsHeartFill size={16} className="text-primary" />
@@ -921,7 +949,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                         On orders above ৳999
                       </p>
                     </div>
-
                     <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <svg
                         className="w-5 h-5 mx-auto text-primary mb-1"
@@ -938,7 +965,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </p>
                       <p className="text-[9px] text-gray-500">100% authentic</p>
                     </div>
-
                     <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <TbTruckReturn
                         className="mx-auto text-primary mb-1"
@@ -951,7 +977,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                         Instant if you don't like
                       </p>
                     </div>
-
                     <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <RiSecurePaymentLine
                         className="mx-auto text-primary mb-1"

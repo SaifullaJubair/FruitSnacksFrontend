@@ -1,4 +1,5 @@
 // src/components/lib/getSeoConfig.js
+// Main Engine - SEO Configuration
 import { SITE_URL } from "../utils/baseURL";
 import { getServerSettingData } from "./getServerSettingData";
 

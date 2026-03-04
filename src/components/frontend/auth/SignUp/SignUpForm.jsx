@@ -18,9 +18,10 @@ import PhoneInput, {
 } from "react-phone-number-input";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
-
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 
 const SignUpForm = () => {
   const [isPasswordShow, setPasswordShow] = useState(false);

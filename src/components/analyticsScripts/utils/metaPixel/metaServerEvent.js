@@ -1,5 +1,5 @@
+// src/components/analyticsScripts/utils/metaPixel/metaServerEvent.js
 import { BASE_URL } from "@/components/utils/baseURL";
-
 // Browser এর cookie পড়ো
 const getCookieValue = (name) => {
   if (typeof document === "undefined") return "";

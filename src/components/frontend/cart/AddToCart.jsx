@@ -31,8 +31,10 @@ import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
 import useGetZoneData from "@/components/lib/getZoneData";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 
 export const CART_QUERY_KEY = "/api/v1/product/cart_product";
 

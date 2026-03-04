@@ -4,7 +4,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getServerSettingData() {
   const res = await fetch(`${BASE_URL}/setting`, {
     next: {
-      revalidate: 21600, // 6 hours
+      revalidate: 1800, // 30 minutes
     },
   });
 

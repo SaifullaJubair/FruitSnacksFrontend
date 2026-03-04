@@ -12,8 +12,10 @@ import { lineThroughPrice, productPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 
 // ✅ Meta Pixel
-import useMetaPixel, { generateEventId } from "@/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/utils/metaPixel/metaServerEvent";
+import useMetaPixel, {
+  generateEventId,
+} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 
 const SearchForm = () => {
   const router = useRouter();
