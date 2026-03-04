@@ -1,22 +1,18 @@
 "use client";
 // scr/components/analyticsScripts/utils/useAnalytics.js
 import { useCallback } from "react";
-import { generateEventId } from "@/components/analyticsScripts/metaPixel/useMetaPixel";
+import { generateEventId } from "@/utils/generateEventId";
 import { sendServerEvent } from "@/components/analyticsScripts/metaPixel/metaServerEvent";
+import { sendTikTokServerEvent } from "@/components/analyticsScripts/tiktokPixel/tiktokServerEvent";
 import useGetSettingData from "@/components/lib/getSettingData";
 
-// ── TikTok helper ──────────────────────────────────────
-const ttq = (...args) => {
-  if (typeof window !== "undefined" && window.ttq) {
-    window.ttq.track(...args);
-  }
+// ── helpers ────────────────────────────────────────────
+const fbq = (...args) => {
+  if (typeof window !== "undefined" && window.fbq) window.fbq(...args);
 };
 
-// ── Meta helper ────────────────────────────────────────
-const fbq = (...args) => {
-  if (typeof window !== "undefined" && window.fbq) {
-    window.fbq(...args);
-  }
+const ttq = (...args) => {
+  if (typeof window !== "undefined" && window.ttq) window.ttq.track(...args);
 };
 
 // ── GTM dataLayer push ─────────────────────────────────
@@ -40,11 +36,11 @@ const useAnalytics = () => {
   const { data: settingsData } = useGetSettingData();
   const settings = settingsData?.data?.[0];
 
-  // কোন platform enabled আছে
-  const metaEnabled = settings?.meta_pixel_enabled;
-  const metaCapiEnabled = settings?.meta_capi_enabled;
-  const tiktokEnabled = settings?.tiktok_pixel_enabled;
-  const gtmEnabled = settings?.gtm_enabled;
+  const metaEnabled = !!settings?.meta_pixel_enabled;
+  const metaCapiEnabled = !!settings?.meta_capi_enabled;
+  const tiktokEnabled = !!settings?.tiktok_pixel_enabled;
+  const tiktokCapiEnabled = !!settings?.tiktok_capi_enabled;
+  const gtmEnabled = !!settings?.gtm_enabled;
 
   // ── ViewContent ────────────────────────────────────
   const trackViewContent = useCallback(
@@ -54,7 +50,6 @@ const useAnalytics = () => {
         product?.product_discount_price || product?.product_price,
       );
 
-      // Meta
       if (metaEnabled) {
         fbq(
           "track",
@@ -85,17 +80,33 @@ const useAnalytics = () => {
         }
       }
 
-      // TikTok
       if (tiktokEnabled) {
-        ttq("ViewContent", {
-          content_id: String(product?._id),
-          content_name: product?.product_name,
-          currency: "BDT",
-          value: price,
-        });
+        ttq(
+          "ViewContent",
+          {
+            content_id: String(product?._id),
+            content_name: product?.product_name,
+            currency: "BDT",
+            value: price,
+          },
+          { event_id: eventId },
+        );
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "ViewContent",
+            event_id: eventId,
+            user_data: userData,
+            properties: {
+              content_id: String(product?._id),
+              content_name: product?.product_name,
+              content_type: "product",
+              currency: "BDT",
+              value: price,
+            },
+          });
+        }
       }
 
-      // GTM
       if (gtmEnabled) {
         pushDataLayer({
           event: "view_item",
@@ -113,7 +124,13 @@ const useAnalytics = () => {
         });
       }
     },
-    [metaEnabled, metaCapiEnabled, tiktokEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── AddToCart ──────────────────────────────────────
@@ -129,7 +146,6 @@ const useAnalytics = () => {
       const itemId = String(variationProduct?._id || product?._id);
       const totalValue = price * quantity;
 
-      // Meta
       if (metaEnabled) {
         fbq(
           "track",
@@ -162,18 +178,35 @@ const useAnalytics = () => {
         }
       }
 
-      // TikTok
       if (tiktokEnabled) {
-        ttq("AddToCart", {
-          content_id: itemId,
-          content_name: product?.product_name,
-          currency: "BDT",
-          value: totalValue,
-          quantity,
-        });
+        ttq(
+          "AddToCart",
+          {
+            content_id: itemId,
+            content_name: product?.product_name,
+            currency: "BDT",
+            value: totalValue,
+            quantity,
+          },
+          { event_id: eventId },
+        );
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "AddToCart",
+            event_id: eventId,
+            user_data: userData,
+            properties: {
+              content_id: itemId,
+              content_name: product?.product_name,
+              content_type: "product",
+              currency: "BDT",
+              value: totalValue,
+              quantity,
+            },
+          });
+        }
       }
 
-      // GTM
       if (gtmEnabled) {
         pushDataLayer({
           event: "add_to_cart",
@@ -192,7 +225,13 @@ const useAnalytics = () => {
         });
       }
     },
-    [metaEnabled, metaCapiEnabled, tiktokEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── Purchase ───────────────────────────────────────
@@ -204,7 +243,6 @@ const useAnalytics = () => {
         orderData?.order_products?.map((p) => p?.product_id),
       );
 
-      // Meta
       if (metaEnabled) {
         fbq(
           "track",
@@ -235,17 +273,30 @@ const useAnalytics = () => {
         }
       }
 
-      // TikTok
       if (tiktokEnabled) {
-        ttq("CompletePayment", {
-          content_id: contentIds[0],
-          currency: "BDT",
-          value,
-          quantity: orderData?.order_products?.length || 1,
-        });
+        ttq(
+          "CompletePayment",
+          {
+            currency: "BDT",
+            value,
+            quantity: orderData?.order_products?.length || 1,
+          },
+          { event_id: eventId },
+        );
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "CompletePayment",
+            event_id: eventId,
+            user_data: userData,
+            properties: {
+              currency: "BDT",
+              value,
+              quantity: orderData?.order_products?.length || 1,
+            },
+          });
+        }
       }
 
-      // GTM
       if (gtmEnabled) {
         pushDataLayer({
           event: "purchase",
@@ -263,7 +314,13 @@ const useAnalytics = () => {
         });
       }
     },
-    [metaEnabled, metaCapiEnabled, tiktokEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── InitiateCheckout ───────────────────────────────
@@ -272,7 +329,6 @@ const useAnalytics = () => {
       const eventId = generateEventId();
       const value = toNumber(orderData?.value);
 
-      // Meta
       if (metaEnabled) {
         fbq(
           "track",
@@ -301,27 +357,40 @@ const useAnalytics = () => {
         }
       }
 
-      // TikTok
       if (tiktokEnabled) {
-        ttq("InitiateCheckout", {
-          currency: "BDT",
-          value,
-          quantity: orderData?.num_items || 1,
-        });
+        ttq(
+          "InitiateCheckout",
+          { currency: "BDT", value, quantity: orderData?.num_items || 1 },
+          { event_id: eventId },
+        );
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "InitiateCheckout",
+            event_id: eventId,
+            user_data: userData,
+            properties: {
+              currency: "BDT",
+              value,
+              quantity: orderData?.num_items || 1,
+            },
+          });
+        }
       }
 
-      // GTM
       if (gtmEnabled) {
         pushDataLayer({
           event: "begin_checkout",
-          ecommerce: {
-            currency: "BDT",
-            value,
-          },
+          ecommerce: { currency: "BDT", value },
         });
       }
     },
-    [metaEnabled, metaCapiEnabled, tiktokEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── Search ─────────────────────────────────────────
@@ -329,22 +398,17 @@ const useAnalytics = () => {
     (searchString) => {
       const eventId = generateEventId();
 
-      if (metaEnabled) {
+      if (metaEnabled)
         fbq(
           "track",
           "Search",
           { search_string: searchString, currency: "BDT" },
           { eventID: eventId },
         );
-      }
-
-      if (tiktokEnabled) {
-        ttq("Search", { query: searchString });
-      }
-
-      if (gtmEnabled) {
+      if (tiktokEnabled)
+        ttq("Search", { query: searchString }, { event_id: eventId });
+      if (gtmEnabled)
         pushDataLayer({ event: "search", search_term: searchString });
-      }
     },
     [metaEnabled, tiktokEnabled, gtmEnabled],
   );
@@ -365,11 +429,26 @@ const useAnalytics = () => {
         }
       }
 
-      if (gtmEnabled) {
-        pushDataLayer({ event: "login", method: "phone" });
+      if (tiktokEnabled) {
+        ttq("Login", {}, { event_id: eventId });
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "Login",
+            event_id: eventId,
+            user_data: userData,
+          });
+        }
       }
+
+      if (gtmEnabled) pushDataLayer({ event: "login", method: "phone" });
     },
-    [metaEnabled, metaCapiEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── CompleteRegistration ───────────────────────────
@@ -389,14 +468,25 @@ const useAnalytics = () => {
       }
 
       if (tiktokEnabled) {
-        ttq("CompleteRegistration");
+        ttq("CompleteRegistration", {}, { event_id: eventId });
+        if (tiktokCapiEnabled) {
+          await sendTikTokServerEvent({
+            event_name: "CompleteRegistration",
+            event_id: eventId,
+            user_data: userData,
+          });
+        }
       }
 
-      if (gtmEnabled) {
-        pushDataLayer({ event: "sign_up", method: "phone" });
-      }
+      if (gtmEnabled) pushDataLayer({ event: "sign_up", method: "phone" });
     },
-    [metaEnabled, metaCapiEnabled, tiktokEnabled, gtmEnabled],
+    [
+      metaEnabled,
+      metaCapiEnabled,
+      tiktokEnabled,
+      tiktokCapiEnabled,
+      gtmEnabled,
+    ],
   );
 
   // ── AddToWishlist ──────────────────────────────────
@@ -427,12 +517,16 @@ const useAnalytics = () => {
       }
 
       if (tiktokEnabled) {
-        ttq("AddToWishlist", {
-          content_id: itemId,
-          content_name: product?.product_name,
-          currency: "BDT",
-          value: price,
-        });
+        ttq(
+          "AddToWishlist",
+          {
+            content_id: itemId,
+            content_name: product?.product_name,
+            currency: "BDT",
+            value: price,
+          },
+          { event_id: eventId },
+        );
       }
 
       if (gtmEnabled) {
