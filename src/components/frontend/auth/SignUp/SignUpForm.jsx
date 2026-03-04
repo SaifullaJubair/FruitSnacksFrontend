@@ -17,17 +17,17 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 
-// ✅ Meta Pixel
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
+// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent
+// ✅ এখন: একটাই hook
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 const SignUpForm = () => {
   const [isPasswordShow, setPasswordShow] = useState(false);
   const [userRegistration, { isLoading }] = useUserRegistrationMutation();
   const [user_phone, setUserPhone] = useState();
-  const { trackCompleteRegistration } = useMetaPixel();
+
+  // ✅ একটাই
+  const { trackCompleteRegistration } = useAnalytics();
 
   const {
     register,
@@ -41,14 +41,10 @@ const SignUpForm = () => {
   const submitForm = async (data) => {
     try {
       if (user_phone) {
-        const formatPhoneNumberValueCheck = formatPhoneNumber(user_phone);
-        const isPossiblePhoneNumberValueCheck =
-          isPossiblePhoneNumber(user_phone);
-        const isValidPhoneNumberValueCheck = isValidPhoneNumber(user_phone);
         if (
-          !formatPhoneNumberValueCheck ||
-          !isPossiblePhoneNumberValueCheck ||
-          !isValidPhoneNumberValueCheck
+          !formatPhoneNumber(user_phone) ||
+          !isPossiblePhoneNumber(user_phone) ||
+          !isValidPhoneNumber(user_phone)
         ) {
           toast.error("Mobile number not valid !", {
             position: "top-center",
@@ -65,25 +61,18 @@ const SignUpForm = () => {
         return;
       }
 
-      const sendData = {
+      const res = await userRegistration({
         user_name: data?.user_name,
-        user_phone: user_phone,
+        user_phone,
         user_password: data?.user_password,
-      };
-
-      const res = await userRegistration(sendData);
+      });
 
       if (res.data?.statusCode === 200 && res.data?.success === true) {
-        // ✅ CompleteRegistration Meta Pixel event
-        const eventId = generateEventId();
-        trackCompleteRegistration(eventId);
-        sendServerEvent({
-          event_name: "CompleteRegistration",
-          event_id: eventId,
-          user_data: {
-            ph: user_phone,
-            fn: data?.user_name,
-          },
+        // ✅ CompleteRegistration — Meta (browser + CAPI) + TikTok (browser + CAPI) + GTM
+        // সব একটাই call — settings এ যেটা enabled সেটাই fire হবে
+        await trackCompleteRegistration({
+          ph: user_phone,
+          fn: data?.user_name,
         });
 
         reset();
@@ -94,18 +83,16 @@ const SignUpForm = () => {
     } catch (error) {
       console.log(error);
       toast.error("Something went wrong!");
-    } finally {
-      console.log("done");
     }
   };
 
   return (
     <div className="">
       <div className="sm:grid sm:grid-cols-2 sm:gap-6 md:gap-8 lg:gap-12">
-        <div className="bg-primary sm:flex sm:justify-center sm:items-center hidden ">
+        <div className="bg-primary sm:flex sm:justify-center sm:items-center hidden">
           <Image src={signupImage} alt="signupImage" width={500} height={500} />
         </div>
-        <div className="min-h-screen lg:w-[500px] md:w-[380px] sm:w-[300px] w-[95%] sm:mx-0 mx-auto flex items-center ">
+        <div className="min-h-screen lg:w-[500px] md:w-[380px] sm:w-[300px] w-[95%] sm:mx-0 mx-auto flex items-center">
           <div className="w-full">
             <div className="mb-8">
               <FaShoppingBag size={35} className="text-primary" />

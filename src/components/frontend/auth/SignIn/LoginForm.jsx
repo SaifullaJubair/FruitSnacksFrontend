@@ -21,14 +21,9 @@ import PhoneInput, {
 } from "react-phone-number-input";
 import { LoaderOverlay } from "@/components/shared/loader/LoaderOverlay";
 
-// ✅ Meta Pixel
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
-
-// ✅ GTM
-import { useGTM } from "@/utils/useGTM";
+// ✅ এখন: একটাই hook
+// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 const LoginForm = () => {
   const [user_phone, setUserPhone] = useState();
@@ -38,10 +33,9 @@ const LoginForm = () => {
   const successRedirect = getQuery.get("success_redirect");
   const dispatch = useDispatch();
   const { products: cartProducts } = useSelector((state) => state.cart);
-  const { trackLogin } = useMetaPixel();
 
-  // ✅ GTM
-  const { trackLogin: gtmLogin } = useGTM();
+  // ✅ একটাই
+  const { trackLogin } = useAnalytics();
 
   const {
     register,
@@ -54,14 +48,10 @@ const LoginForm = () => {
   const submitForm = async (data) => {
     try {
       if (user_phone) {
-        const formatPhoneNumberValueCheck = formatPhoneNumber(user_phone);
-        const isPossiblePhoneNumberValueCheck =
-          isPossiblePhoneNumber(user_phone);
-        const isValidPhoneNumberValueCheck = isValidPhoneNumber(user_phone);
         if (
-          !formatPhoneNumberValueCheck ||
-          !isPossiblePhoneNumberValueCheck ||
-          !isValidPhoneNumberValueCheck
+          !formatPhoneNumber(user_phone) ||
+          !isPossiblePhoneNumber(user_phone) ||
+          !isValidPhoneNumber(user_phone)
         ) {
           toast.error("Mobile number not valid !", {
             position: "top-center",
@@ -78,42 +68,21 @@ const LoginForm = () => {
         return;
       }
 
-      const sendData = { user_phone, user_password: data?.user_password };
-      const res = await userLogin(sendData);
-      // if (res?.data?.statusCode === 200 && res?.data?.success === true) {
-      //   toast.success(res?.data?.message, {
-      //     autoClose: 2000,
-      //   });
-      //   reset();
-      //   if (successRedirect) {
-      //     router.push(successRedirect);
-      //   } else {
-      //     router.push("/");
-      //   }
-      // }
+      const res = await userLogin({
+        user_phone,
+        user_password: data?.user_password,
+      });
+
       if (res?.data?.statusCode === 200 && res?.data?.success === true) {
         toast.success(res?.data?.message, { autoClose: 2000 });
         reset();
 
-        // ✅ Login — Meta Pixel
-        const eventId = generateEventId();
-        trackLogin(eventId);
-        sendServerEvent({
-          event_name: "Login",
-          event_id: eventId,
-          user_data: { ph: user_phone },
-        });
-
-        // ✅ login — GTM / GA4
-        gtmLogin("phone");
+        // ✅ Login — Meta (browser + CAPI) + TikTok (browser + CAPI) + GTM
+        // সব একটাই call — settings এ যেটা enabled সেটাই fire হবে
+        await trackLogin({ ph: user_phone });
 
         await syncCartAfterLogin(cartProducts, dispatch);
-
-        if (successRedirect) {
-          router.push(successRedirect);
-        } else {
-          router.push("/");
-        }
+        router.push(successRedirect || "/");
       } else {
         toast.error(res?.error?.data?.message || "Something went wrong", {
           autoClose: 1000,
@@ -121,8 +90,6 @@ const LoginForm = () => {
       }
     } catch (error) {
       console.error(error);
-    } finally {
-      console.log("done");
     }
   };
 
