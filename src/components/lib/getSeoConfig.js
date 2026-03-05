@@ -49,10 +49,28 @@ export async function getSeoConfig() {
     favicon: s?.favicon || "/favicon.ico",
     facebook: s?.facebook || "",
     instagram: s?.instagram || "",
-    // ✅ Analytics — একবারই fetch, সব এখান থেকে
-    metaPixelId: s?.meta_pixel_enabled ? s?.meta_pixel_id : null,
-    tiktokPixelId: s?.tiktok_pixel_enabled ? s?.tiktok_pixel_id : null,
-    gtmId: s?.gtm_enabled ? s?.gtm_id : null,
-    clarityId: s?.clarity_enabled ? s?.clarity_id : null,
+    youtube: s?.you_tube || "",
+    whatsapp: s?.watsapp || "",
+    tiktok: s?.tik_tok || "",
+    twitter: s?.twitter || "",
+
+    // ── Analytics — enabled toggles DB থেকে, IDs .env থেকে ───
+    // ✅ enabled check DB থেকে
+    metaPixelEnabled: !!s?.meta_pixel_enabled,
+    tiktokPixelEnabled: !!s?.tiktok_pixel_enabled,
+    gtmEnabled: !!s?.gtm_enabled,
+    ga4Enabled: !!s?.ga4_enabled,
+    clarityEnabled: !!s?.clarity_enabled,
+
+    // ✅ IDs .env থেকে — DB তে নেই, API response এ আসবে না
+    metaPixelId: s?.meta_pixel_enabled
+      ? process.env.META_PIXEL_ID || null
+      : null,
+    tiktokPixelId: s?.tiktok_pixel_enabled
+      ? process.env.TIKTOK_PIXEL_ID || null
+      : null,
+    gtmId: s?.gtm_enabled ? process.env.GTM_ID || null : null,
+    ga4Id: s?.ga4_enabled ? process.env.GA4_ID || null : null,
+    clarityId: s?.clarity_enabled ? process.env.CLARITY_ID || null : null,
   };
 }

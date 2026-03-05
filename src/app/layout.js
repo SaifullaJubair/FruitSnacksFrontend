@@ -45,7 +45,7 @@ export async function generateMetadata() {
 
     // ── 3. Verification ───────────────────────────────────
     verification: {
-      google: process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION,
+      google: process.env.GOOGLE_VERIFICATION,
     },
 
     // ── 4. Icons ──────────────────────────────────────────
@@ -91,14 +91,18 @@ export default async function RootLayout({ children }) {
     name: seo.siteName,
     url: seo.siteUrl,
     logo: seo.logo,
-    sameAs: [seo.facebook, seo.instagram].filter(Boolean), //YouTube বা TikTok লিঙ্কও থাকে, তবে সেগুলোও সেখানে অ্যাড করে দিও।
+    sameAs: [
+      seo.facebook,
+      seo.instagram,
+      seo.youtube,
+      seo.whatsapp,
+      seo.twitter,
+    ].filter(Boolean),
   };
 
   return (
     <html lang="bn">
-      <head>
-        <GoogleTagManager />
-      </head>
+      <head>{seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}</head>
       <body className={bodyFont.className}>
         <script
           type="application/ld+json"

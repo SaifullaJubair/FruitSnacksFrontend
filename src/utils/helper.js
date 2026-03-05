@@ -63,35 +63,35 @@ export const productPrice = (product) => {
     : product?.product_price;
 };
 
-// export const lineThroughPrice = (product) => {
-//   if (
-//     product?.variations?.variation_discount_price ||
-//     product?.product_discount_price
-//   ) {
-//     return product?.variations?.variation_price || product?.product_price;
-//   }
-//   return null;
-// };
+export const lineThroughPrice = (product) => {
+  if (
+    product?.variations?.variation_discount_price ||
+    product?.product_discount_price
+  ) {
+    return product?.variations?.variation_price || product?.product_price;
+  }
+  return null;
+};
 
 // এই function টা replace করো
-// export const lineThroughPrice = (product) => {
-//   // Flash sale active থাকলে
-//   if (product?.flash_sale_details?.flash_sale_product) {
-//     return product?.variations?.[0]?.variation_price || product?.product_price;
-//   }
-//   // Campaign active থাকলে
-//   if (product?.campaign_details?.campaign_product) {
-//     return product?.variations?.[0]?.variation_price || product?.product_price;
-//   }
-//   // Normal discount থাকলে
-//   if (
-//     product?.variations?.[0]?.variation_discount_price ||
-//     product?.product_discount_price
-//   ) {
-//     return product?.variations?.[0]?.variation_price || product?.product_price;
-//   }
-//   return null;
-// };
+export const singleProductLineThroughPrice = (product) => {
+  // Flash sale active থাকলে
+  if (product?.flash_sale_details?.flash_sale_product) {
+    return product?.variations?.[0]?.variation_price || product?.product_price;
+  }
+  // Campaign active থাকলে
+  if (product?.campaign_details?.campaign_product) {
+    return product?.variations?.[0]?.variation_price || product?.product_price;
+  }
+  // Normal discount থাকলে
+  if (
+    product?.variations?.[0]?.variation_discount_price ||
+    product?.product_discount_price
+  ) {
+    return product?.variations?.[0]?.variation_price || product?.product_price;
+  }
+  return null;
+};
 export const calculatePrice = (originalPrice, discount, type) => {
   if (type === "percent") {
     const roundPrice = Math.round(

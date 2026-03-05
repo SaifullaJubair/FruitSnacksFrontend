@@ -1,10 +1,10 @@
 "use client";
 // scr/components/analyticsScripts/utils/useAnalytics.js
 import { useCallback } from "react";
-import { generateEventId } from "@/utils/generateEventId";
-import { sendServerEvent } from "@/components/analyticsScripts/metaPixel/metaServerEvent";
-import { sendTikTokServerEvent } from "@/components/analyticsScripts/tiktokPixel/tiktokServerEvent";
+import { sendServerEvent } from "./metaPixel/metaServerEvent";
+import { sendTikTokServerEvent } from "./tiktokPixel/TiktokServerEvent";
 import useGetSettingData from "@/components/lib/getSettingData";
+import { generateEventId } from "./metaPixel/useMetaPixel";
 
 // ── helpers ────────────────────────────────────────────
 const fbq = (...args) => {

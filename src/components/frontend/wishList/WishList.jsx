@@ -18,15 +18,12 @@ import { lineThroughPrice, productPrice } from "@/utils/helper";
 import { PhotoProvider, PhotoView } from "react-photo-view";
 import WishlistTableSkeleton from "@/components/shared/loader/WishlistTableSkeleton";
 import { CART_QUERY_KEY } from "../cart/AddToCart";
-
-// ✅ Meta Pixel
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 
-// Wishlist এর আলাদা query key
+// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
+// ✅ এখন: একটাই hook
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
+
 const WISHLIST_QUERY_KEY = "/api/v1/product/wishlist_product";
 
 const WishList = () => {
@@ -34,8 +31,10 @@ const WishList = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const cartProducts = useSelector((state) => state.cart.products);
-  const { trackAddToCart } = useMetaPixel();
   const { data: userInfo } = useUserInfoQuery();
+
+  // ✅ একটাই hook
+  const { trackAddToCart } = useAnalytics();
 
   useEffect(() => {
     try {
@@ -58,7 +57,6 @@ const WishList = () => {
     staleTime: Infinity,
   });
 
-  // Product remove হলে cache update — refetch নেই
   const handleRemoveWishlist = (product) => {
     const wishListItem = {
       productId: product?._id,
@@ -66,18 +64,15 @@ const WishList = () => {
         ? product?.variations?._id
         : null,
     };
-
     let existingWishlist = [];
     try {
       existingWishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
     } catch (error) {}
-
     const updatedWishlist = existingWishlist.filter(
       (item) =>
         item.productId !== wishListItem.productId ||
         item.variation_product_id !== wishListItem.variation_product_id,
     );
-
     setWishList(updatedWishlist);
     localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
@@ -96,7 +91,6 @@ const WishList = () => {
     const productID = cartProducts.find(
       (item) => item?.productId === product?._id,
     );
-
     if (product?.is_variation) {
       const variationID = cartProducts.find(
         (item) => item?.variation_product_id === product?.variations?._id,
@@ -112,35 +106,19 @@ const WishList = () => {
 
     dispatch(addToCart(cartItem));
     toast.success("Successfully added to cart", { autoClose: 1500 });
-
-    // ✅ Cart page cache update করো — নতুন product add হলে refetch trigger হবে
     queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
 
-    // ✅ AddToCart Meta Pixel event
-    const eventId = generateEventId();
+    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
     trackAddToCart(
       product,
       product?.is_variation ? product?.variations : null,
       1,
-      eventId,
-    );
-    sendServerEvent({
-      event_name: "AddToCart",
-      event_id: eventId,
-      user_data: {
+      {
         ph: userInfo?.data?.user_phone,
         fn: userInfo?.data?.user_name,
         external_id: userInfo?.data?._id,
       },
-      custom_data: {
-        content_ids: [product?.variations?._id || product?._id],
-        content_name: product?.product_name,
-        content_type: "product",
-        currency: "BDT",
-        value: productPrice(product),
-        num_items: 1,
-      },
-    });
+    );
   };
 
   const { data: settingsData } = useGetSettingData();

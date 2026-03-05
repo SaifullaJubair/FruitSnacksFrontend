@@ -30,11 +30,8 @@ import useGetSettingData from "@/components/lib/getSettingData";
 import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
 import useGetZoneData from "@/components/lib/getZoneData";
 
-// ✅ Meta Pixel
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
+// ✅ একটাই hook — সব platform
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 export const CART_QUERY_KEY = "/api/v1/product/cart_product";
 
@@ -43,14 +40,13 @@ const AddToCart = () => {
   const dispatch = useDispatch();
   const queryClient = useQueryClient();
   const { products } = useSelector((state) => state.cart);
-  const { trackPurchase, trackInitiateCheckout } = useMetaPixel();
+  const { trackPurchase, trackInitiateCheckout } = useAnalytics();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm();
-
   const [mounted, setMounted] = useState(false);
   const initiateCheckoutFired = useRef(false);
   useEffect(() => setMounted(true), []);
@@ -69,7 +65,6 @@ const AddToCart = () => {
   });
 
   const isLoading = !mounted || cartLoading;
-
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
@@ -85,9 +80,8 @@ const AddToCart = () => {
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
 
   useEffect(() => {
-    if (userInfo?.data?.user_phone) {
+    if (userInfo?.data?.user_phone)
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
-    }
   }, [userInfo?.data?.user_phone]);
 
   const {
@@ -107,44 +101,33 @@ const AddToCart = () => {
   const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
     useCartCalculations({ cartData, products, couponData, shippingCharge });
 
-  // ✅ InitiateCheckout — phone input করলে একবার fire
+  // ✅ InitiateCheckout
   const handlePhoneChangeWithTracking = useCallback(
     (value) => {
       setUserPhone(value);
       if (!initiateCheckoutFired.current && value) {
         initiateCheckoutFired.current = true;
-        const eventId = generateEventId();
         trackInitiateCheckout(
           {
             content_ids: cartData?.map((p) => p?._id) || [],
             value: shopGrandTotals || 0,
             num_items: cartData?.length || 1,
           },
-          eventId,
+          { ph: value, external_id: userInfo?.data?._id },
         );
-        sendServerEvent({
-          event_name: "InitiateCheckout",
-          event_id: eventId,
-          custom_data: {
-            currency: "BDT",
-            value: shopGrandTotals || 0,
-            num_items: cartData?.length || 1,
-          },
-        });
       }
     },
-    [cartData, shopGrandTotals, trackInitiateCheckout],
+    [cartData, shopGrandTotals, trackInitiateCheckout, userInfo],
   );
-  // Remove হলে cache update — API call নেই
+
   const handleRemoveFromCache = useCallback(
     (productId, variationId) => {
       queryClient.setQueryData([CART_QUERY_KEY], (old = []) =>
         old.filter((item) => {
-          if (variationId) {
+          if (variationId)
             return !(
               item._id === productId && item.variations?._id === variationId
             );
-          }
           return !(item._id === productId && !item.variations?._id);
         }),
       );
@@ -206,10 +189,6 @@ const AddToCart = () => {
         return;
       }
 
-      // ✅ Purchase event_id — browser + server deduplication
-      const purchaseEventId = generateEventId();
-
-      // ✅ fbc, fbp cookie পড়ো
       const getCookie = (name) => {
         if (typeof document === "undefined") return "";
         const match = document.cookie.match(new RegExp(`(^| )${name}=([^;]+)`));
@@ -243,7 +222,6 @@ const AddToCart = () => {
         grand_total_amount: shopGrandTotals || 0,
         coupon_id: couponData?._id || null,
         need_user_create: !userInfo?.data?.user_phone,
-        purchase_event_id: purchaseEventId, // ✅ server side deduplication
         fbc: getCookie("_fbc"),
         fbp: getCookie("_fbp"),
         order_products: cartData.map((product) => {
@@ -298,10 +276,8 @@ const AddToCart = () => {
         if (!response.ok)
           throw new Error(result.message || "Failed to create order");
 
-        // আগে cart clear — তারপর redirect (empty cart flash বন্ধ)
         dispatch(allRemoveFromCart());
         queryClient.removeQueries({ queryKey: [CART_QUERY_KEY] });
-
         if (userInfo?.data?._id) {
           await fetch(`${BASE_URL}/cart`, {
             method: "DELETE",
@@ -309,25 +285,15 @@ const AddToCart = () => {
           }).catch(() => {});
         }
 
-        // ✅ Browser + Server Purchase event
-        trackPurchase(orderData, purchaseEventId);
-        sendServerEvent({
-          event_name: "Purchase",
-          event_id: purchaseEventId,
-          user_data: {
+        // ✅ Purchase
+        trackPurchase(
+          { ...orderData, _id: result?.data?.order_id },
+          {
             ph: customer_phone,
             fn: formData.customer_name || userInfo?.data?.user_name,
             external_id: userInfo?.data?._id,
           },
-          custom_data: {
-            currency: "BDT",
-            value: shopGrandTotals,
-            content_ids: cartData.map((p) => p._id),
-            content_type: "product",
-            num_items: cartData.length,
-            order_id: result?.data?.order_id,
-          },
-        });
+        );
 
         const orderId = result?.data?.order_id;
         const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
@@ -338,13 +304,12 @@ const AddToCart = () => {
         const params = new URLSearchParams();
         if (orderId) params.set("order_id", orderId);
         if (isGuest) params.set("guest", "true");
-        // loading false করো না — redirect হওয়া পর্যন্ত overlay থাকবে
         navigate.push(`/orders/order-success?${params.toString()}`);
       } catch (error) {
         toast.error(error.message || "Something went wrong", {
           autoClose: 1000,
         });
-        setLoading(false); // শুধু error এ loading false
+        setLoading(false);
       }
     },
     [
@@ -367,10 +332,11 @@ const AddToCart = () => {
       divisionID,
       districtId,
       queryClient,
+      trackPurchase,
     ],
   );
 
-  if (!mounted) {
+  if (!mounted)
     return (
       <div className="min-h-screen bg-[#F4F4F4]/50">
         <Contain>
@@ -380,9 +346,8 @@ const AddToCart = () => {
         </Contain>
       </div>
     );
-  }
 
-  if (!products?.length) {
+  if (!products?.length)
     return (
       <div className="text-center max-w-md mx-auto mt-2 bg-white p-6 shadow-lg">
         <img
@@ -408,11 +373,9 @@ const AddToCart = () => {
         </div>
       </div>
     );
-  }
 
   return (
     <div className="min-h-screen bg-[#F4F4F4]/50 relative">
-      {/* Order submitting overlay — empty cart flash বন্ধ */}
       {loading && (
         <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -427,7 +390,6 @@ const AddToCart = () => {
               There are {products?.length} products in this list
             </p>
           </div>
-
           <div className="grid md:gap-4 lg:gap-4 grid-cols-1 md:grid-cols-5 lg:grid-cols-4">
             <div className="flex gap-6 md:col-span-3 mt-4 overflow-x-auto pb-6">
               <div className="w-full space-y-6">
@@ -467,7 +429,6 @@ const AddToCart = () => {
                 )}
               </div>
             </div>
-
             <div className="md:col-span-2 space-y-6 lg:col-span-1">
               {isLoading || userGetLoading ? (
                 <CartSummarySkeleton />

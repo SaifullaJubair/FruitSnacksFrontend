@@ -26,16 +26,11 @@ import { BASE_URL } from "@/components/utils/baseURL";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { calculatePrice, isHexColor, singleProductPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
-
-// ✅ Meta Pixel
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 
-// ✅ GTM
-import { useGTM } from "@/utils/useGTM";
+// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
+// ✅ এখন: একটাই hook
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 const Overlay = ({ onClick }) => (
   <motion.div
@@ -53,24 +48,16 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   const cartProducts = useSelector((state) => state.cart.products);
   const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data[0]?.currency_symbol;
-  const { trackAddToCart, trackViewContent, trackAddToWishlist } =
-    useMetaPixel();
   const { data: userInfo } = useUserInfoQuery();
   const modalRef = useRef(null);
 
-  // ✅ GTM hook
-  const {
-    trackViewItem,
-    trackAddToCart: gtmAddToCart,
-    trackAddToWishlist: gtmAddToWishlist,
-  } = useGTM();
+  // ✅ একটাই hook
+  const { trackViewContent, trackAddToCart, trackAddToWishlist } =
+    useAnalytics();
 
-  // Full product details
   const [product, setProduct] = useState(null);
   const [fetchLoading, setFetchLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-
-  // Variation & quantity state
   const [selectedVariations, setSelectedVariations] = useState({});
   const [variationProduct, setVariationProduct] = useState(null);
   const [productPrice, setProductPrice] = useState(null);
@@ -83,14 +70,11 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
-
-  // Gallery images
   const [galleryImages, setGalleryImages] = useState([]);
 
-  // Check if product is in cart
+  // Cart check
   useEffect(() => {
     if (!product) return;
-
     const inCart = cartProducts.some((item) => {
       if (variationProduct) {
         return (
@@ -100,14 +84,12 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       }
       return item.productId === product._id && !item.variation_product_id;
     });
-
     setIsInCart(inCart);
   }, [product, variationProduct, cartProducts]);
 
   // Full product fetch
   useEffect(() => {
     if (!listProduct?.product_slug) return;
-
     setFetchLoading(true);
     setFetchError(false);
 
@@ -123,58 +105,30 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         setProduct(p);
         setFetchError(false);
 
-        // Setup gallery images with all available images
+        // Gallery images
         const images = [p?.main_image].filter(Boolean);
-
-        // Add other images
         if (p?.other_images?.length > 0) {
           p.other_images.forEach((img) => {
-            if (img.other_image && !images.includes(img.other_image)) {
+            if (img.other_image && !images.includes(img.other_image))
               images.push(img.other_image);
-            }
           });
         }
-
-        // Add variation images
         if (p?.is_variation && p?.variations?.length > 0) {
           p.variations.forEach((v) => {
-            if (v.variation_image && !images.includes(v.variation_image)) {
+            if (v.variation_image && !images.includes(v.variation_image))
               images.push(v.variation_image);
-            }
           });
         }
         setGalleryImages(images.filter(Boolean));
 
-        // ✅ ViewContent event
-        const eventId = generateEventId();
-        trackViewContent(p, eventId);
-        sendServerEvent({
-          event_name: "ViewContent",
-          event_id: eventId,
-          user_data: {
-            ph: userInfo?.data?.user_phone,
-            fn: userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-          custom_data: {
-            content_ids: [p?._id],
-            content_name: p?.product_name,
-            content_type: "product",
-            currency: "BDT",
-            value: p?.product_discount_price || p?.product_price,
-          },
+        // ✅ ViewContent — Meta + TikTok + GTM একটাই call
+        trackViewContent(p, {
+          ph: userInfo?.data?.user_phone,
+          fn: userInfo?.data?.user_name,
+          external_id: userInfo?.data?._id,
         });
 
-        // ✅ view_item — GTM / GA4
-        trackViewItem({
-          _id: p._id,
-          product_name: p.product_name,
-          price: p.product_discount_price || p.product_price,
-          brand: p.product_brand || "",
-          category: p.product_category || "",
-        });
-
-        // Initial price & stock set
+        // Initial price & stock
         if (p?.is_variation && p?.variations?.length > 0) {
           const firstVariation = p.variations[0];
           setVariationProduct(firstVariation);
@@ -187,13 +141,11 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             setLineThoughPrice(firstVariation.variation_price);
           setActiveImage(firstVariation.variation_image || p.main_image);
 
-          // Initial variation selections
           if (p.attributes_details?.length > 0) {
             const initial = {};
             p.attributes_details.forEach((attr) => {
-              if (attr.attribute_values?.length > 0) {
+              if (attr.attribute_values?.length > 0)
                 initial[attr.attribute_name] = attr.attribute_values[0];
-              }
             });
             setSelectedVariations(initial);
           }
@@ -201,27 +153,28 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           setStock(p?.product_quantity || 0);
           setProductPrice(singleProductPrice(p));
           setActiveImage(p?.main_image);
-          if (p?.product_discount_price) {
-            setLineThoughPrice(p.product_price);
-          }
+          if (p?.product_discount_price) setLineThoughPrice(p.product_price);
         }
 
-        // Check wishlist status (after setting product and variation)
+        // Wishlist status
         try {
           const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
           if (p?.is_variation && p?.variations?.length > 0) {
             const firstVariation = p.variations[0];
-            const variationInWishlist = wishlist.some(
-              (item) =>
-                item.productId === p?._id &&
-                item.variation_product_id === firstVariation._id,
+            setIsWishlisted(
+              wishlist.some(
+                (item) =>
+                  item.productId === p?._id &&
+                  item.variation_product_id === firstVariation._id,
+              ),
             );
-            setIsWishlisted(variationInWishlist);
           } else {
-            const isInWishlist = wishlist.some(
-              (item) => item.productId === p?._id && !item.variation_product_id,
+            setIsWishlisted(
+              wishlist.some(
+                (item) =>
+                  item.productId === p?._id && !item.variation_product_id,
+              ),
             );
-            setIsWishlisted(isInWishlist);
           }
         } catch (error) {
           console.error("Error reading wishlist:", error);
@@ -233,28 +186,26 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         toast.error("Failed to load product. Please try again.");
       })
       .finally(() => setFetchLoading(false));
-  }, [listProduct?.product_slug, trackViewContent, userInfo]);
+  }, [listProduct?.product_slug, userInfo]);
 
   // Variation select
   const handleSelectVariation = useCallback(
     (value, attributeName) => {
       if (!product) return;
-
       const newVariations = { ...selectedVariations, [attributeName]: value };
       setSelectedVariations(newVariations);
 
       const slug = Object.values(newVariations)
         .map((v) => v.attribute_value_name)
         .join("-");
-
       const found = product.variations?.find((v) => v.variation_name === slug);
+
       if (found) {
         setVariationProduct(found);
         setStock(found.variation_quantity);
         setQuantity(1);
         setActiveImage(found.variation_image || product.main_image);
 
-        // Update active image index in gallery
         const imageIndex = galleryImages.findIndex(
           (img) => img === (found.variation_image || product.main_image),
         );
@@ -286,15 +237,15 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         }
         setProductPrice(price);
 
-        // Check wishlist status for this variation
         try {
           const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
-          const isInWishlist = wishlist.some(
-            (item) =>
-              item.productId === product._id &&
-              item.variation_product_id === found._id,
+          setIsWishlisted(
+            wishlist.some(
+              (item) =>
+                item.productId === product._id &&
+                item.variation_product_id === found._id,
+            ),
           );
-          setIsWishlisted(isInWishlist);
         } catch (error) {
           console.error("Error reading wishlist:", error);
         }
@@ -306,12 +257,10 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   // Add to cart
   const handleAddToCart = useCallback(() => {
     if (!product) return;
-
     if (product.is_variation && !variationProduct) {
       toast.error("Please select a variation");
       return;
     }
-
     if (isInCart) {
       toast.error("Already in cart!", { autoClose: 1500 });
       return;
@@ -324,44 +273,16 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         quantity,
       }),
     );
-
-    // Success animation
     setAddedToCart(true);
     toast.success("Added to cart!", { autoClose: 1500 });
     setTimeout(() => setAddedToCart(false), 1500);
 
-    // ✅ AddToCart — Meta Pixel
-    const eventId = generateEventId();
-    trackAddToCart(product, variationProduct, quantity, eventId);
-    sendServerEvent({
-      event_name: "AddToCart",
-      event_id: eventId,
-      user_data: {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
-      custom_data: {
-        content_ids: [variationProduct?._id || product._id],
-        content_name: product.product_name,
-        content_type: "product",
-        currency: "BDT",
-        value: productPrice * quantity,
-        num_items: quantity,
-      },
+    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
+    trackAddToCart(product, variationProduct, quantity, {
+      ph: userInfo?.data?.user_phone,
+      fn: userInfo?.data?.user_name,
+      external_id: userInfo?.data?._id,
     });
-
-    // ✅ add_to_cart — GTM / GA4
-    gtmAddToCart(
-      {
-        _id: variationProduct?._id || product._id,
-        product_name: product.product_name,
-        price: productPrice,
-        brand: product.product_brand || "",
-        category: product.product_category || "",
-      },
-      quantity,
-    );
   }, [
     product,
     variationProduct,
@@ -371,21 +292,19 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     userInfo,
     productPrice,
     isInCart,
-    gtmAddToCart,
   ]);
 
-  // Wishlist handler
+  // Wishlist
   const handleWishlist = useCallback(() => {
     const wishlistItem = {
       productId: product._id,
       variation_product_id: variationProduct?._id || null,
     };
-
     let wishlist = [];
     try {
       wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
     } catch (error) {
-      console.error("Error reading wishlist:", error);
+      console.error(error);
     }
 
     const exists = wishlist.some(
@@ -409,44 +328,13 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       setIsWishlisted(true);
       toast.success("Added to wishlist", { autoClose: 1500 });
 
-      // ✅ AddToWishlist Meta Pixel event
-      const eventId = generateEventId();
-      trackAddToWishlist(product, variationProduct, eventId);
-      sendServerEvent({
-        event_name: "AddToWishlist",
-        event_id: eventId,
-        user_data: {
-          ph: userInfo?.data?.user_phone,
-          fn: userInfo?.data?.user_name,
-          external_id: userInfo?.data?._id,
-        },
-        custom_data: {
-          content_ids: [variationProduct?._id || product._id],
-          content_name: product.product_name,
-          content_type: "product",
-          currency: "BDT",
-          value: productPrice,
-        },
-      });
-
-      // ✅ add_to_wishlist — GTM / GA4
-      gtmAddToWishlist({
-        _id: variationProduct?._id || product._id,
-        product_name: product.product_name,
-        price: productPrice,
-      });
+      // ✅ AddToWishlist — Meta + TikTok + GTM একটাই call
+      trackAddToWishlist(product, variationProduct);
     }
 
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
-  }, [
-    product,
-    variationProduct,
-    productPrice,
-    trackAddToWishlist,
-    userInfo,
-    gtmAddToWishlist,
-  ]);
+  }, [product, variationProduct, productPrice, trackAddToWishlist]);
 
   // Quantity handlers
   const handleIncrement = () => {
@@ -457,12 +345,11 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     if (quantity > 1) setQuantity((q) => q - 1);
   };
 
-  // Click outside handler
+  // Click outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (modalRef.current && !modalRef.current.contains(event.target)) {
+      if (modalRef.current && !modalRef.current.contains(event.target))
         onClose();
-      }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
@@ -485,32 +372,29 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     };
   }, []);
 
-  // Render stars for rating
   const renderRatingStars = (rating) => {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
-
     for (let i = 1; i <= 5; i++) {
-      if (i <= fullStars) {
+      if (i <= fullStars)
         stars.push(
           <span key={i} className="text-yellow-400">
             ★
           </span>,
         );
-      } else if (hasHalfStar && i === fullStars + 1) {
+      else if (hasHalfStar && i === fullStars + 1)
         stars.push(
           <span key={i} className="text-yellow-400">
             ½
           </span>,
         );
-      } else {
+      else
         stars.push(
           <span key={i} className="text-gray-300">
             ★
           </span>,
         );
-      }
     }
     return stars;
   };
@@ -536,7 +420,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
             marginBottom: "env(safe-area-inset-bottom)",
           }}
         >
-          {/* Close Button - Fixed position on mobile, absolute on desktop */}
           <motion.button
             whileHover={{ scale: 1.1, rotate: 90 }}
             whileTap={{ scale: 0.9 }}
@@ -600,8 +483,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </SwiperSlide>
                     ))}
                   </Swiper>
-
-                  {/* Discount Badge */}
                   {lineThoughPrice && (
                     <motion.span
                       initial={{ scale: 0 }}
@@ -617,7 +498,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                   )}
                 </div>
 
-                {/* Thumbnails */}
                 {galleryImages.length > 1 && (
                   <Swiper
                     onSwiper={setThumbsSwiper}
@@ -631,11 +511,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     {galleryImages.map((img, idx) => (
                       <SwiperSlide key={idx}>
                         <button
-                          className={`relative w-full aspect-square rounded-md overflow-hidden border-2 transition-all ${
-                            activeImageIndex === idx
-                              ? "border-primary"
-                              : "border-transparent hover:border-gray-300"
-                          }`}
+                          className={`relative w-full aspect-square rounded-md overflow-hidden border-2 transition-all ${activeImageIndex === idx ? "border-primary" : "border-transparent hover:border-gray-300"}`}
                         >
                           <Image
                             fill
@@ -656,7 +532,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                 style={{ maxHeight: "calc(100vh - 80px)" }}
               >
                 <div className="space-y-4 pb-8 sm:pb-4">
-                  {/* Brand/Title */}
                   <div className="mt-12 sm:mt-0">
                     {product.product_brand && (
                       <span className="text-xs text-gray-400 uppercase tracking-wider">
@@ -668,7 +543,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     </h2>
                   </div>
 
-                  {/* Rating from product data */}
                   {(product?.avarage_review_ratting > 0 ||
                     product?.total_review_ratting > 0) && (
                     <div className="flex items-center gap-2">
@@ -687,7 +561,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     </div>
                   )}
 
-                  {/* Price */}
                   <div className="flex items-baseline gap-3">
                     <motion.span
                       key={productPrice}
@@ -706,14 +579,12 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     )}
                   </div>
 
-                  {/* Short Description */}
                   {product.product_short_description && (
                     <p className="text-xs sm:text-sm text-gray-600 leading-relaxed border-b border-gray-100 pb-3">
                       {product.product_short_description}
                     </p>
                   )}
 
-                  {/* Variations */}
                   {product.is_variation &&
                     product.attributes_details?.map((attr, i) => (
                       <motion.div
@@ -752,11 +623,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                                 }
                                 title={val.attribute_value_name}
                                 className={`relative transition-all duration-200
-                                ${
-                                  isColor
-                                    ? "w-7 h-7 sm:w-8 sm:h-8 rounded-full"
-                                    : "px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-md border"
-                                }
+                                ${isColor ? "w-7 h-7 sm:w-8 sm:h-8 rounded-full" : "px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm rounded-md border"}
                                 ${
                                   isSelected
                                     ? isColor
@@ -780,7 +647,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </motion.div>
                     ))}
 
-                  {/* Quantity & Actions */}
                   {stock > 0 && (
                     <div className="space-y-3">
                       <div>
@@ -788,9 +654,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           <p className="text-xs sm:text-sm text-gray-700 font-medium">
                             Quantity:
                           </p>
-                          {/* Share and More Options */}
                           <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
-                            {/* Stock Status Badge */}
                             <div className="flex items-center gap-1.5">
                               {stock > 0 ? (
                                 <>
@@ -808,8 +672,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                                 </>
                               )}
                             </div>
-
-                            {/* Share Button */}
                             <motion.button
                               whileHover={{ scale: 1.1 }}
                               whileTap={{ scale: 0.9 }}
@@ -868,7 +730,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Add to Cart */}
                         <motion.button
                           whileHover={
                             !isInCart && stock > 0 ? { scale: 1.02 } : {}
@@ -901,7 +762,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           )}
                         </motion.button>
 
-                        {/* View Details (same width as Add to Cart) */}
                         <Link
                           href={`/products/${product.product_slug}`}
                           onClick={onClose}
@@ -917,7 +777,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           </motion.button>
                         </Link>
 
-                        {/* Wishlist */}
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
@@ -935,7 +794,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     </div>
                   )}
 
-                  {/* Features - Alternative Grid Layout */}
                   <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
                     <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <MdOutlineLocalShipping

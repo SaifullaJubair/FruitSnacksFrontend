@@ -12,11 +12,14 @@ import RelatedProducts from "./relatedProducts/RelatedProducts";
 import MobileDeliveryInfoAccordion from "./rightSideShoppingSection/MobileDeliveryInfoAccordion";
 import ReturnPolicyAccordion from "./returnPolicyAccordion/ReturnPolicyAccordion";
 import { useEffect, useState, useRef } from "react";
-import { updateRecentProducts } from "@/utils/helper";
+import {
+  updateRecentProducts,
+  calculatePrice,
+  singleProductPrice,
+} from "@/utils/helper";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { calculatePrice, singleProductPrice } from "@/utils/helper";
 import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -29,56 +32,39 @@ import {
 } from "react-phone-number-input";
 import useGetZoneData from "@/components/lib/getZoneData";
 import "react-phone-number-input/style.css";
-
-// ✅ Meta Pixel — all events intact
-import useMetaPixel, {
-  generateEventId,
-} from "@/components/analyticsScripts/utils/metaPixel/useMetaPixel";
-import { sendServerEvent } from "@/components/analyticsScripts/utils/metaPixel/metaServerEvent";
-
 import { BsBoxSeam } from "react-icons/bs";
 
+// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
+// ✅ এখন: একটাই hook
+import useAnalytics from "@/hooks/useAnalytics";
+
 const SingleProduct = ({ product }) => {
-  // Track recent products
   useEffect(() => {
     if (product) updateRecentProducts(product);
   }, [product]);
 
-  // Meta Pixel hooks
+  const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
+  const initiateCheckoutFired = useRef(false);
+
+  // ✅ একটাই hook — সব platform
   const {
     trackViewContent,
     trackAddToCart,
     trackPurchase,
     trackInitiateCheckout,
     trackAddToWishlist,
-  } = useMetaPixel();
-  const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
-  const initiateCheckoutFired = useRef(false);
+  } = useAnalytics();
 
-  // ✅ ViewContent — fires once on product page load
+  // ✅ ViewContent — product load হলে একবার fire
   useEffect(() => {
     if (!product?._id) return;
-    const eventId = generateEventId();
-    trackViewContent(product, eventId);
-    sendServerEvent({
-      event_name: "ViewContent",
-      event_id: eventId,
-      user_data: {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
-      custom_data: {
-        content_ids: [product?._id],
-        content_name: product?.product_name,
-        content_type: "product",
-        currency: "BDT",
-        value: product?.product_discount_price || product?.product_price,
-      },
+    trackViewContent(product, {
+      ph: userInfo?.data?.user_phone,
+      fn: userInfo?.data?.user_name,
+      external_id: userInfo?.data?._id,
     });
   }, [product?._id]);
 
-  // Form
   const {
     register,
     handleSubmit,
@@ -94,30 +80,19 @@ const SingleProduct = ({ product }) => {
   );
   const [userPhoneLogin, setUserPhoneLogin] = useState(false);
 
-  // ✅ InitiateCheckout — fires once when phone input starts
+  // ✅ InitiateCheckout — phone দিলে একবার fire
   const handlePhoneChangeWithTracking = (value) => {
     setUserPhone(value);
     if (!initiateCheckoutFired.current && value) {
       initiateCheckoutFired.current = true;
-      const eventId = generateEventId();
       trackInitiateCheckout(
         {
           content_ids: [product?._id],
-          value: productPrice,
+          value: productPrice * quantity,
           num_items: quantity,
         },
-        eventId,
+        { ph: value, external_id: userInfo?.data?._id },
       );
-      sendServerEvent({
-        event_name: "InitiateCheckout",
-        event_id: eventId,
-        custom_data: {
-          content_ids: [product?._id],
-          currency: "BDT",
-          value: productPrice,
-          num_items: quantity,
-        },
-      });
     }
   };
 
@@ -126,21 +101,15 @@ const SingleProduct = ({ product }) => {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
   }, [userInfo?.data?.user_phone]);
 
-  // Location state
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
   const [districtId, setDistrictId] = useState("");
   const [district, setDistrict] = useState();
-  F;
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
-
-  // Price/order state
   const [totalDiscount, setTotalDiscount] = useState(0);
   const [shopSubtotals, setShopSubtotals] = useState(0);
   const [shopTotal, setShopTotal] = useState(0);
   const [shopGrandTotals, setShopGrandTotals] = useState(0);
-
-  // Variation state
   const [selectedVariations, setSelectedVariations] = useState({});
   const [variationProduct, setVariationProduct] = useState(null);
   const [stock, setStock] = useState(
@@ -150,28 +119,27 @@ const SingleProduct = ({ product }) => {
   );
   const [productPrice, setProductPrice] = useState(null);
   const [lineThoughPrice, setLineThoughPrice] = useState(null);
-  const cartProducts = useSelector((state) => state.cart.products);
-  const dispatch = useDispatch();
+  const [quantity, setQuantity] = useState(1);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isCompare, setIsCompare] = useState(false);
-  const [quantity, setQuantity] = useState(1);
-
-  const shippingCharge =
-    division === "Dhaka"
-      ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
-      : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0;
-
+  const cartProducts = useSelector((state) => state.cart.products);
+  const dispatch = useDispatch();
   const {
     data: zoneData,
     isLoading: zoneLoading,
     refetch: refetchZone,
   } = useGetZoneData(divisionID);
 
-  // Initial product setup
-  useEffect(() => {
-    // ✅ singleProductPrice handles flash sale / campaign / variation / regular price
-    setProductPrice(singleProductPrice(product));
+  const shippingCharge =
+    division === "Dhaka"
+      ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
+      : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0;
 
+  const maxQuantity = stock || product?.product_quantity || 1;
+
+  // Product init
+  useEffect(() => {
+    setProductPrice(singleProductPrice(product));
     if (
       product?.variations?.[0]?.variation_discount_price ||
       product?.product_discount_price
@@ -193,8 +161,10 @@ const SingleProduct = ({ product }) => {
           initial[item.attribute_name] = item.attribute_values[0];
       });
       setSelectedVariations(initial);
-      const slug = generateSlug(initial);
-      const found = findVariation(slug);
+      const slug = Object.values(initial)
+        .map((v) => v.attribute_value_name)
+        .join("-");
+      const found = product?.variations?.find((v) => v.variation_name === slug);
       setVariationProduct(found);
     }
   }, [product]);
@@ -206,21 +176,16 @@ const SingleProduct = ({ product }) => {
   const findVariation = (slug) =>
     product?.variations?.find((v) => v.variation_name === slug);
 
-  // ✅ Variation select — proper price recalculation
   const handleSelectVariation = (value, attributeName) => {
     const newVars = { ...selectedVariations, [attributeName]: value };
     setSelectedVariations(newVars);
     const slug = generateSlug(newVars);
     const found = findVariation(slug);
     setVariationProduct(found || null);
-
     if (found) {
       setStock(found.variation_quantity);
       setQuantity(1);
-
-      // Base price: discount price if exists, else regular price
       let price = found.variation_discount_price || found.variation_price;
-
       if (product?.flash_sale_details?.flash_sale_product) {
         const fp = product.flash_sale_details.flash_sale_product;
         if (fp?.flash_price_type)
@@ -240,7 +205,6 @@ const SingleProduct = ({ product }) => {
           );
         setLineThoughPrice(found.variation_price);
       } else {
-        // ✅ Only set lineThoughPrice if there IS a discount price (and it's > 0)
         setLineThoughPrice(
           found.variation_discount_price > 0 ? found.variation_price : null,
         );
@@ -256,9 +220,8 @@ const SingleProduct = ({ product }) => {
   const handleDecrement = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
-  const maxQuantity = stock || product?.product_quantity || 1;
 
-  // ✅ Add to Cart
+  // ✅ AddToCart
   const handleAddToCart = () => {
     const cartItem = {
       productId: product?._id,
@@ -275,30 +238,19 @@ const SingleProduct = ({ product }) => {
       toast.error("Already in cart", { autoClose: 1500 });
       return;
     }
+
     dispatch(addToCart(cartItem));
     toast.success("Added to cart!", { autoClose: 1500 });
-    const eventId = generateEventId();
-    trackAddToCart(product, variationProduct, quantity, eventId);
-    sendServerEvent({
-      event_name: "AddToCart",
-      event_id: eventId,
-      user_data: {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
-      custom_data: {
-        content_ids: [variationProduct?._id || product?._id],
-        content_name: product?.product_name,
-        content_type: "product",
-        currency: "BDT",
-        value: productPrice * quantity,
-        num_items: quantity,
-      },
+
+    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
+    trackAddToCart(product, variationProduct, quantity, {
+      ph: userInfo?.data?.user_phone,
+      fn: userInfo?.data?.user_name,
+      external_id: userInfo?.data?._id,
     });
   };
 
-  // Wishlist
+  // Wishlist & compare sync
   useEffect(() => {
     try {
       const w = JSON.parse(localStorage.getItem("wishlist")) || [];
@@ -320,7 +272,7 @@ const SingleProduct = ({ product }) => {
     } catch (e) {}
   }, [product?._id, variationProduct?._id]);
 
-  // ✅ Wishlist with Meta Pixel
+  // ✅ Wishlist
   const handleWishlist = () => {
     const item = {
       productId: product?._id,
@@ -343,24 +295,9 @@ const SingleProduct = ({ product }) => {
       list.push(item);
       setIsWishlisted(true);
       toast.success("Added to wishlist", { autoClose: 1500 });
-      const eventId = generateEventId();
-      trackAddToWishlist(product, variationProduct, eventId);
-      sendServerEvent({
-        event_name: "AddToWishlist",
-        event_id: eventId,
-        user_data: {
-          ph: userInfo?.data?.user_phone,
-          fn: userInfo?.data?.user_name,
-          external_id: userInfo?.data?._id,
-        },
-        custom_data: {
-          content_ids: [variationProduct?._id || product?._id],
-          content_name: product?.product_name,
-          content_type: "product",
-          currency: "BDT",
-          value: productPrice,
-        },
-      });
+
+      // ✅ AddToWishlist — Meta + TikTok + GTM একটাই call
+      trackAddToWishlist(product, variationProduct);
     }
     localStorage.setItem("wishlist", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));
@@ -393,7 +330,6 @@ const SingleProduct = ({ product }) => {
     window.dispatchEvent(new Event("localStorageUpdated"));
   };
 
-  // ✅ Order summary calculations
   useEffect(() => {
     const subtotal =
       (lineThoughPrice != null ? lineThoughPrice : productPrice) * quantity;
@@ -408,7 +344,7 @@ const SingleProduct = ({ product }) => {
     if (Object.keys(errors).length > 0) setIsAccordionOpen(true);
   }, [errors]);
 
-  // ✅ Order submit with Purchase Pixel event
+  // ✅ Order submit — Purchase
   const handleOrderProduct = async (data) => {
     if (!userPhoneLogin) {
       if (customer_phone) {
@@ -441,7 +377,6 @@ const SingleProduct = ({ product }) => {
       new Date().toISOString().split("T")[0] +
       " " +
       new Date().toLocaleTimeString();
-    const purchaseEventId = generateEventId();
 
     const sendData = {
       order_status: "pending",
@@ -467,12 +402,10 @@ const SingleProduct = ({ product }) => {
       pathao_city_name: division,
       pathao_zone_id: parseInt(districtId),
       pathao_zone_name: district,
-      purchase_event_id: purchaseEventId,
       order_products: [product].map((item) => ({
         product_id: item._id,
         variation_id: variationProduct?._id || null,
-        // ✅ Correct price mapping:
-        product_main_price: lineThoughPrice || productPrice, // original price before discount
+        product_main_price: lineThoughPrice || productPrice,
         product_main_discount_price:
           variationProduct?.variation_discount_price ||
           product?.product_discount_price ||
@@ -494,7 +427,16 @@ const SingleProduct = ({ product }) => {
       });
       const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        trackPurchase(sendData, purchaseEventId);
+        // ✅ Purchase — Meta + TikTok + GTM একটাই call
+        await trackPurchase(
+          { ...sendData, _id: result?.data?.order_id },
+          {
+            ph: customer_phone,
+            fn: data?.customer_name || userInfo?.data?.user_name,
+            external_id: userInfo?.data?._id,
+          },
+        );
+
         toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,
         });
@@ -517,7 +459,6 @@ const SingleProduct = ({ product }) => {
 
   return (
     <div className="min-h-screen bg-gray-50/50">
-      {/* Loading overlay */}
       {loading && (
         <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -529,22 +470,17 @@ const SingleProduct = ({ product }) => {
           </p>
         </div>
       )}
-
       <Contain>
         <div className="py-4 md:py-6 space-y-5">
-          {/* ===== MAIN PRODUCT CARD ===== */}
           <form onSubmit={handleSubmit(handleOrderProduct)}>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-0">
-                {/* Col 1 — Images (lg: 4/12) */}
                 <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
                   <ProductPhotoSelect
                     product={product}
                     variationProduct={variationProduct}
                   />
                 </div>
-
-                {/* Col 2 — Product Info (lg: 4/12) */}
                 <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
                   <ProductHighlightSection
                     product={product}
@@ -565,10 +501,7 @@ const SingleProduct = ({ product }) => {
                     handleAddToCart={handleAddToCart}
                   />
                 </div>
-
-                {/* Col 3 — Order Form (lg: 4/12) */}
                 <div className="lg:col-span-4 p-4 md:p-5 bg-gray-50/40">
-                  {/* Header */}
                   <div className="flex items-center gap-2.5 mb-4 pb-3 border-b border-gray-100">
                     <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shadow-sm shadow-primary/20">
                       <BsBoxSeam className="text-white" size={16} />
@@ -582,7 +515,6 @@ const SingleProduct = ({ product }) => {
                       </p>
                     </div>
                   </div>
-
                   <div className="space-y-3">
                     <RightSideDeliveryInfo
                       register={register}
@@ -622,10 +554,7 @@ const SingleProduct = ({ product }) => {
               </div>
             </div>
           </form>
-
-          {/* ===== DESCRIPTION / REVIEWS / POLICY + RECENT PRODUCTS ===== */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {/* Left: Accordion sections */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
                 <ProductDescription product={product} />
@@ -637,8 +566,6 @@ const SingleProduct = ({ product }) => {
                 <ReturnPolicyAccordion />
               </div>
             </div>
-
-            {/* Right: Recently Viewed */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-4">
                 <RecentProducts
@@ -648,8 +575,6 @@ const SingleProduct = ({ product }) => {
               </div>
             </div>
           </div>
-
-          {/* ===== RELATED PRODUCTS ===== */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 md:p-6">
             <div className="flex items-center gap-3 mb-5">
               <div className="w-1 h-6 bg-primary rounded-full" />
@@ -661,8 +586,6 @@ const SingleProduct = ({ product }) => {
           </div>
         </div>
       </Contain>
-
-      {/* Mobile bottom padding for fixed CTA */}
       <div className="h-20 md:h-0" />
     </div>
   );

@@ -4,12 +4,16 @@ import Script from "next/script";
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
+// export const ttq = (...args) => {
+//   if (typeof window !== "undefined" && window.ttq) {
+//     window.ttq(...args);
+//   }
+// };
 export const ttq = (...args) => {
   if (typeof window !== "undefined" && window.ttq) {
-    window.ttq(...args);
+    window.ttq.track(...args);
   }
 };
-
 // ✅ Redux নেই — শুধু script load করে
 const TikTokPageView = () => {
   const pathname = usePathname();

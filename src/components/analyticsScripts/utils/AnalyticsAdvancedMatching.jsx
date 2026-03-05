@@ -20,13 +20,19 @@ const AnalyticsAdvancedMatching = ({ metaPixelId, tiktokPixelId }) => {
   const externalId = userInfo?.data?._id;
 
   // ✅ Meta Advanced Matching
+
   useEffect(() => {
-    if (!phone || !metaPixelId || !window.fbq) return;
-    window.fbq("init", String(metaPixelId), {
-      ph: phone,
-      fn: name || undefined,
-      external_id: String(externalId),
-    });
+    if (!phone || !metaPixelId) return;
+    const timer = setTimeout(() => {
+      if (window.fbq) {
+        window.fbq("init", String(metaPixelId), {
+          ph: phone,
+          fn: name,
+          external_id: String(externalId),
+        });
+      }
+    }, 500);
+    return () => clearTimeout(timer);
   }, [phone, metaPixelId]);
 
   // ✅ TikTok Advanced Matching
