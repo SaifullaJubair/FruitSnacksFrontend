@@ -164,28 +164,34 @@ export const updateRecentProducts = (product) => {
   const maxProducts = 5;
   let recentProducts =
     JSON.parse(localStorage.getItem("recent-products")) || [];
-  // Remove existing product if it already exists
+
   recentProducts = recentProducts.filter(
     (item) => item?.product_slug !== product?.product_slug,
   );
-  // const productExistsIndex = recentProducts.findIndex(
-  //   (item) => item?.product_slug === product?.product_slug
-  // );
-  // if (productExistsIndex !== -1) {
-  //   recentProducts.splice(productExistsIndex, 1);
-  // }
 
-  // Add the new product to the beginning
-  recentProducts.unshift(product);
+  // ✅ শুধু display এর জন্য দরকারি fields save করো
+  const saveProduct = {
+    _id: product?._id,
+    product_name: product?.product_name,
+    product_slug: product?.product_slug,
+    main_image: product?.main_image,
+    product_price: product?.product_price,
+    product_discount_price: product?.product_discount_price,
+    is_variation: product?.is_variation,
+    // ✅ variation হলে — প্রথম variation এর price আর image save করো
+    ...(product?.is_variation &&
+      product?.variations?.length > 0 && {
+        product_price: product.variations[0]?.variation_price,
+        product_discount_price: product.variations[0]?.variation_discount_price,
+        main_image:
+          product.variations[0]?.variation_image || product?.main_image,
+      }),
+  };
 
-  // if (recentProducts.length > maxProducts) {
-  //   recentProducts.pop();
-  // }
+  recentProducts.unshift(saveProduct);
   recentProducts = recentProducts.slice(0, maxProducts);
-
   localStorage.setItem("recent-products", JSON.stringify(recentProducts));
 };
-
 // Helper function to check color is valid hex code
 export const isHexColor = (code) => /^#([0-9A-F]{3}){1,2}$/i.test(code);
 

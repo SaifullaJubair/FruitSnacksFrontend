@@ -567,7 +567,7 @@ const SingleProduct = ({ product }) => {
               </div>
             </div>
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 sticky top-14">
                 <RecentProducts
                   productId={product?._id}
                   product_slug={product?.product_slug}

@@ -54,8 +54,13 @@ const AddToCart = () => {
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const { data: settingData } = useGetSettingData();
 
+  // products এর শুধু id গুলো key হিসেবে ব্যবহার করো
+  const cartKey = products
+    .map((p) => `${p.productId}-${p.variation_product_id || ""}`)
+    .join(",");
+
   const { data: cartData = [], isLoading: cartLoading } = useQuery({
-    queryKey: [CART_QUERY_KEY],
+    queryKey: [CART_QUERY_KEY, cartKey], // ✅ product add/remove এ key বদলায়
     queryFn: async () => {
       const res = await fetchCartDetails(products);
       return res?.data || [];
@@ -63,7 +68,6 @@ const AddToCart = () => {
     enabled: mounted && products?.length > 0,
     staleTime: Infinity,
   });
-
   const isLoading = !mounted || cartLoading;
   const [divisionID, setDivisionID] = useState();
   const [division, setDivision] = useState();
