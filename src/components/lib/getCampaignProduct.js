@@ -2,7 +2,7 @@ import { BASE_URL } from "../utils/baseURL";
 
 export async function getCampaignProduct(id) {
   const res = await fetch(`${BASE_URL}/campaign/${id}`, {
-    cache: "no-cache",
+    cache: "no-store",
   });
 
   if (!res.ok) {

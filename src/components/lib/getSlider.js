@@ -3,7 +3,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getSlider() {
   const res = await fetch(`${BASE_URL}/slider`, {
     next: {
-      revalidate: 30,
+      revalidate: 600,
     },
   });
 

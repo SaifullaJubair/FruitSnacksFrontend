@@ -529,9 +529,9 @@ next: {
   revalidate: 3600000;
 } // ~41 দিন!
 
-// ✅ 1 ঘণ্টা
+// ✅ 10 min
 next: {
-  revalidate: 3600;
+  revalidate: 600;
 }
 ```
 

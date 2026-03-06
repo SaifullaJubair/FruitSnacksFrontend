@@ -3,7 +3,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getBanner() {
   const res = await fetch(`${BASE_URL}/banner`, {
     next: {
-      revalidate: 30,
+      revalidate: 600,
     },
   });
 

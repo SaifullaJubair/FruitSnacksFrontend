@@ -3,7 +3,7 @@ import { BASE_URL } from '../utils/baseURL'
 export async function getAllOffers() {
   const res = await fetch(`${BASE_URL}/offer`, {
     next: {
-      revalidate: 30,
+      revalidate: 100,
     },
   })
 

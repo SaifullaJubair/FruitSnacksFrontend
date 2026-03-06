@@ -6,7 +6,7 @@ export async function getPopularProducts(category_id) {
   const url = `${BASE_URL}/product/popular_product?category_id=${category_id}`;
 
   const res = await fetch(url, {
-    next: { revalidate: 30 }, // Server-side caching
+    next: { revalidate: 300 }, // Server-side caching
   });
 
   if (!res.ok) {

@@ -4,7 +4,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getAllCampaign() {
   const res = await fetch(`${BASE_URL}/campaign`, {
     next: {
-      revalidate: 30,
+      revalidate: 100,
     },
   });
 

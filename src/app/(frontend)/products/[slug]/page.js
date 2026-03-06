@@ -4,14 +4,14 @@ import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 
 export async function generateMetadata({ params }) {
   const { slug } = params;
   const seo = await getSeoConfig();
 
   const res = await fetch(`${BASE_URL}/product/${slug}`, {
-    next: { revalidate: 30 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
@@ -23,19 +23,18 @@ export async function generateMetadata({ params }) {
 
   const productData = await res.json();
 
-  // ✅ পুরনো slug — metadata বানানোর দরকার নেই, page redirect করবে
-  if (productData?.data?.redirect_slug) {
-    return {
-      robots: { index: false },
-    };
+  // ✅ পুরনো slug — redirect হবে, metadata দরকার নেই
+  if (productData?.redirect_slug) {
+    return { robots: { index: false } };
   }
 
   const product = productData?.data;
+  if (!product) return { title: `Product Not Found | ${seo.siteName}` };
+
   const price = product?.product_discount_price || product?.product_price;
   const description =
     product?.meta_description ||
     `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
-
   const productImage = product?.main_image || seo.logo;
 
   return {
@@ -72,19 +71,16 @@ export async function generateMetadata({ params }) {
 const ProductDetailsPage = async ({ params }) => {
   const { slug } = params;
 
-  const [seoResult, productRes] = await Promise.all([
+  const [seo, productRes] = await Promise.all([
     getSeoConfig(),
-    fetch(`${BASE_URL}/product/${slug}`, { next: { revalidate: 3600 } }),
+    fetch(`${BASE_URL}/product/${slug}`, { cache: "no-store" }),
   ]);
 
-  const seo = seoResult;
   const data = await productRes.json();
 
-  // ✅ পুরনো slug — নতুন slug এ 301 redirect
-  if (data?.data?.redirect_slug) {
-    redirect(`/products/${data.data.redirect_slug}`);
-    // Next.js এ redirect() automatically 308 করে server component এ
-    // কিন্তু SEO এর জন্য আমরা backend থেকে 301 পাঠাচ্ছি — সেটাই Google দেখবে
+  // ✅ পুরনো slug — নতুন slug এ redirect
+  if (data?.redirect_slug) {
+    redirect(`/products/${data.redirect_slug}`);
   }
 
   const product = data?.data;
@@ -138,11 +134,11 @@ const ProductDetailsPage = async ({ params }) => {
       availability: "https://schema.org/InStock",
       seller: { "@type": "Organization", name: seo.siteName },
     },
-    ...(product?.average_review_rating && {
+    ...(product?.avarage_review_ratting && {
       aggregateRating: {
         "@type": "AggregateRating",
-        ratingValue: product?.average_review_rating,
-        reviewCount: product?.total_reviews || 1,
+        ratingValue: product?.avarage_review_ratting,
+        reviewCount: product?.total_review_ratting || 1,
         bestRating: 5,
         worstRating: 1,
       },

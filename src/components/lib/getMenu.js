@@ -2,7 +2,9 @@ import { BASE_URL } from "../utils/baseURL";
 
 export async function getMenu() {
   const res = await fetch(`${BASE_URL}/category/category_sub_child`, {
-    cache: "no-cache",
+    next: {
+      revalidate: 600,
+    },
   });
 
   if (!res.ok) {

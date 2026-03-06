@@ -36,7 +36,7 @@ import { BsBoxSeam } from "react-icons/bs";
 
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
-import useAnalytics from "@/hooks/useAnalytics";
+import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 const SingleProduct = ({ product }) => {
   useEffect(() => {

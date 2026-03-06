@@ -3,7 +3,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getJustForYouProducts() {
   const res = await fetch(`${BASE_URL}/product/just_for_you_product`, {
     next: {
-      revalidate: 30,
+      revalidate: 300,
     },
   });
 

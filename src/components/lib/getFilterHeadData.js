@@ -10,7 +10,7 @@ export async function getFilterHeadData({
     `${BASE_URL}/filter_product/heading_sub_child_category_data?categoryType=${categoryType}&sub_categoryType=${subCategoryType}&child_categoryType=${childCategoryType}`,
     {
       next: {
-        revalidate: 10,
+        revalidate: 300,
       },
     }
   );

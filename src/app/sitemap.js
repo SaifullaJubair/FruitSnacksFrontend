@@ -91,7 +91,7 @@ export default async function sitemap() {
   try {
     const res = await fetch(
       `${API_URL}/product?page=1&limit=500&product_status=active`,
-      { next: { revalidate: 3600 } },
+      { next: { revalidate: 60 } },
     );
     const data = await res.json();
     productPages = (data?.data || []).map((p) => ({
@@ -108,7 +108,7 @@ export default async function sitemap() {
   let categoryPages = [];
   try {
     const res = await fetch(`${API_URL}/category/category_sub_child`, {
-      next: { revalidate: 3600 * 24 },
+      next: { revalidate: 300 },
     });
     const data = await res.json();
     categoryPages = (data?.data || []).map((item) => ({
