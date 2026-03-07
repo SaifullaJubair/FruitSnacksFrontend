@@ -1,6 +1,6 @@
 "use client";
+// src/components/analyticsScripts/microsoftClarity/MicrosoftClarity.jsx
 import Script from "next/script";
-// src/components/analyticsScripts/microsoftClarity/Microsoftclarity.jsx
 // layout.jsx এ একবার add করলেই সব page এ কাজ করবে
 // ✅ clarityId prop — layout থেকে settings.clarity_id আসবে
 const MicrosoftClarity = ({ clarityId }) => {

@@ -9,12 +9,12 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
 import AnalyticsAdvancedMatching from "@/components/analyticsScripts/utils/AnalyticsAdvancedMatching";
-import MicrosoftClarity from "@/components/analyticsScripts/microsoftClarity/Microsoftclarity";
 import TikTokPixelScript from "@/components/analyticsScripts/tiktokPixel/TikTokPixelScript";
 import MetaPixelScript from "@/components/analyticsScripts/metaPixel/MetaPixelScript";
 import GoogleTagManager, {
   GoogleTagManagerNoScript,
 } from "@/components/analyticsScripts/googleAnalytics/GoogleTagManager";
+import MicrosoftClarity from "@/components/analyticsScripts/microsoftClarity/MicrosoftClarity";
 
 export async function generateMetadata() {
   const seo = await getSeoConfig();
