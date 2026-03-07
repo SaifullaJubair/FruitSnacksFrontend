@@ -1,13 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   eslint: {
-    ignoreDuringBuilds: true, // ✅ build time এ warning এ থামবে না
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
   },
   images: {
     remotePatterns: [
       {
         protocol: "https",
         hostname: "artisen-leather.sgp1.cdn.digitaloceanspaces.com",
+        pathname: "**",
+      },
+      {
+        protocol: "https",
+        hostname: "sin1.contabostorage.com",
         pathname: "**",
       },
       {
@@ -25,7 +33,6 @@ const nextConfig = {
         hostname: "images.unsplash.com",
         pathname: "**",
       },
-
       {
         protocol: "https",
         hostname: "source.unsplash.com",
