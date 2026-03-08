@@ -6,6 +6,36 @@ import { Button } from "@/components/ui/button";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
 import { redirect } from "next/navigation";
 
+// ✅ Variation সহ সঠিক price বের করা
+const getProductPrice = (product) => {
+  if (!product) return null;
+
+  // Variation product — প্রথম variation এর price নাও
+  if (product?.is_variation && product?.variations?.length > 0) {
+    const firstVariation = product.variations[0];
+    return (
+      firstVariation?.variation_discount_price ||
+      firstVariation?.variation_price ||
+      null
+    );
+  }
+
+  // Normal product
+  return product?.product_discount_price || product?.product_price || null;
+};
+
+// ✅ Variation সহ সঠিক image বের করা
+const getProductImage = (product, fallback) => {
+  if (!product) return fallback;
+
+  if (product?.is_variation && product?.variations?.length > 0) {
+    const firstVariation = product.variations[0];
+    return firstVariation?.variation_image || product?.main_image || fallback;
+  }
+
+  return product?.main_image || fallback;
+};
+
 export async function generateMetadata({ params }) {
   const { slug } = params;
   const seo = await getSeoConfig();
@@ -23,7 +53,6 @@ export async function generateMetadata({ params }) {
 
   const productData = await res.json();
 
-  // ✅ পুরনো slug — redirect হবে, metadata দরকার নেই
   if (productData?.redirect_slug) {
     return { robots: { index: false } };
   }
@@ -31,11 +60,12 @@ export async function generateMetadata({ params }) {
   const product = productData?.data;
   if (!product) return { title: `Product Not Found | ${seo.siteName}` };
 
-  const price = product?.product_discount_price || product?.product_price;
+  const price = getProductPrice(product); // ✅ variation aware
+  const productImage = getProductImage(product, seo.logo); // ✅ variation aware
+
   const description =
     product?.meta_description ||
-    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
-  const productImage = product?.main_image || seo.logo;
+    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price ?? ""}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
 
   return {
     title: product?.product_name,
@@ -78,7 +108,6 @@ const ProductDetailsPage = async ({ params }) => {
 
   const data = await productRes.json();
 
-  // ✅ পুরনো slug — নতুন slug এ redirect
   if (data?.redirect_slug) {
     redirect(`/products/${data.redirect_slug}`);
   }
@@ -112,13 +141,13 @@ const ProductDetailsPage = async ({ params }) => {
     );
   }
 
-  const price = product?.product_discount_price || product?.product_price;
+  const price = getProductPrice(product); // ✅ variation aware
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product?.product_name,
-    image: product?.main_image,
+    image: getProductImage(product, seo.logo),
     description: product?.meta_description || product?.product_name,
     brand: { "@type": "Brand", name: seo.siteName },
     offers: {
