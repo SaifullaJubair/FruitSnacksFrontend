@@ -59,7 +59,6 @@ const RightSideDeliveryInfo = ({
   customer_phone,
   setUserPhone,
   setUserPhoneLogin,
-  refetchZone,
   zoneLoading,
   zoneData,
 }) => {
@@ -176,13 +175,12 @@ const RightSideDeliveryInfo = ({
                 getOptionLabel={(x) => x?.city_name}
                 getOptionValue={(x) => x?.city_id}
                 onChange={(opt) => {
-                  refetchZone();
                   setIsOpenDistrict(false);
                   setDistrict(undefined);
                   setDistrictId(undefined);
-                  setDivisionID(opt?.city_id);
                   setDivision(opt?.city_name);
-                  setTimeout(() => setIsOpenDistrict(true), 100);
+                  setDivisionID(opt?.city_id); // ✅ এটা set হলেই useGetZoneData auto fetch করবে
+                  setTimeout(() => setIsOpenDistrict(true), 50);
                 }}
                 styles={selectStyles}
                 menuPortalTarget={

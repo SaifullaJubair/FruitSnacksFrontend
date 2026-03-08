@@ -124,11 +124,7 @@ const SingleProduct = ({ product }) => {
   const [isCompare, setIsCompare] = useState(false);
   const cartProducts = useSelector((state) => state.cart.products);
   const dispatch = useDispatch();
-  const {
-    data: zoneData,
-    isLoading: zoneLoading,
-    refetch: refetchZone,
-  } = useGetZoneData(divisionID);
+  const { data: zoneData, isLoading: zoneLoading } = useGetZoneData(divisionID);
 
   const shippingCharge =
     division === "Dhaka"
@@ -535,7 +531,6 @@ const SingleProduct = ({ product }) => {
                       customer_phone={customer_phone}
                       setUserPhone={handlePhoneChangeWithTracking}
                       setUserPhoneLogin={setUserPhoneLogin}
-                      refetchZone={refetchZone}
                       zoneLoading={zoneLoading}
                       zoneData={zoneData}
                     />
