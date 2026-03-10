@@ -1,7 +1,10 @@
+// sign-in/page.jsx এ এই change করো
+// LoginForm এ phone prefill support add করো
+
 "use client";
 import { Suspense } from "react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { CiLock } from "react-icons/ci";
 import { useForm } from "react-hook-form";
@@ -20,9 +23,6 @@ import PhoneInput, {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 import { LoaderOverlay } from "@/components/shared/loader/LoaderOverlay";
-
-// ✅ এখন: একটাই hook
-// ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
 
 const LoginForm = () => {
@@ -31,11 +31,19 @@ const LoginForm = () => {
   const [userLogin, { isLoading }] = useUserLoginMutation();
   const getQuery = useSearchParams();
   const successRedirect = getQuery.get("success_redirect");
+  // ✅ phone prefill — set-password page থেকে আসলে
+  const phoneFromQuery = getQuery.get("phone");
+
   const dispatch = useDispatch();
   const { products: cartProducts } = useSelector((state) => state.cart);
-
-  // ✅ একটাই
   const { trackLogin } = useAnalytics();
+
+  // ✅ prefill phone if passed in query
+  useEffect(() => {
+    if (phoneFromQuery) {
+      setUserPhone(phoneFromQuery);
+    }
+  }, [phoneFromQuery]);
 
   const {
     register,
@@ -76,11 +84,7 @@ const LoginForm = () => {
       if (res?.data?.statusCode === 200 && res?.data?.success === true) {
         toast.success(res?.data?.message, { autoClose: 2000 });
         reset();
-
-        // ✅ Login — Meta (browser + CAPI) + TikTok (browser + CAPI) + GTM
-        // সব একটাই call — settings এ যেটা enabled সেটাই fire হবে
         await trackLogin({ ph: user_phone });
-
         await syncCartAfterLogin(cartProducts, dispatch);
         router.push(successRedirect || "/");
       } else {

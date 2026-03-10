@@ -5,9 +5,9 @@ import { MdOutlinePayment } from "react-icons/md";
 
 const services = [
   {
-    icon: <TbTruckDelivery className="text-3xl text-primary-400" />,
-    title: "Free Delivery",
-    desc: "On orders above ৳999",
+    icon: <PiHammerLight className="text-3xl text-primary-400" />,
+    title: "Built to Last",
+    desc: "Reinforced stitching at every joint",
   },
   {
     icon: <PiLeafLight className="text-3xl text-primary-400" />,

@@ -94,11 +94,11 @@ const ForgetPasswordForm = () => {
       if (res?.data?.statusCode === 200 && res?.data?.success === true) {
         localStorage.setItem(
           "forget_user_phone",
-          JSON.stringify(sendData?.user_phone)
+          JSON.stringify(sendData?.user_phone),
         );
         localStorage.setItem(
           "forget_user_name",
-          JSON.stringify(res?.data?.data?.user_name)
+          JSON.stringify(res?.data?.data?.user_name),
         );
         toast.info(res?.data?.message, {
           autoClose: 2000,
@@ -137,7 +137,7 @@ const ForgetPasswordForm = () => {
                   Phone
                 </label>
                 <PhoneInput
-                  className="w-full   border border-white-light bg-white px-2 py-3 text-sm text-black !outline-none ps-4 placeholder:text-white-dark mt-2"
+                  className="w-full custom-phone-input  border border-white-light bg-white px-2 py-3 text-sm text-black !outline-none ps-4 placeholder:text-white-dark mt-2"
                   placeholder="Enter phone number"
                   id="user_phone"
                   value={user_phone}

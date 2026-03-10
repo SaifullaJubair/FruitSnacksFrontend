@@ -31,6 +31,7 @@ import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
+import { PiHammerLight } from "react-icons/pi";
 
 const Overlay = ({ onClick }) => (
   <motion.div
@@ -795,7 +796,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                   )}
 
                   <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
+                    {/* <div className="text-center p-2 bg-gray-50 rounded-lg">
                       <MdOutlineLocalShipping
                         className="mx-auto text-primary mb-1"
                         size={20}
@@ -805,6 +806,18 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </p>
                       <p className="text-[9px] text-gray-500">
                         On orders above ৳999
+                      </p>
+                    </div> */}
+                    <div className="text-center p-2 bg-gray-50 rounded-lg">
+                      <PiHammerLight
+                        className="mx-auto text-primary mb-1"
+                        size={20}
+                      />
+                      <p className="text-xs font-medium text-gray-800">
+                        Built to Last
+                      </p>
+                      <p className="text-[9px] text-gray-500">
+                        Reinforced stitching at every joint
                       </p>
                     </div>
                     <div className="text-center p-2 bg-gray-50 rounded-lg">
