@@ -126,6 +126,12 @@ export const PAGE_SEO = {
     path: "forget-password",
     noIndex: true,
   },
+  setPassowrd: {
+    title: "Set Your Password",
+    description: "",
+    path: "set-password",
+    noIndex: true,
+  },
   offer: {
     title: "Special Offers & Discounts",
     description: "",

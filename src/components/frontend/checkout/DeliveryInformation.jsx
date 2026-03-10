@@ -1,7 +1,7 @@
 import { cities } from "@/data/cites";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import Select from "react-select";
-
+import "react-phone-number-input/style.css";
 const DeliveryInformation = ({
   register,
   userInfo,

@@ -144,7 +144,7 @@ const RightSideDeliveryInfo = ({
               />
             ) : (
               <PhoneInput
-                className="custom-phone-input-new w-full text-sm rounded-lg border border-gray-200 bg-white px-3 py-2"
+                className=" custom-phone-input w-full text-sm rounded-lg border border-gray-200 bg-white px-3 py-2"
                 placeholder="01XXXXXXXXX"
                 value={customer_phone}
                 defaultCountry="BD"

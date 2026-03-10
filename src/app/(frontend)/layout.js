@@ -1,6 +1,7 @@
 import Navbar from "@/components/shared/navbar/Navbar";
 import Footer from "@/components/shared/footer/Footer";
 import { getMenu } from "@/components/lib/getMenu";
+import UnverifiedBanner from "@/components/common/unverifiedBanner/UnverifiedBanner";
 
 const MainLayout = async ({ children }) => {
   const dataArray = await getMenu();
@@ -9,6 +10,7 @@ const MainLayout = async ({ children }) => {
   return (
     <div>
       <Navbar menuData={dataArray} />
+      <UnverifiedBanner />
       {/* pb-16 — mobile bottom nav এর জন্য space */}
       <div className="min-h-screen pb-16 md:pb-0">{children}</div>
       <Footer menuData={menuData} />

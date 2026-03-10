@@ -439,7 +439,10 @@ const SingleProduct = ({ product }) => {
         const params = new URLSearchParams();
         if (result?.data?.order_id)
           params.set("order_id", result.data.order_id);
-        if (!userInfo?.data?._id) params.set("guest", "true");
+        const isGuest = result?.data?.user_created === true;
+
+        if (isGuest) params.set("guest", "true");
+
         navigate.push(`/orders/order-success?${params.toString()}`);
       } else {
         toast.error(result?.message || "Something went wrong", {

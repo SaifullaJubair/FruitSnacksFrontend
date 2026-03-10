@@ -300,7 +300,9 @@ const AddToCart = () => {
         );
 
         const orderId = result?.data?.order_id;
-        const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
+        // const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
+        const isGuest = result?.data?.user_created === true;
+
         toast.success(result.message || "Order created successfully", {
           autoClose: 1500,
         });

@@ -8,120 +8,91 @@ import {
   useResendOtpMutation,
 } from "@/redux/feature/auth/authApi";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
-import { CiLock } from "react-icons/ci";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import {
+  FiLock,
+  FiEye,
+  FiEyeOff,
+  FiCheckCircle,
+  FiShield,
+} from "react-icons/fi";
 
+// ── OTP Input — 4 boxes ────────────────────────────────────────────────────────
+const OTPInput = ({ value, onChange }) => {
+  const digits = value.split("").concat(Array(4).fill("")).slice(0, 4);
+
+  const handleChange = (index, val) => {
+    if (!/^\d*$/.test(val)) return;
+    const newDigits = [...digits];
+    newDigits[index] = val.slice(-1);
+    onChange(newDigits.join(""));
+    if (val && index < 3) {
+      document.getElementById(`otpInput-${index + 1}`)?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !digits[index] && index > 0) {
+      document.getElementById(`otpInput-${index - 1}`)?.focus();
+    }
+  };
+
+  const handlePaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData
+      .getData("text")
+      .replace(/\D/g, "")
+      .slice(0, 4);
+    onChange(pasted.padEnd(4, "").slice(0, 4));
+  };
+
+  return (
+    <div className="flex gap-3 justify-center">
+      {digits.map((digit, index) => (
+        <input
+          key={index}
+          id={`otpInput-${index}`}
+          type="text"
+          inputMode="numeric"
+          maxLength={1}
+          value={digit}
+          onChange={(e) => handleChange(index, e.target.value)}
+          onKeyDown={(e) => handleKeyDown(index, e)}
+          onPaste={handlePaste}
+          className={`w-12 h-12 text-center text-lg font-bold border-2 rounded-lg outline-none transition-all ${
+            digit
+              ? "border-primary bg-primary/5 text-primary"
+              : "border-gray-200 focus:border-primary"
+          }`}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 const ChangePassword = () => {
   const [user_phone, setUser_phone] = useState("");
   const [user_name, setUser_name] = useState("");
-  const [timerCount, setTimer] = useState(15);
-  const [OTPinput, setOTPinput] = useState(["", "", "", ""]);
+  const [otp, setOtp] = useState("");
+  const [timerCount, setTimer] = useState(60);
   const [disable, setDisable] = useState(true);
-  const [isPasswordShow, setPasswordShow] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
     reset,
   } = useForm();
+  const password = watch("user_password");
   const router = useRouter();
 
   const [changePassword, { isLoading }] = useChangePasswordMutation();
   const [resendOtp] = useResendOtpMutation();
 
-  const handleVerify = async (data) => {
-    try {
-      const otp = OTPinput.join("");
-      if (!otp) {
-        toast.error("Must be send OTP !", {
-          position: "top-center",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        return;
-      }
-      const sendData = {
-        user_phone: user_phone,
-        user_otp: otp,
-        user_password: data?.user_password,
-      };
-      const res = await changePassword(sendData);
-      if (res?.data?.success) {
-        toast.success(res?.data?.message, {
-          autoClose: 100,
-        });
-        localStorage.removeItem("forget_user_phone");
-        localStorage.removeItem("forget_user_name");
-        reset();
-        router.push("/sign-in");
-      } else if (res?.error?.status === 400) {
-        toast.error(res?.error?.data?.message);
-      }
-    } catch (error) {
-      console.error("otp verified error", error);
-    } finally {
-      console.log("done");
-    }
-  };
-
-  const handleResend = async () => {
-    try {
-      if (disable) return;
-      if (!user_phone || !user_name) {
-        toast.error("Something went wrong !", {
-          position: "top-center",
-          autoClose: 2000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
-          theme: "light",
-        });
-        return;
-      }
-      const data = {
-        user_phone: user_phone,
-        user_name: user_name,
-      };
-      const res = await resendOtp(data);
-      if (res.data?.statusCode === 200 && res.data?.success === true) {
-        setDisable(true);
-        toast.info(res?.data?.message);
-        setTimer(15);
-      } else {
-        toast.error(res.error.data?.message, {
-          autoClose: 2000,
-        });
-      }
-    } catch (error) {
-      console.error("resend otp error", error);
-    }
-  };
-
-  const handleInputChange = (index, value) => {
-    const newOTPinput = [...OTPinput];
-    newOTPinput[index] = value;
-    setOTPinput(newOTPinput);
-
-    // Automatically move to the next input field if the current field is not the last one
-    if (index < newOTPinput.length - 1 && value !== "") {
-      document.getElementById(`otpInput-${index + 1}`).focus();
-    }
-  };
-
-  const handleInputKeyDown = (index, e) => {
-    // Move to the previous input field on backspace if the current field is empty
-    if (e.key === "Backspace" && index > 0 && OTPinput[index] === "") {
-      document.getElementById(`otpInput-${index - 1}`).focus();
-    }
-  };
-
+  // Timer
   useEffect(() => {
     let interval = setInterval(() => {
       setTimer((lastTimerCount) => {
@@ -130,105 +101,190 @@ const ChangePassword = () => {
         if (lastTimerCount <= 0) return lastTimerCount;
         return lastTimerCount - 1;
       });
-    }, 1000); // each count lasts for a second
-    // cleanup the interval on complete
+    }, 1000);
     return () => clearInterval(interval);
   }, [disable]);
 
+  // Load phone from localStorage
   useEffect(() => {
-    const user_phone = JSON.parse(localStorage.getItem("forget_user_phone"));
-    const user_name = JSON.parse(localStorage.getItem("forget_user_name"));
-    if (user_phone) {
-      setUser_phone(user_phone);
-    }
-    if (user_name) {
-      setUser_name(user_name);
-    }
+    const savedPhone = JSON.parse(localStorage.getItem("forget_user_phone"));
+    const savedName = JSON.parse(localStorage.getItem("forget_user_name"));
+    if (savedPhone) setUser_phone(savedPhone);
+    if (savedName) setUser_name(savedName);
   }, []);
 
-  return (
-    <div className="flex justify-center items-center">
-      <div>
-        <div className="px-6 pt-10 pb-9 shadow mx-auto w-full  ">
-          <div className="mx-auto flex flex-col space-y-3">
-            <div className="flex flex-col items-center justify-center text-center space-y-2">
-              <h4 className="text-primary font-medium mb-0">
-                Change Your Password
-              </h4>
-              <p>We have sent a code to {user_phone}</p>
-            </div>
+  const handleVerify = async (data) => {
+    try {
+      if (otp.length !== 4) {
+        toast.error("Please enter the 4-digit OTP", {
+          position: "top-center",
+          autoClose: 2000,
+        });
+        return;
+      }
+      const res = await changePassword({
+        user_phone,
+        user_otp: otp,
+        user_password: data?.user_password,
+      });
+      if (res?.data?.success) {
+        toast.success(res?.data?.message, { autoClose: 1500 });
+        localStorage.removeItem("forget_user_phone");
+        localStorage.removeItem("forget_user_name");
+        reset();
+        router.push("/sign-in");
+      } else {
+        toast.error(res?.error?.data?.message || "Something went wrong");
+      }
+    } catch (error) {
+      console.error("change password error", error);
+    }
+  };
 
-            <form onSubmit={handleSubmit(handleVerify)}>
-              <div className="flex flex-col space-y-5">
-                <div className="flex flex-row items-center justify-between mx-auto w-full max-w-xs">
-                  {Array.from({ length: 4 }).map((_, index) => (
-                    <div key={index} className="w-12 h-12">
-                      <input
-                        maxLength="1"
-                        id={`otpInput-${index}`}
-                        className="w-full h-full flex flex-col items-center justify-center text-center px-5 outline-none  border border-gray-200 text-lg bg-white focus:bg-gray-50 focus:ring-1 ring-blue-700"
-                        type="text"
-                        onChange={(e) =>
-                          handleInputChange(index, e.target.value)
-                        }
-                        onKeyDown={(e) => handleInputKeyDown(index, e)}
-                      ></input>
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <label htmlFor="Password">Password</label>
-                  <span className="text-xs text-danger">*</span>
-                  <div className="relative text-white-dark">
-                    <input
-                      id="Password"
-                      name="user_password"
-                      type={isPasswordShow ? "text" : "password"}
-                      placeholder="Enter Password"
-                      className="w-full   border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
-                      {...register("user_password", {
-                        required: "Password is Required!",
-                      })}
-                    />
-                    <span className="absolute start-4 top-1/2 -translate-y-1/2">
-                      <CiLock />
-                    </span>
-                    <span
-                      onClick={() => setPasswordShow(!isPasswordShow)}
-                      className="absolute end-4 top-1 translate-y-1/2 cursor-pointer"
-                    >
-                      {isPasswordShow ? <FaEyeSlash /> : <FaEye />}
-                    </span>
-                  </div>
-                  {errors.user_password && (
-                    <span className="text-xs text-danger">
-                      {errors?.user_password?.message}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <button className="flex flex-row cursor-pointer items-center justify-center text-center w-full border  outline-none py-3 bg-primary border-none text-white text-sm shadow-sm">
-                    {isLoading ? <MiniSpinner /> : "Change Password"}
-                  </button>
-                </div>
-              </div>
-            </form>
-            <div className="flex flex-col space-y-5 max-w-xs mx-auto">
-              <div className="flex flex-row items-center justify-center text-center text-sm font-medium space-x-1 text-gray-500">
-                <p className="mb-0">Did not receive code?</p>{" "}
+  const handleResend = async () => {
+    if (disable) return;
+    try {
+      const res = await resendOtp({ user_phone, user_name });
+      if (res.data?.statusCode === 200 && res.data?.success === true) {
+        setDisable(true);
+        setTimer(60);
+        setOtp("");
+        toast.info(res?.data?.message);
+      } else {
+        toast.error(res.error?.data?.message, { autoClose: 2000 });
+      }
+    } catch (error) {
+      console.error("resend otp error", error);
+    }
+  };
+
+  return (
+    <div className="flex justify-center items-center min-h-[60vh] py-8">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg overflow-hidden">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary to-primary-600 px-6 py-5 text-white text-center">
+          <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <FiShield size={22} />
+          </div>
+          <h4 className="font-bold text-lg text-white mb-1">
+            Change Your Password
+          </h4>
+          <p className="text-white/80 text-sm">
+            We have sent a code to{" "}
+            <span className="font-semibold">{user_phone}</span>
+          </p>
+        </div>
+
+        {/* Body */}
+        <div className="px-6 py-6">
+          <form onSubmit={handleSubmit(handleVerify)} className="space-y-5">
+            {/* OTP */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3 text-center">
+                Enter OTP
+              </label>
+              <OTPInput value={otp} onChange={setOtp} />
+              <div className="text-center mt-2">
                 <button
-                  className={`${
+                  type="button"
+                  onClick={handleResend}
+                  disabled={disable}
+                  className={`text-xs transition-colors ${
                     disable
-                      ? "text-gray-500 cursor-not-allowed"
-                      : "cursor-pointer underline"
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-primary hover:underline cursor-pointer"
                   }`}
-                  onClick={() => handleResend()}
                 >
                   {disable ? `Resend OTP in ${timerCount}s` : "Resend OTP"}
                 </button>
               </div>
             </div>
-          </div>
+
+            {/* New Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                New Password
+              </label>
+              <div className="relative">
+                <FiLock
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Minimum 6 characters"
+                  {...register("user_password", {
+                    required: "Password is required",
+                    minLength: { value: 6, message: "Minimum 6 characters" },
+                  })}
+                  className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+                </button>
+              </div>
+              {errors.user_password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.user_password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <FiLock
+                  size={15}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                />
+                <input
+                  type={showConfirm ? "text" : "password"}
+                  placeholder="Re-enter password"
+                  {...register("confirm_password", {
+                    required: "Please confirm your password",
+                    validate: (val) =>
+                      val === password || "Passwords do not match",
+                  })}
+                  className="w-full pl-9 pr-10 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-primary transition-colors"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showConfirm ? <FiEyeOff size={15} /> : <FiEye size={15} />}
+                </button>
+              </div>
+              {errors.confirm_password && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.confirm_password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              disabled={isLoading || otp.length !== 4}
+              className="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <MiniSpinner />
+              ) : (
+                <>
+                  <FiCheckCircle size={16} />
+                  Change Password
+                </>
+              )}
+            </button>
+          </form>
         </div>
       </div>
     </div>
