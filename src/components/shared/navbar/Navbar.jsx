@@ -245,11 +245,11 @@ const AnnouncementBar = ({ message }) => {
   if (!message) return null;
   return (
     <div className="bg-primary text-white text-xs py-1.5 overflow-hidden">
-      {/* <Marquee speed={0} gradient={false} pauseOnHover autoPlay> */}
-      <span className="mx-16 tracking-wide font-medium opacity-90">
-        {message}
-      </span>
-      {/* <span className="mx-16 tracking-wide font-medium opacity-70">
+      <Marquee speed={0} gradient={false} pauseOnHover autoPlay>
+        <span className="mx-16 tracking-wide font-medium opacity-90">
+          {message}
+        </span>
+        <span className="mx-16 tracking-wide font-medium opacity-70">
           🎁 Free delivery on orders above ৳999
         </span>
         <span className="mx-16 tracking-wide font-medium opacity-90">
@@ -257,8 +257,8 @@ const AnnouncementBar = ({ message }) => {
         </span>
         <span className="mx-16 tracking-wide font-medium opacity-70">
           ✅ 100% Genuine Leather Products
-        </span> */}
-      {/* </Marquee> */}
+        </span>
+      </Marquee>
     </div>
   );
 };
@@ -824,7 +824,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
       <SearchOverlay isOpen={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Announcement */}
-      <AnnouncementBar message={welcomeMessage} />
+      {/* <AnnouncementBar message={welcomeMessage} /> */}
 
       {/* ── Sticky Header ── */}
       <header className="sticky top-0 z-30 bg-white shadow-sm">
