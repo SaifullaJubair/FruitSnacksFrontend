@@ -93,7 +93,7 @@ const PurchaseHistory = () => {
 
                 <td className="whitespace-nowrap p-4">
                   <Link
-                    href={`/orders/${userInfo?.data?._id}/${item?._id}`}
+                    href={`/orders/${item?._id}`}
                     className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
                   >
                     View <FiExternalLink size={13} />

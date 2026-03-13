@@ -300,6 +300,7 @@ const AddToCart = () => {
         );
 
         const orderId = result?.data?.order_id;
+        const invoiceId = result?.data?.invoice_id;
         // const isGuest = !userInfo?.data?._id || orderData?.need_user_create;
         const isGuest = result?.data?.user_created === true;
 
@@ -309,6 +310,7 @@ const AddToCart = () => {
         await new Promise((r) => setTimeout(r, 300));
         const params = new URLSearchParams();
         if (orderId) params.set("order_id", orderId);
+        if (invoiceId) params.set("invoice_id", invoiceId);
         if (isGuest) params.set("guest", "true");
         navigate.push(`/orders/order-success?${params.toString()}`);
       } catch (error) {

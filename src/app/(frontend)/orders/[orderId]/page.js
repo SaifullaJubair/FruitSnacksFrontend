@@ -1,4 +1,4 @@
-// src/app/(frontend)/orders/[userId]/[orderId]/page.js
+// src/app/(frontend)/orders/[orderId]/page.js
 import Contain from "@/components/common/Contain";
 import OrderInvoice from "@/components/frontend/orders/orderInvoice/OrderInvoice";
 import { buildPageMeta } from "@/components/lib/buildPageMeta";

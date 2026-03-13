@@ -439,6 +439,9 @@ const SingleProduct = ({ product }) => {
         const params = new URLSearchParams();
         if (result?.data?.order_id)
           params.set("order_id", result.data.order_id);
+        if (result?.data?.invoice_id)
+          params.set("invoice_id", result.data.invoice_id);
+
         const isGuest = result?.data?.user_created === true;
 
         if (isGuest) params.set("guest", "true");

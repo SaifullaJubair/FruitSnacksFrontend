@@ -63,7 +63,7 @@ const PurchaseHistory = () => {
 
                       <td className="whitespace-nowrap p-4 font-bold">
                         <Link
-                          href={`/orders/${userInfo?.data?._id}/${item?._id}`}
+                          href={`/orders/${item?._id}`}
                           className="flex items-center justify-center gap-1 text-primary hover:underline"
                         >
                           {item?.invoice_id}
@@ -106,7 +106,7 @@ const PurchaseHistory = () => {
                       </td>
                       <td className="whitespace-nowrap p-4">
                         <Link
-                          href={`/orders/${userInfo?.data?._id}/${item?._id}`}
+                          href={`/orders/${item?._id}`}
                           className="flex items-center justify-center gap-1 text-primary hover:underline"
                         >
                           Visit <FiExternalLink size={16} />

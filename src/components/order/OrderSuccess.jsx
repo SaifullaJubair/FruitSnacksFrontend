@@ -14,6 +14,7 @@ const OrderSuccessContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get("order_id");
+  const invoiceId = searchParams.get("invoice_id");
   const isGuest = searchParams.get("guest") === "true";
 
   const { data: userInfo, refetch: refetchUser } = useUserInfoQuery();
@@ -84,12 +85,12 @@ const OrderSuccessContent = () => {
           Thank you for your purchase. We'll process your order shortly.
         </p>
 
-        {orderId && (
+        {invoiceId && (
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-7">
             <FiPackage size={15} className="text-gray-400" />
-            <span className="text-sm text-gray-500">Order ID:</span>
+            <span className="text-sm text-gray-500">Invoice ID:</span>
             <span className="text-sm font-bold text-gray-800 font-mono">
-              {orderId}
+              {invoiceId}
             </span>
           </div>
         )}
@@ -165,21 +166,18 @@ const OrderSuccessContent = () => {
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center justify-center gap-3">
-          {orderId && (isLoggedIn || successState) && (
-            <Link
-              href={`/user-profile?tab=purchase-history&order_id=${orderId}`}
-            >
-              <Button className="flex items-center gap-2">
-                <FaFileInvoice size={14} /> View Invoice
-              </Button>
-            </Link>
-          )}
+          <Link href={`/orders/${orderId}`}>
+            <Button className="flex items-center gap-2">
+              <FaFileInvoice size={14} /> View Invoice
+            </Button>
+          </Link>
+
           {(isLoggedIn || successState) && (
             <Link href="/user-profile?tab=purchase-history">
               <Button variant="outline">View All Orders</Button>
             </Link>
           )}
-          <Link href="/orders/order-tracking">
+          <Link href={`/orders/order-tracking/${invoiceId}`}>
             <Button variant="outline" className="flex items-center gap-2">
               <FiTruck size={14} /> Track Order
             </Button>
