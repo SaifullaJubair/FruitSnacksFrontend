@@ -308,7 +308,7 @@ const OrderInvoice = () => {
             <span>{isGenerating ? "Generating..." : "Download PDF"}</span>
           </motion.button>
 
-          <motion.button
+          {/* <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handlePrint}
@@ -316,9 +316,9 @@ const OrderInvoice = () => {
           >
             <FaPrint size={14} />
             <span>Print</span>
-          </motion.button>
+          </motion.button> */}
 
-          <motion.button
+          {/* <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={handleShare}
@@ -326,7 +326,7 @@ const OrderInvoice = () => {
           >
             <FaShare size={14} />
             <span>Share</span>
-          </motion.button>
+          </motion.button> */}
 
           <motion.button
             whileHover={{ scale: 1.02 }}
@@ -354,7 +354,7 @@ const OrderInvoice = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <StatusBadge status={order?.order_status} />
+          {/* <StatusBadge status={order?.order_status} /> */}
           <span className="text-xs text-gray-500 hidden sm:inline font-mono bg-gray-100 px-2 py-1 rounded">
             #{order?.invoice_id}
           </span>
