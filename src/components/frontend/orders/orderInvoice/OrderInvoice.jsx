@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { toCanvas } from "html-to-image";
+import { toPng } from "html-to-image";
 import jsPDF from "jspdf";
 import {
   FaDownload,
@@ -92,14 +92,26 @@ const OrderInvoice = () => {
   );
   const deliveryMessage = getDeliveryMessage(order?.shipping_location);
 
-  // ── html-to-image + jsPDF ─────────────────────────────────────────────────
+  // ── PDF download — fixed centering + proper multi-page ──────────────────────
   const downloadPDF = async () => {
     setIsGenerating(true);
     try {
-      const canvas = await toCanvas(invoiceRef.current, {
+      // toPng gives us a data URL directly — no canvas sizing issues
+      const dataUrl = await toPng(invoiceRef.current, {
+        quality: 1,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
+        // Fix: set explicit width to match the element's actual rendered width
+        width: invoiceRef.current.offsetWidth,
+        height: invoiceRef.current.offsetHeight,
+      });
+
+      // Load image to get natural dimensions
+      const img = new Image();
+      img.src = dataUrl;
+      await new Promise((res) => {
+        img.onload = res;
       });
 
       const pdf = new jsPDF({
@@ -107,34 +119,54 @@ const OrderInvoice = () => {
         unit: "mm",
         format: "a4",
       });
-      const pageW = pdf.internal.pageSize.getWidth();
-      const pageH = pdf.internal.pageSize.getHeight();
+      const pageW = pdf.internal.pageSize.getWidth(); // 210mm
+      const pageH = pdf.internal.pageSize.getHeight(); // 297mm
+
+      // Image rendered at pixelRatio:2, so actual mm dimensions:
       const imgW = pageW;
-      const imgH = (canvas.height * pageW) / canvas.width;
+      const imgH = (img.naturalHeight / img.naturalWidth) * pageW;
 
       if (imgH <= pageH) {
-        pdf.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
-          0,
-          0,
-          imgW,
-          imgH,
-          undefined,
-          "FAST",
-        );
+        // Fits in 1 page — add centered
+        pdf.addImage(dataUrl, "PNG", 0, 0, imgW, imgH);
       } else {
-        const scale = pageH / imgH;
-        pdf.addImage(
-          canvas.toDataURL("image/png"),
-          "PNG",
-          0,
-          0,
-          imgW * scale,
-          pageH,
-          undefined,
-          "FAST",
-        );
+        // Multi-page — slice properly
+        const pageHeightPx = (pageH / imgW) * img.naturalWidth;
+
+        let offsetY = 0;
+        let pageNum = 0;
+
+        while (offsetY < img.naturalHeight) {
+          if (pageNum > 0) pdf.addPage();
+
+          // Create a slice canvas
+          const sliceH = Math.min(pageHeightPx, img.naturalHeight - offsetY);
+          const sliceCanvas = document.createElement("canvas");
+          sliceCanvas.width = img.naturalWidth;
+          sliceCanvas.height = sliceH;
+          const ctx = sliceCanvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+          ctx.drawImage(
+            img,
+            0,
+            offsetY,
+            img.naturalWidth,
+            sliceH,
+            0,
+            0,
+            img.naturalWidth,
+            sliceH,
+          );
+
+          const sliceData = sliceCanvas.toDataURL("image/png");
+          const sliceHeightMm = (sliceH / img.naturalWidth) * pageW;
+
+          pdf.addImage(sliceData, "PNG", 0, 0, pageW, sliceHeightMm);
+
+          offsetY += pageHeightPx;
+          pageNum++;
+        }
       }
 
       pdf.save(`invoice-${order?.invoice_id}.pdf`);
@@ -261,7 +293,6 @@ const OrderInvoice = () => {
 
             {/* Info Cards */}
             <div className="grid grid-cols-2 gap-4 mb-5">
-              {/* Billing */}
               <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-[#E7ECF2] rounded-lg">
@@ -284,7 +315,6 @@ const OrderInvoice = () => {
                 </p>
               </div>
 
-              {/* Order Info */}
               <div className="border border-gray-200 rounded-xl p-4 bg-gray-50/60">
                 <div className="flex items-center gap-2 mb-3">
                   <div className="p-1.5 bg-[#F0E9E8] rounded-lg">
@@ -318,24 +348,22 @@ const OrderInvoice = () => {
                   Order Items
                 </span>
               </div>
-              {/* Col headers */}
               <div className="flex bg-gray-50 px-4 py-2 border-b border-gray-100">
                 {[
-                  { label: "#", w: "w-7" },
+                  { label: "#", cls: "w-7" },
                   { label: "Product", cls: "flex-1" },
-                  { label: "Price", w: "w-20", align: "text-right" },
-                  { label: "Qty", w: "w-10", align: "text-center" },
-                  { label: "Total", w: "w-20", align: "text-right" },
-                ].map(({ label, w, cls, align }) => (
+                  { label: "Price", cls: "w-20 text-right" },
+                  { label: "Qty", cls: "w-10 text-center" },
+                  { label: "Total", cls: "w-20 text-right" },
+                ].map(({ label, cls }) => (
                   <div
                     key={label}
-                    className={`${w || ""} ${cls || ""} ${align || ""} text-[9px] font-bold text-gray-400 uppercase tracking-wider`}
+                    className={`${cls} text-[9px] font-bold text-gray-400 uppercase tracking-wider`}
                   >
                     {label}
                   </div>
                 ))}
               </div>
-              {/* Rows */}
               {products?.map((product, idx) => (
                 <div
                   key={idx}
@@ -436,7 +464,6 @@ const OrderInvoice = () => {
 
           {/* Footer */}
           <div className="border-t border-gray-200 px-7 py-5">
-            {/* Thank you */}
             <div className="text-center mb-5">
               <div className="flex justify-center mb-2">
                 <FaCheckCircle className="text-emerald-500 text-4xl" />
@@ -449,7 +476,6 @@ const OrderInvoice = () => {
               </p>
             </div>
 
-            {/* Store info + social */}
             <div className="flex justify-between gap-6 mb-4">
               <div>
                 <div className="flex items-center gap-2 mb-2">
