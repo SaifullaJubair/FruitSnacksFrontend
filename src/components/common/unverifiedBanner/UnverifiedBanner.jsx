@@ -3,34 +3,44 @@ import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { FiShield, FiX, FiArrowRight } from "react-icons/fi";
+import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 
-/**
- * Global banner — layout এ রাখো।
- * localStorage এ "unverified_guest_phone" থাকলে দেখাবে।
- * user login করলে বা verified হলে localStorage clear করো।
- */
 const UnverifiedBanner = () => {
   const [phone, setPhone] = useState(null);
   const [dismissed, setDismissed] = useState(false);
   const pathname = usePathname();
 
+  const { data: userInfo } = useUserInfoQuery();
+  const isLoggedIn = !!userInfo?.data?._id;
+  const loggedInPhone = userInfo?.data?.user_phone;
+
   useEffect(() => {
-    // success page এ দেখাবে না
     if (pathname?.includes("/order-success")) return;
-
     const saved = localStorage.getItem("unverified_guest_phone");
-    if (saved) setPhone(saved);
-  }, [pathname]);
+    if (!saved) return;
 
-  const handleDismiss = () => {
-    setDismissed(true);
-    // session এ dismiss — sessionStorage এ রাখো
-    sessionStorage.setItem("banner_dismissed", "true");
-  };
+    if (isLoggedIn) {
+      // same number দিয়ে login করেছে → clear করো
+      const normalize = (p) => p?.replace(/\D/g, "").slice(-10);
+      if (normalize(loggedInPhone) === normalize(saved)) {
+        localStorage.removeItem("unverified_guest_phone");
+      }
+      // যেকোনো ক্ষেত্রে login করা থাকলে banner দেখাবে না
+      setPhone(null);
+      return;
+    }
+
+    setPhone(saved);
+  }, [pathname, isLoggedIn, loggedInPhone]);
 
   useEffect(() => {
     if (sessionStorage.getItem("banner_dismissed")) setDismissed(true);
   }, []);
+
+  const handleDismiss = () => {
+    setDismissed(true);
+    sessionStorage.setItem("banner_dismissed", "true");
+  };
 
   if (!phone || dismissed) return null;
 
