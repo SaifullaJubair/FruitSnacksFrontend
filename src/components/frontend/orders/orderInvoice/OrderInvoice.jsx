@@ -92,22 +92,19 @@ const OrderInvoice = () => {
   );
   const deliveryMessage = getDeliveryMessage(order?.shipping_location);
 
-  // ── PDF download — fixed centering + proper multi-page ──────────────────────
+  // ── PDF download ──────────────────────────────────────────────────────────
   const downloadPDF = async () => {
     setIsGenerating(true);
     try {
-      // toPng gives us a data URL directly — no canvas sizing issues
       const dataUrl = await toPng(invoiceRef.current, {
         quality: 1,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         useCORS: true,
-        // Fix: set explicit width to match the element's actual rendered width
         width: invoiceRef.current.offsetWidth,
         height: invoiceRef.current.offsetHeight,
       });
 
-      // Load image to get natural dimensions
       const img = new Image();
       img.src = dataUrl;
       await new Promise((res) => {
@@ -122,49 +119,73 @@ const OrderInvoice = () => {
       const pageW = pdf.internal.pageSize.getWidth(); // 210mm
       const pageH = pdf.internal.pageSize.getHeight(); // 297mm
 
-      // Image rendered at pixelRatio:2, so actual mm dimensions:
-      const imgW = pageW;
-      const imgH = (img.naturalHeight / img.naturalWidth) * pageW;
+      // Margins
+      const marginBottom = 10; // mm — page 1 bottom
+      const marginTop = 10; // mm — page 2+ top
+      const marginTopBottom = 10; // mm — page 2+ bottom
 
-      if (imgH <= pageH) {
-        // Fits in 1 page — add centered
-        pdf.addImage(dataUrl, "PNG", 0, 0, imgW, imgH);
+      // Full image height in mm (at full page width)
+      const imgTotalH = (img.naturalHeight / img.naturalWidth) * pageW;
+
+      if (imgTotalH <= pageH - marginBottom) {
+        // ── Fits in 1 page ──
+        pdf.addImage(dataUrl, "PNG", 0, 0, pageW, imgTotalH);
       } else {
-        // Multi-page — slice properly
-        const pageHeightPx = (pageH / imgW) * img.naturalWidth;
+        // ── Multi-page ──
+        // px per mm
+        const pxPerMm = img.naturalWidth / pageW;
 
-        let offsetY = 0;
+        // Page 1: from top (0) to (pageH - marginBottom)
+        // Page 2+: from (marginTop) to (pageH - marginTopBottom)
+        const page1HeightMm = pageH - marginBottom;
+        const page1HeightPx = page1HeightMm * pxPerMm;
+
+        const otherHeightMm = pageH - marginTop - marginTopBottom;
+        const otherHeightPx = otherHeightMm * pxPerMm;
+
+        let offsetPx = 0;
         let pageNum = 0;
 
-        while (offsetY < img.naturalHeight) {
+        while (offsetPx < img.naturalHeight) {
           if (pageNum > 0) pdf.addPage();
 
-          // Create a slice canvas
-          const sliceH = Math.min(pageHeightPx, img.naturalHeight - offsetY);
+          const isFirstPage = pageNum === 0;
+          const sliceHeightPx = Math.min(
+            isFirstPage ? page1HeightPx : otherHeightPx,
+            img.naturalHeight - offsetPx,
+          );
+          const drawY = isFirstPage ? 0 : marginTop;
+          const sliceHeightMm = sliceHeightPx / pxPerMm;
+
+          // Draw slice onto temp canvas
           const sliceCanvas = document.createElement("canvas");
           sliceCanvas.width = img.naturalWidth;
-          sliceCanvas.height = sliceH;
+          sliceCanvas.height = sliceHeightPx;
           const ctx = sliceCanvas.getContext("2d");
           ctx.fillStyle = "#ffffff";
           ctx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
           ctx.drawImage(
             img,
             0,
-            offsetY,
+            offsetPx,
             img.naturalWidth,
-            sliceH,
+            sliceHeightPx,
             0,
             0,
             img.naturalWidth,
-            sliceH,
+            sliceHeightPx,
           );
 
-          const sliceData = sliceCanvas.toDataURL("image/png");
-          const sliceHeightMm = (sliceH / img.naturalWidth) * pageW;
+          pdf.addImage(
+            sliceCanvas.toDataURL("image/png"),
+            "PNG",
+            0,
+            drawY,
+            pageW,
+            sliceHeightMm,
+          );
 
-          pdf.addImage(sliceData, "PNG", 0, 0, pageW, sliceHeightMm);
-
-          offsetY += pageHeightPx;
+          offsetPx += sliceHeightPx;
           pageNum++;
         }
       }
