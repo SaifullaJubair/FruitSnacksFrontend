@@ -355,7 +355,7 @@ const Footer = ({ menuData }) => {
 
             <div className="mt-12 pt-6 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-secondary-200 text-xs">
-                © {new Date().getFullYear()} Artisan Leather. All rights
+                © {new Date().getFullYear()} FruitSnacks. All rights
                 reserved.
               </p>
               <Link

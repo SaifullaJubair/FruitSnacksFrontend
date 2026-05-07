@@ -100,7 +100,7 @@ export default function MobileNavBarUserDashBoard() {
 
   const handleLogOut = () => {
     // Remove the token from cookies
-    Cookies.remove("artisan_lather_token");
+    Cookies.remove("fruit_snacks_token");
 
     // Redirect to the home page
     router.push("/");

@@ -63,7 +63,7 @@ const SecondNavbar = ({ menuData }) => {
   }, []);
   //log out Function
   // const handleLogOut = () => {
-  //   Cookies.remove("artisan_lather_token");
+  //   Cookies.remove("fruit_snacks_token");
 
   //   router.push("/");
   //   window.location.reload();

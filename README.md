@@ -1,4 +1,4 @@
-# ArtisanLatherFrontend- Sagor vai er ecommarce frontend
+# FruitSnacks Frontend
 
 ##Final SEO setup complete। সব files:
 src/app/layout.js                    ← root_layout.jsx

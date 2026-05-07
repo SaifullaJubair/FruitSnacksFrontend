@@ -10,7 +10,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "artisen-leather.sgp1.cdn.digitaloceanspaces.com",
+        hostname: "fruit-snacks.sgp1.cdn.digitaloceanspaces.com",
         pathname: "**",
       },
       {

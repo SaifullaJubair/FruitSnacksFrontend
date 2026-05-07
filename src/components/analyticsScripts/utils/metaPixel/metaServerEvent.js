@@ -12,7 +12,7 @@ const getCookieValue = (name) => {
 const getOrCreateAnonymousId = () => {
   if (typeof document === "undefined") return "";
 
-  const COOKIE_NAME = "_artisan_uid";
+  const COOKIE_NAME = "_fruit_snacks_uid";
   const existing = getCookieValue(COOKIE_NAME);
   if (existing) return existing;
 

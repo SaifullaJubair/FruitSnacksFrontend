@@ -22,7 +22,7 @@ export async function getSeoConfig() {
     console.error("Server Setting Data Fetch Error:", error);
   }
 
-  const siteName = s?.title || "Artisan Leather";
+  const siteName = s?.title || "FruitSnacks";
   const seoTitle =
     s?.seo_title || `${siteName} – Premium Genuine Leather Products Bangladesh`;
   const seoDescription =
