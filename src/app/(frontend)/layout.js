@@ -2,13 +2,25 @@ import Navbar from "@/components/shared/navbar/Navbar";
 import Footer from "@/components/shared/footer/Footer";
 import { getMenu } from "@/components/lib/getMenu";
 import UnverifiedBanner from "@/components/common/unverifiedBanner/UnverifiedBanner";
+import { getServerSettingData } from "@/components/lib/getServerSettingData";
+import AnnouncementBar from "@/components/theme/AnnouncementBar";
 
 const MainLayout = async ({ children }) => {
   const dataArray = await getMenu();
   const menuData = dataArray?.data;
 
+  // site_settings.announcement_bar — top-of-page rolling banner
+  let announcementItems = [];
+  try {
+    const settingResp = await getServerSettingData();
+    announcementItems = settingResp?.data?.[0]?.announcement_bar || [];
+  } catch (e) {
+    // non-fatal — site renders without announcement bar
+  }
+
   return (
     <div>
+      <AnnouncementBar items={announcementItems} />
       <Navbar menuData={dataArray} />
       <UnverifiedBanner />
       {/* pb-16 — mobile bottom nav এর জন্য space */}

@@ -1,6 +1,7 @@
 // src/app/(frontend)/products/[slug]/page.js
 import { BASE_URL } from "@/components/utils/baseURL";
 import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
+import ProductThemedSections from "@/components/theme/ProductThemedSections";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
@@ -181,6 +182,7 @@ const ProductDetailsPage = async ({ params }) => {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <SingleProduct product={product} />
+      <ProductThemedSections product={product} />
     </section>
   );
 };
