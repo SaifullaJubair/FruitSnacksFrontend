@@ -148,6 +148,19 @@ module.exports = {
           500: "#F6A723",
         },
         purple: "#936DFF",
+        // Dynamic Product Page System — resolve from CSS variables injected
+        // on the product page server component. Defaults are sensible neutrals
+        // so existing pages render unchanged when not on a themed product page.
+        brand: {
+          DEFAULT: "var(--brand-primary, #10B981)",
+          light: "var(--brand-primary-light, #6EE7B7)",
+          dark: "var(--brand-primary-dark, #047857)",
+        },
+        "page-bg": "var(--page-bg, #FAFAFA)",
+        "section-bg": "var(--section-bg, #F3F4F6)",
+        heading: "var(--heading-color, #111827)",
+        body: "var(--body-color, #374151)",
+        accent2: "var(--accent-color, #F59E0B)",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

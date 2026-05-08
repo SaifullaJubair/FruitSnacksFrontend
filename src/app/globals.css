@@ -229,3 +229,55 @@ input[type="number"] {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ───────────────────────────────────────────────────────────────────
+   Dynamic Product Page System — floating asset animations
+   ─────────────────────────────────────────────────────────────────── */
+@keyframes brand-float {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+@keyframes brand-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(3deg); }
+}
+@keyframes brand-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-16px); }
+}
+@keyframes brand-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.brand-anim-float-slow   { animation: brand-float 5s ease-in-out infinite; }
+.brand-anim-float-normal { animation: brand-float 3s ease-in-out infinite; }
+.brand-anim-float-fast   { animation: brand-float 1.5s ease-in-out infinite; }
+
+.brand-anim-sway-slow    { animation: brand-sway 5s ease-in-out infinite; }
+.brand-anim-sway-normal  { animation: brand-sway 3s ease-in-out infinite; }
+.brand-anim-sway-fast    { animation: brand-sway 1.5s ease-in-out infinite; }
+
+.brand-anim-bounce-slow   { animation: brand-bounce 5s ease-in-out infinite; }
+.brand-anim-bounce-normal { animation: brand-bounce 2.5s ease-in-out infinite; }
+.brand-anim-bounce-fast   { animation: brand-bounce 1.2s ease-in-out infinite; }
+
+.brand-anim-spin-slow    { animation: brand-spin 12s linear infinite; }
+.brand-anim-spin-normal  { animation: brand-spin 6s linear infinite; }
+.brand-anim-spin-fast    { animation: brand-spin 3s linear infinite; }
+
+/* Themed button base — used by Order Now / WhatsApp / etc. on product page */
+.brand-btn {
+  background: var(--brand-primary, #10B981);
+  color: var(--button-text, #FFFFFF);
+  border-radius: var(--button-radius, 8px);
+  transition: filter 0.15s ease;
+}
+.brand-btn:hover { filter: brightness(0.93); }
+
+.brand-btn-outline {
+  background: transparent;
+  color: var(--brand-primary-dark, #047857);
+  border: 2px solid var(--brand-primary, #10B981);
+  border-radius: var(--button-radius, 8px);
+}
