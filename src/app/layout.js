@@ -1,7 +1,7 @@
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
 import Providers from "@/components/providers/Providers";
 import QueryProviders from "@/components/providers/QueryProviders";
-import { bodyFont } from "@/utils/font";
+import { bodyFont, sansFont } from "@/utils/font";
 import "react-loading-skeleton/dist/skeleton.css";
 import "react-photo-view/dist/react-photo-view.css";
 import { Slide, ToastContainer } from "react-toastify";
@@ -101,7 +101,7 @@ export default async function RootLayout({ children }) {
   };
 
   return (
-    <html lang="bn">
+    <html lang="bn" className={sansFont.variable}>
       <head>{seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}</head>
       <body className={bodyFont.className}>
         <script

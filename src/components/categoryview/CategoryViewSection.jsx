@@ -35,11 +35,15 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
 
   const queryString = encodeURIComponent(JSON.stringify(selectedFilters));
 
+  // Catch-all slug is the full chain root → … → leaf. We match the whole
+  // SUBTREE at the chosen leaf, so pass the deepest crumb as categoryType.
+  const leafSlug = slug?.[slug.length - 1];
+
   const { data, isLoading } = useQuery({
     queryKey: [selectedFilters, slug, page, rows],
     queryFn: async () => {
       const res = await fetch(
-        `${BASE_URL}/filter_product?categoryType=${slug[0]}&sub_categoryType=${slug[1]}&child_categoryType=${slug[2]}&filterData=${queryString}&page=${page}&limit=${rows}`
+        `${BASE_URL}/filter_product?categoryType=${leafSlug}&filterData=${queryString}&page=${page}&limit=${rows}`
       );
       const data = await res.json();
       setDefaultsProducts(data);
@@ -84,21 +88,22 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
         <span className="capitalize ">{slug[0]}</span>{" "}
       </h2>
 
+      {/* Direct child categories of the current node (tree drill-down).
+          Backend's heading endpoint now returns the tree's children of the
+          slug[0] node — flat `{category_name, category_slug}` records.
+          The category route is catch-all (`/category/[...slug]`), so we
+          extend the current slug chain with the chosen child. */}
       <div className="bg-white py-2.5  mb-2 flex flex-wrap gap-1">
         {filterHeadData?.map((item) => (
           <Link
             key={item._id}
-            href={`/category/${slug[0]}/${
-              item?.sub_category_id?.sub_category_slug
-                ? item?.sub_category_id?.sub_category_slug
-                : item?.sub_category_slug
-            }/${item?.child_category_slug ? item?.child_category_slug : ""}`}
+            href={`/category/${[...slug, item?.category_slug]
+              .filter(Boolean)
+              .join("/")}`}
             className=" px-3 py-[1px] bg-gray-50 border border-gray-400 shadow-sm hover:bg-gray-100"
           >
             <span className="text-primary text-base">
-              {item?.sub_category_name
-                ? item?.sub_category_name
-                : item?.child_category_name}
+              {item?.category_name}
             </span>
           </Link>
         ))}

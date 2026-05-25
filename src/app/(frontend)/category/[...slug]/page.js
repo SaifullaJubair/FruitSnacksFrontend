@@ -13,33 +13,18 @@ const slugToName = (slug) =>
 
 export async function generateMetadata({ params }) {
   const { slug } = params;
-  const [categoryType, subCategoryType] = slug || [];
+  // catch-all route — slug is the full chain root → … → leaf in the tree.
+  const leafSlug = slug?.[slug.length - 1];
+  const rootSlug = slug?.[0];
 
-  // ✅ একসাথে fetch — double call না
-  const [seo, filterHeadData] = await Promise.all([
-    getSeoConfig(),
-    getFilterHeadData({
-      categoryType,
-      subCategoryType,
-      childCategoryType: undefined,
-    }),
-  ]);
+  const [seo] = await Promise.all([getSeoConfig()]);
 
   try {
-    const headData = filterHeadData?.data;
-    const categoryName =
-      headData?.[0]?.category_id?.category_name || slugToName(categoryType);
+    const leafName = slugToName(leafSlug);
+    const rootName = slugToName(rootSlug);
+    const pageTitle = leafSlug !== rootSlug ? `${leafName} – ${rootName}` : leafName;
 
-    const subCategoryName =
-      subCategoryType && subCategoryType !== "undefined"
-        ? slugToName(subCategoryType)
-        : null;
-
-    const pageTitle = subCategoryName
-      ? `${subCategoryName} – ${categoryName}`
-      : categoryName;
-
-    const description = `${seo.siteName} এর ${pageTitle} collection। Genuine leather, premium quality, affordable price। Cash on delivery সারাদেশে।`;
+    const description = `${seo.siteName} এর ${pageTitle} collection। Premium quality, affordable price। Cash on delivery সারাদেশে।`;
     const canonicalSlug = slug.join("/");
     const url = seo.joinUrl(seo.siteUrl, `category/${canonicalSlug}`);
 
@@ -65,7 +50,7 @@ export async function generateMetadata({ params }) {
     };
   } catch {
     return {
-      title: slugToName(categoryType),
+      title: slugToName(rootSlug),
       robots: { index: false },
     };
   }
@@ -73,11 +58,13 @@ export async function generateMetadata({ params }) {
 
 const CategoryPage = async ({ params }) => {
   const { slug } = params;
-  const [categoryType, subCategoryType, childCategoryType] = slug || [];
+  // Filter facets are scoped to the chosen leaf (subtree at the deepest crumb)
+  // and the heading chips are the leaf's direct children.
+  const leafSlug = slug?.[slug.length - 1];
 
   const [filterData, filterHeadData] = await Promise.all([
-    getFilterData(slug[0]),
-    getFilterHeadData({ categoryType, subCategoryType, childCategoryType }),
+    getFilterData(leafSlug),
+    getFilterHeadData({ categoryType: leafSlug }),
   ]);
 
   return (

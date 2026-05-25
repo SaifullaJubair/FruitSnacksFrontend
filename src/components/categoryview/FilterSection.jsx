@@ -10,11 +10,12 @@ const FilterSection = ({
   setSelectedFilters,
   filterData,
 }) => {
+  // Per-attribute open/close map keyed by attribute slot index.
   const [openFilters, setOpenFilters] = useState({
     price: true,
     availability: true,
     brand: true,
-    specifications: {},
+    attributes: {},
   });
 
   // Toggle Filter Open/Close
@@ -25,12 +26,12 @@ const FilterSection = ({
     }));
   };
 
-  const toggleSpecificationFilter = (filterKey) => {
+  const toggleAttributeFilter = (filterKey) => {
     setOpenFilters((prev) => ({
       ...prev,
-      specifications: {
-        ...prev.specifications,
-        [filterKey]: !prev.specifications[filterKey],
+      attributes: {
+        ...prev.attributes,
+        [filterKey]: !prev.attributes[filterKey],
       },
     }));
   };
@@ -220,30 +221,30 @@ const FilterSection = ({
         </div>
       )}
       {/* ✅ Specifications Filter */}
-      {filterData?.specifications?.length > 0 && (
+      {filterData?.attributes?.length > 0 && (
         <div className="space-y-2">
-          {filterData?.specifications?.map((item, i) => (
+          {filterData?.attributes?.map((item, i) => (
             <div key={i} className="border   bg-white">
               <div
                 className={`flex cursor-pointer items-center justify-between px-4 py-3  hover:bg-gray-100 ${
-                  openFilters.specifications[`spec-${i}`]
+                  openFilters.attributes[`spec-${i}`]
                     ? " border-b-2"
                     : "border-b-0"
                 }`}
-                onClick={() => toggleSpecificationFilter(`spec-${i}`)}
+                onClick={() => toggleAttributeFilter(`spec-${i}`)}
               >
                 <p className="text-sm font-medium">
                   {item?.attribute_name}
                 </p>
                 <IoIosArrowDown
                   className={`w-5 h-5 transition-transform ${
-                    openFilters.specifications[`spec-${i}`] ? "rotate-180" : ""
+                    openFilters.attributes[`spec-${i}`] ? "rotate-180" : ""
                   }`}
                 />
               </div>
               <div
                 className={`transition-all duration-300 overflow-hidden ${
-                  openFilters.specifications[`spec-${i}`]
+                  openFilters.attributes[`spec-${i}`]
                     ? "max-h-60 opacity-100"
                     : "max-h-0 opacity-0"
                 }`}

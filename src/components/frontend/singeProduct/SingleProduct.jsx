@@ -16,6 +16,7 @@ import {
   updateRecentProducts,
   calculatePrice,
   singleProductPrice,
+  variantAxisAttributes,
 } from "@/utils/helper";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
@@ -150,9 +151,13 @@ const SingleProduct = ({ product }) => {
     } else {
       setStock(product?.product_quantity);
     }
-    if (product?.is_variation && product?.attributes_details) {
+    if (product?.is_variation) {
+      // Seed selectedVariations from variation AXES only (spec-only attrs do
+      // not generate combinations). Falls back to all attributes_details on
+      // older products that don't have variant_axes yet.
+      const axisAttrs = variantAxisAttributes(product);
       const initial = {};
-      product.attributes_details.forEach((item) => {
+      axisAttrs?.forEach((item) => {
         if (item?.attribute_values?.length > 0)
           initial[item.attribute_name] = item.attribute_values[0];
       });
@@ -160,7 +165,9 @@ const SingleProduct = ({ product }) => {
       const slug = Object.values(initial)
         .map((v) => v.attribute_value_name)
         .join("-");
-      const found = product?.variations?.find((v) => v.variation_name === slug);
+      const found = product?.variations?.find(
+        (v) => v.variation_name === slug && v.is_active !== false,
+      );
       setVariationProduct(found);
     }
   }, [product]);
@@ -170,7 +177,7 @@ const SingleProduct = ({ product }) => {
       .map((v) => v.attribute_value_name)
       .join("-");
   const findVariation = (slug) =>
-    product?.variations?.find((v) => v.variation_name === slug);
+    product?.variations?.find((v) => v.variation_name === slug && v.is_active !== false);
 
   const handleSelectVariation = (value, attributeName) => {
     const newVars = { ...selectedVariations, [attributeName]: value };

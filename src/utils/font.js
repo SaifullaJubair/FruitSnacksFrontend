@@ -18,6 +18,17 @@
 //   display: "swap",
 // });
 import localFont from "next/font/local";
+import { Montserrat } from "next/font/google";
+
+// Default sans (TweakCN theme + shadcn components opt-in via Tailwind
+// `font-sans` / `var(--font-sans)`). NOT applied to <body> — the existing
+// DM Sans (`bodyFont`) keeps body Bangla/English rendering unchanged.
+export const sansFont = Montserrat({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 export const bodyFont = localFont({
   src: [

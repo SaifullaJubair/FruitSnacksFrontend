@@ -9,18 +9,23 @@ module.exports = {
   theme: {
     extend: {
       colors: {
+        // ── Primary palette — vibrant brand green for FruitSnacks (fresh,
+        //    natural, fruity). DEFAULT ≈ emerald-600, more saturated than
+        //    the previous forest-green so CTAs/buttons pop. Shades follow
+        //    the Tailwind green/emerald curve so 500 is the strong brand
+        //    tone and 50/100 stay legible as backgrounds.
         primary: {
-          50: "#E7ECF2",
-          100: "#C3CFDD",
-          200: "#9AB0C6",
-          300: "#6D8DAF",
-          400: "#456F97",
-          500: "#234E7C",
-          600: "#183C63",
-          700: "#122D4A",
-          800: "#0D1F34",
-          900: "#0A1524",
-          DEFAULT: "#0D1B2A",
+          50: "#E8F5E9",
+          100: "#C8E6C9",
+          200: "#A5D6A7",
+          300: "#81C784",
+          400: "#4CAF50",
+          500: "#1B5E20",   // brand — deep rich green
+          600: "#174D1B",
+          700: "#133D16",
+          800: "#0F2E11",
+          900: "#0A1F0C",
+          DEFAULT: "#1B5E20",
         },
         secondary: {
           50: "#F0E9E8",
@@ -161,34 +166,59 @@ module.exports = {
         heading: "var(--heading-color, #111827)",
         body: "var(--body-color, #374151)",
         accent2: "var(--accent-color, #F59E0B)",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        // Default site theme (TweakCN-adapted, oklch direct — no HSL wrapper
+        // because the vars in globals.css are oklch, not HSL channels).
+        // NOTE: keys "primary", "secondary", "accent" already exist above as
+        // the legacy palette objects (primary.50..900, primary.DEFAULT). To
+        // avoid clashing with those existing utilities we expose the shadcn
+        // tokens under namespaced keys: "surface", "fg" (with foregrounds)
+        // and "ui-*" for the rest. shadcn-ui primitive components are wired
+        // to these in components/ui/* if used.
+        background: "var(--background)",
+        foreground: "var(--foreground)",
         card: {
-          DEFAULT: "hsl(var(--card))",
-          foreground: "hsl(var(--card-foreground))",
+          DEFAULT: "var(--card)",
+          foreground: "var(--card-foreground)",
         },
         popover: {
-          DEFAULT: "hsl(var(--popover))",
-          foreground: "hsl(var(--popover-foreground))",
+          DEFAULT: "var(--popover)",
+          foreground: "var(--popover-foreground)",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
-          foreground: "hsl(var(--muted-foreground))",
+          DEFAULT: "var(--muted)",
+          foreground: "var(--muted-foreground)",
         },
         destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
+          DEFAULT: "var(--destructive)",
+          foreground: "var(--destructive-foreground)",
         },
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
+        border: "var(--border)",
+        input: "var(--input)",
+        ring: "var(--ring)",
         chart: {
-          1: "hsl(var(--chart-1))",
-          2: "hsl(var(--chart-2))",
-          3: "hsl(var(--chart-3))",
-          4: "hsl(var(--chart-4))",
-          5: "hsl(var(--chart-5))",
+          1: "var(--chart-1)",
+          2: "var(--chart-2)",
+          3: "var(--chart-3)",
+          4: "var(--chart-4)",
+          5: "var(--chart-5)",
         },
+        sidebar: {
+          DEFAULT: "var(--sidebar)",
+          foreground: "var(--sidebar-foreground)",
+          primary: "var(--sidebar-primary)",
+          "primary-foreground": "var(--sidebar-primary-foreground)",
+          accent: "var(--sidebar-accent)",
+          "accent-foreground": "var(--sidebar-accent-foreground)",
+          border: "var(--sidebar-border)",
+          ring: "var(--sidebar-ring)",
+        },
+      },
+      fontFamily: {
+        // English-leaning sans (shadcn / mixed content). Bangla components
+        // keep their own family (Hind Siliguri etc.) via utils/font.js.
+        sans: ["var(--font-sans)"],
+        serif: ["var(--font-serif)"],
+        mono: ["var(--font-mono)"],
       },
       borderRadius: {
         lg: "var(--radius)",

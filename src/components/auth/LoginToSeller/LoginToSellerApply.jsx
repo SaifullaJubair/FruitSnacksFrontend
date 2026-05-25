@@ -282,7 +282,7 @@ const LoginToSellerApply = ({ setSellerLoginApplyModal }) => {
                   type="file"
                   id="nid_card"
                   ref={fileInputRef}
-                  className="mt-2  sm:text-sm p-0.5 file:cursor-pointer file:bg-primary file:text-white file:border-none file:file:px-2 file:py-1.5"
+                  className="mt-2  sm:text-sm p-0.5 file:cursor-pointer file:bg-primary file:text-white file:border-none file:px-2 file:py-1.5"
                   onChange={handleImageChange}
                 />
                 <p className="text-xs text-[#C9CACA]  text-end">

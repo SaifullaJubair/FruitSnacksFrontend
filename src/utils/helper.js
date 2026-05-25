@@ -355,3 +355,18 @@ export const useCartCalculations = ({
     calculateShopGrandTotals,
   ]);
 };
+
+
+// PDP variation selector helper — return only the `attributes_details` entries
+// that are also variant axes for this product, so the buyer chip strip shows
+// "Color / Size" axes but not spec-only attributes (Warranty etc.). Falls back
+// to the full legacy list when variant_axes is missing (older products).
+export const variantAxisAttributes = (product) => {
+  const all = product?.attributes_details || [];
+  const axes = product?.variant_axes || [];
+  if (!axes.length) return all;
+  // variant_axes holds attribute_ids; attributes_details rows ALSO carry _id
+  // (admin StepOneVariation copies the attribute._id into each snapshot row).
+  const axisIds = new Set(axes.map((a) => String(a?.attribute_id)));
+  return all.filter((a) => axisIds.has(String(a?._id)));
+};
