@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { syncCartAfterLogin } from "@/utils/cartSync";
+import { syncWishlistAfterLogin } from "@/utils/wishlistSync";
 import { FaEye, FaEyeSlash, FaShoppingBag } from "react-icons/fa";
 import { useUserLoginMutation } from "@/redux/feature/auth/authApi";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
@@ -86,6 +87,9 @@ const LoginForm = () => {
         reset();
         await trackLogin({ ph: user_phone });
         await syncCartAfterLogin(cartProducts, dispatch);
+        // F3 — push the guest's localStorage wishlist to the BE so the buyer
+        // keeps saved items across devices. Best-effort, never throws.
+        await syncWishlistAfterLogin();
         router.push(successRedirect || "/");
       } else {
         toast.error(res?.error?.data?.message || "Something went wrong", {

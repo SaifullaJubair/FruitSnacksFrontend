@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useUserLoginMutation } from "@/redux/feature/auth/authApi";
 import { syncCartAfterLogin } from "@/utils/cartSync";
+import { syncWishlistAfterLogin } from "@/utils/wishlistSync";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
 import {
   FiX,
@@ -303,6 +304,7 @@ const AccountModal = ({
       });
       if (res?.data?.statusCode === 200 && res?.data?.success) {
         await syncCartAfterLogin(cartProducts, dispatch);
+        await syncWishlistAfterLogin();
         setLoggedIn(true);
         resetLogin();
         toast.success("Logged in successfully!");

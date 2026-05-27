@@ -11,6 +11,8 @@ import HeroGallery from "../theme/HeroGallery";
 import FloatingAssets from "../theme/FloatingAssets";
 import DescriptionCard from "../theme/DescriptionCard";
 import DynamicIcon from "@/lib/icons/DynamicIcon";
+import PdpPriceMeta from "./PdpPriceMeta";
+import ViewCountFire from "./ViewCountFire";
 import { useEffect, useState, useRef } from "react";
 import {
   updateRecentProducts,
@@ -486,6 +488,8 @@ const SingleProduct = ({ product, theme }) => {
       className="overflow-x-hidden"
       style={{ background: "var(--page-bg, #FFF8F8)", fontFamily: "var(--brand-font)" }}
     >
+      {/* F2 — fire-and-forget view count bump (deduped per session). */}
+      <ViewCountFire productId={product?._id} />
       {loading && (
         <div className="fixed inset-0 z-[100] bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div
@@ -601,6 +605,9 @@ const SingleProduct = ({ product, theme }) => {
                   </span>
                 )}
               </div>
+
+              {/* F2 — PDP price meta: flash countdown + sold count + tier + group hint. */}
+              <PdpPriceMeta product={product} currencySymbol={currencySymbol} />
 
               {/* Rating */}
               {(product?.avarage_review_ratting > 0 ||

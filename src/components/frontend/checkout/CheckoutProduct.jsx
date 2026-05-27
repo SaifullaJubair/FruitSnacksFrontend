@@ -14,6 +14,11 @@ import DeliveryInformation from "./DeliveryInformation";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { BASE_URL } from "@/components/utils/baseURL";
 import OrderSummaryTable from "./OrderSummaryTable";
+import PaymentMethodPicker from "./PaymentMethodPicker";
+import PaymentInitModal from "./PaymentInitModal";
+import AdvancePayPicker from "./AdvancePayPicker";
+import LoyaltyRedeemPanel from "./LoyaltyRedeemPanel";
+import AbandonedCartCapture from "./AbandonedCartCapture";
 import { toast } from "react-toastify";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -23,8 +28,12 @@ const CheckoutProduct = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm();
+  // F3 — watch customer_phone so AbandonedCartCapture knows when to fire.
+  // Falls back to the logged-in user's phone when the input is empty.
+  const watchedPhone = watch("customer_phone");
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
   const { data: settingData, isLoading: settingLoading } = useGetSettingData();
   const [loading, setLoading] = useState(false);
@@ -36,6 +45,56 @@ const CheckoutProduct = () => {
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
   const [couponData, setCouponData] = useState(null);
   const [orderData, setOrderData] = useState(null);
+
+  // ── F1a: payment method state ────────────────────────────────────────
+  // settings unwraps to settingData?.data?.[0] (same shape used elsewhere)
+  const settings = settingData?.data?.[0];
+  const [paymentMethod, setPaymentMethod] = useState("cod");
+  // Once settings load, pick the first enabled method as the default if cod
+  // happens to be disabled. (Otherwise leave the cod default alone.)
+  useEffect(() => {
+    if (!settings) return;
+    if (settings.cod_enabled === false) {
+      if (settings.manual_mfs_enabled) setPaymentMethod("manual_mfs");
+      else if (settings.bank_transfer_enabled) setPaymentMethod("bank_transfer");
+      else if (settings.sslcommerz_enabled) setPaymentMethod("sslcommerz");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings?.cod_enabled, settings?.manual_mfs_enabled, settings?.bank_transfer_enabled, settings?.sslcommerz_enabled]);
+
+  // Modal-state — holds the BE response (`{order_id, invoice_id, payment_method,
+  // payment_init}`) once placement succeeds.
+  const [placementResult, setPlacementResult] = useState(null);
+
+  // ── F1b: advance pay + loyalty redeem ────────────────────────────────
+  const [advanceEnabled, setAdvanceEnabled] = useState(false);
+  const [advanceMethod, setAdvanceMethod] = useState("");
+  const [advanceAmount, setAdvanceAmount] = useState("");
+  const [redeemPoints, setRedeemPoints] = useState("");
+
+  // ── F1a: VAT preview (approximation only) ────────────────────────────
+  // Server is the source of truth — it recomputes per-line VAT using the
+  // product's vat_percentage_override when set, otherwise settings.vat_percentage.
+  // The preview here uses settings.vat_percentage on the cart subtotal which is
+  // accurate for shops without per-product overrides; if a product carries an
+  // override the server may charge a different VAT (the final placed order
+  // doc will show the real value). The disclaimer below makes that explicit.
+  const vatPercent = Number(settings?.vat_percentage) || 0;
+  const vatPreview =
+    vatPercent > 0 && orderData?.sub_total_amount
+      ? Math.round(
+          (Number(orderData.sub_total_amount) -
+            Number(orderData.discount_amount || 0)) *
+            (vatPercent / 100),
+        )
+      : 0;
+
+  // F1b — loyalty redeem preview (server caps; this is a UI hint only).
+  const redeemRate = Number(settings?.loyalty_redeem_rate) || 0;
+  const redeemDiscountPreview =
+    redeemRate > 0 && Number(redeemPoints) > 0
+      ? Math.round(Math.floor(Number(redeemPoints)) * redeemRate)
+      : 0;
 
   useEffect(() => {
     if (districtId) {
@@ -100,6 +159,19 @@ const CheckoutProduct = () => {
       billing_address: data?.address,
       customer_phone: data?.customer_phone,
       customer_id: orderData?.customer_id,
+      // F1a: tell the server which gateway to initiate post-commit.
+      payment_method: paymentMethod || "cod",
+      // F1b: optional advance/partial (server validates allow-list + minPct).
+      ...(advanceEnabled && advanceMethod && Number(advanceAmount) > 0
+        ? {
+            advance_amount: Number(advanceAmount),
+            advance_method: advanceMethod,
+          }
+        : {}),
+      // F1b: optional loyalty redeem (server caps by balance + max-pct).
+      ...(Number(redeemPoints) > 0
+        ? { loyalty_redeem_points: Math.floor(Number(redeemPoints)) }
+        : {}),
       shop_products: orderData?.shop_products?.map(
         ({ shop_name, ...shop }) => ({
           shop,
@@ -113,22 +185,32 @@ const CheckoutProduct = () => {
     try {
       const response = await fetch(`${BASE_URL}/order`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(sendData),
       });
       const result = await response.json();
-      if (response.success) {
-        sessionStorage.removeItem("order_info");
-      }
       if (result?.statusCode === 200 && result?.success === true) {
+        sessionStorage.removeItem("order_info");
         toast.success(
           result?.message ? result?.message : "Order created successfully",
           {
             autoClose: 1000,
           }
         );
+        // F1a: open the PaymentInitModal when the gateway needs the buyer's
+        // attention (manual_mfs / bank instructions, sslcommerz redirect, or
+        // a "none + error" surfaced from a misconfigured gateway). For pure
+        // COD `payment_init.kind === "none"` and we just route to /orders.
+        const initKind = result?.data?.payment_init?.kind || "none";
+        const initError = result?.data?.payment_init?.error;
+        if (initKind === "none" && !initError) {
+          router.push("/orders");
+        } else {
+          setPlacementResult(result.data);
+        }
         setLoading(false);
       } else {
         toast.error(result?.message || "Something went wrong", {
@@ -136,9 +218,9 @@ const CheckoutProduct = () => {
         });
         setLoading(false);
       }
-      setLoading(false);
     } catch (error) {
       console.error("Error posting data:", error);
+      toast.error(error?.message || "Network error");
       setLoading(false);
     }
   };
@@ -165,6 +247,36 @@ const CheckoutProduct = () => {
                   districtsData={districtsData}
                 />
                 {orderData && <OrderSummaryTable orderData={orderData} />}
+
+                {/* F1a — payment method picker + per-method instructions. */}
+                <PaymentMethodPicker
+                  settings={settings}
+                  value={paymentMethod}
+                  onChange={setPaymentMethod}
+                />
+
+                {/* F1b — advance/partial pay (only when COD + settings allow). */}
+                <AdvancePayPicker
+                  settings={settings}
+                  paymentMethod={paymentMethod}
+                  grandTotal={orderData?.grand_total_amount}
+                  advanceEnabled={advanceEnabled}
+                  setAdvanceEnabled={setAdvanceEnabled}
+                  advanceMethod={advanceMethod}
+                  setAdvanceMethod={setAdvanceMethod}
+                  advanceAmount={advanceAmount}
+                  setAdvanceAmount={setAdvanceAmount}
+                />
+
+                {/* F1b — loyalty redeem (only when user logged in + balance > 0). */}
+                <LoyaltyRedeemPanel
+                  settings={settings}
+                  userInfo={userInfo}
+                  subTotal={orderData?.sub_total_amount}
+                  discountAmount={orderData?.discount_amount}
+                  redeemPoints={redeemPoints}
+                  setRedeemPoints={setRedeemPoints}
+                />
               </div>
               <div className=" ">
                 <div className="   py-6 px-3 bg-white shadow-sm">
@@ -174,12 +286,26 @@ const CheckoutProduct = () => {
                       <p className="text-text-default">Subtotal</p>
                       <p className="text-text-default">Discount Amount</p>
                       <p className="text-text-default">Shipping Cost</p>
+                      {vatPreview > 0 && (
+                        <p className="text-text-default">VAT ({vatPercent}%)</p>
+                      )}
+                      {redeemDiscountPreview > 0 && (
+                        <p className="text-text-default">
+                          Loyalty redeem
+                        </p>
+                      )}
                       <p className="text-text-default">Delivery Location</p>
                     </div>
                     <div>
                       <p className="fo">৳ {orderData?.sub_total_amount}</p>
                       <p className="">৳ {orderData?.discount_amount}</p>
                       <p className="">৳ {orderData?.shipping_cost}</p>
+                      {vatPreview > 0 && <p>৳ {vatPreview}</p>}
+                      {redeemDiscountPreview > 0 && (
+                        <p className="text-emerald-600">
+                          −৳ {redeemDiscountPreview}
+                        </p>
+                      )}
                       <p className="">{orderData?.shipping_location}</p>
                     </div>
                   </div>
@@ -187,11 +313,19 @@ const CheckoutProduct = () => {
                   <div className="flex justify-between mt-4">
                     <p className="text-text-default">Grand Total</p>
                     <p className="font-medium text-primary">
-                      ৳ {orderData?.grand_total_amount}
+                      ৳{" "}
+                      {Math.max(
+                        0,
+                        Number(orderData?.grand_total_amount || 0) +
+                          vatPreview -
+                          redeemDiscountPreview,
+                      )}
                     </p>
                   </div>
                   <p className="text-text-Lightest text-right my-2 text-xs">
-                    VAT included, where applicable
+                    {vatPreview > 0
+                      ? "VAT estimated; product-specific overrides may adjust the final amount."
+                      : "VAT included, where applicable"}
                   </p>
                   <div className="flex my-2 gap-2 mt-4">
                     {loading == true ? (
@@ -212,6 +346,26 @@ const CheckoutProduct = () => {
               </div>
             </div>
           </form>
+
+          {/* F1a — post-placement gateway handoff (instructions / redirect). */}
+          {placementResult && (
+            <PaymentInitModal
+              result={placementResult}
+              paymentMethod={paymentMethod}
+              onClose={() => setPlacementResult(null)}
+            />
+          )}
+
+          {/* F3 — abandoned-cart capture (silent; phone-keyed; BE marks as
+              recovered automatically once placement commits with same phone). */}
+          <AbandonedCartCapture
+            phone={watchedPhone || userInfo?.data?.user_phone}
+            name={userInfo?.data?.user_name}
+            email={userInfo?.data?.user_email}
+            userId={userInfo?.data?._id}
+            orderData={orderData}
+            step="cart"
+          />
         </div>
       </Contain>
     </div>

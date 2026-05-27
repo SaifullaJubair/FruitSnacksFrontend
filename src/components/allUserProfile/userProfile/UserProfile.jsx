@@ -11,6 +11,9 @@ import { IoSettingsOutline } from "react-icons/io5";
 import Dashboard from "./Dashboard";
 import PurchaseHistory from "./PurchaseHistory";
 import UserDashboardWishList from "./UserDashboardWishList";
+import LoyaltyHistory from "./LoyaltyHistory";
+import WalletHistory from "./WalletHistory";
+import { FaGift, FaWallet } from "react-icons/fa";
 import Cookies from "js-cookie";
 import ShowProfileDetails from "./ShowProfileDetails";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -139,6 +142,10 @@ const UserProfile = () => {
                 //   label: "Offer History",
                 // },
 
+                // F3 — loyalty + wallet history (read-only ledgers).
+                { name: "loyalty", icon: FaGift, label: "Loyalty Points" },
+                { name: "wallet", icon: FaWallet, label: "Wallet" },
+
                 { name: "review", icon: SlUserFollowing, label: "Review" },
                 {
                   name: "profile-setting",
@@ -182,6 +189,8 @@ const UserProfile = () => {
             {activeNavButton === "purchase-history" && <PurchaseHistory />}
             {activeNavButton === "wishlist" && <UserDashboardWishList />}
             {activeNavButton === "offer-history" && <OfferHistory />}
+            {activeNavButton === "loyalty" && <LoyaltyHistory />}
+            {activeNavButton === "wallet" && <WalletHistory />}
             {activeNavButton === "review" && (
               <DashBoardReview userInfo={userInfo} />
             )}
