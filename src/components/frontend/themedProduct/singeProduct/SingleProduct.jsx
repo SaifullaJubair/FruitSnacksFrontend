@@ -28,7 +28,7 @@ import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import { BASE_URL } from "@/components/utils/baseURL";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
   formatPhoneNumber,
   isPossiblePhoneNumber,
@@ -82,6 +82,18 @@ const SingleProduct = ({ product, theme }) => {
   const [showChart, setShowChart] = useState(false);
   const [cartAnim, setCartAnim] = useState(false);
   const navigate = useRouter();
+  // ── URL ↔ variation sync ──────────────────────────────────────────────────
+  // Pattern: /products/:slug?size=m&color=jet-black
+  // Reload / share / back-button all preserve the picked variation. The keys
+  // are the attribute_name kebab-cased, the values are the attribute_value_name
+  // kebab-cased (matches admin URL conventions everywhere).
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const slugify = (s) =>
+    String(s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "");
   const [customer_phone, setUserPhone] = useState(
     userInfo?.data?.user_phone?.slice(3, 14),
   );
@@ -167,8 +179,18 @@ const SingleProduct = ({ product, theme }) => {
       const axisAttrs = variantAxisAttributes(product);
       const initial = {};
       axisAttrs?.forEach((item) => {
-        if (item?.attribute_values?.length > 0)
-          initial[item.attribute_name] = item.attribute_values[0];
+        if (!item?.attribute_values?.length) return;
+        // Prefer the value referenced in the URL (?<attr>=<value>) so reload /
+        // share / back all preserve the picked variation. Fall back to the
+        // first value if URL has nothing or no match.
+        const paramKey = slugify(item.attribute_name);
+        const wanted = searchParams?.get(paramKey);
+        const wantedValue =
+          wanted &&
+          item.attribute_values.find(
+            (v) => slugify(v.attribute_value_name) === slugify(wanted),
+          );
+        initial[item.attribute_name] = wantedValue || item.attribute_values[0];
       });
       setSelectedVariations(initial);
       const slug = Object.values(initial)
@@ -179,6 +201,9 @@ const SingleProduct = ({ product, theme }) => {
       );
       setVariationProduct(found);
     }
+    // searchParams intentionally NOT in deps — we only want this to run on
+    // mount / product change. handleSelectVariation owns runtime URL updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
   const generateSlug = (vars) =>
@@ -198,6 +223,19 @@ const SingleProduct = ({ product, theme }) => {
     const slug = generateSlug(newVars);
     const found = findVariation(slug);
     setVariationProduct(found || null);
+
+    // Sync the URL so reload / share / back preserve this selection.
+    // router.replace (not push) — back button shouldn't cycle through every
+    // variation tweak, only the page itself.
+    try {
+      const params = new URLSearchParams(searchParams?.toString() || "");
+      Object.entries(newVars).forEach(([attrName, v]) => {
+        params.set(slugify(attrName), slugify(v?.attribute_value_name || ""));
+      });
+      navigate.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    } catch {
+      /* no-op — URL sync is a nice-to-have, never block the pick */
+    }
     if (found) {
       setStock(found.variation_quantity);
       setQuantity(1);
