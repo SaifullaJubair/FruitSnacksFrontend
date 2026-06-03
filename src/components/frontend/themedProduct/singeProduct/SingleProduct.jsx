@@ -18,9 +18,9 @@ import {
   updateRecentProducts,
   calculatePrice,
   singleProductPrice,
-  isHexColor,
   variantAxisAttributes,
 } from "@/utils/helper";
+import VariationPicker from "./VariationPicker";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -155,115 +155,195 @@ const SingleProduct = ({ product, theme }) => {
 
   const maxQuantity = stock || product?.product_quantity || 1;
 
-  // Product init
-  useEffect(() => {
-    setProductPrice(singleProductPrice(product));
-    if (
-      product?.variations?.[0]?.variation_discount_price ||
-      product?.product_discount_price
-    ) {
-      setLineThoughPrice(
-        product?.variations?.[0]?.variation_price || product?.product_price,
-      );
+  // Phase C audit fix — themed PDP uses combination[] set-intersection
+  // matching (Bangla-safe). URL state now keyed by attribute_slug / value_slug
+  // (Phase E follow-up) instead of ObjectId so URLs are human-readable
+  // (`?color=jet-black&size=l`). Falls back to ObjectId when a slug isn't
+  // pure-ASCII (i.e. legacy Bangla-literal slug that didn't go through the
+  // any-ascii migration) so old data doesn't break.
+  const PURE_ASCII_SLUG = /^[a-z0-9-]+$/;
+  const safeKey = (slug, fallbackId) =>
+    typeof slug === "string" && PURE_ASCII_SLUG.test(slug)
+      ? slug
+      : String(fallbackId);
+
+  // Helper: build a Set<value_id_string> from the current selection map.
+  const collectSelectedValueIds = (vars) => {
+    const ids = [];
+    for (const v of Object.values(vars || {})) {
+      if (v?._id) ids.push(String(v._id));
     }
-    if (product?.is_variation) {
-      setVariationProduct(product?.variations?.[0]);
-      setStock(product?.variations?.[0]?.variation_quantity);
+    return ids;
+  };
+
+  // Combination[] set intersection — order-agnostic, Bangla-safe.
+  const findVariationByValueIds = (vars) => {
+    const selectedIds = collectSelectedValueIds(vars);
+    if (!selectedIds.length) return null;
+    const target = new Set(selectedIds);
+    return (
+      product?.variations?.find((v) => {
+        if (v?.is_active === false) return false;
+        const combo = v?.combination;
+        if (!Array.isArray(combo) || combo.length !== target.size) return false;
+        for (const id of combo) {
+          if (!target.has(String(id))) return false;
+        }
+        return true;
+      }) || null
+    );
+  };
+
+  // Apply a chosen variation's price / stock into local state. Shared between
+  // the init effect and the click handler so they can't drift.
+  const applyVariationPriceStock = (found) => {
+    if (!found) return;
+    setStock(found.variation_quantity);
+    let price = found.variation_discount_price || found.variation_price;
+    if (product?.flash_sale_details?.flash_sale_product) {
+      const fp = product.flash_sale_details.flash_sale_product;
+      if (fp?.flash_price_type)
+        price = calculatePrice(
+          price,
+          fp.flash_sale_product_price,
+          fp.flash_price_type,
+        );
+      setLineThoughPrice(found.variation_price);
+    } else if (product?.campaign_details?.campaign_product) {
+      const cp = product.campaign_details.campaign_product;
+      if (cp?.campaign_price_type)
+        price = calculatePrice(
+          price,
+          cp.campaign_product_price,
+          cp.campaign_price_type,
+        );
+      setLineThoughPrice(found.variation_price);
     } else {
-      setStock(product?.product_quantity);
-    }
-    if (product?.is_variation) {
-      // Seed selectedVariations from variation AXES only (spec-only attrs do
-      // not generate combinations). Falls back to all attributes_details on
-      // older products that don't have variant_axes yet.
-      const axisAttrs = variantAxisAttributes(product);
-      const initial = {};
-      axisAttrs?.forEach((item) => {
-        if (!item?.attribute_values?.length) return;
-        // Prefer the value referenced in the URL (?<attr>=<value>) so reload /
-        // share / back all preserve the picked variation. Fall back to the
-        // first value if URL has nothing or no match.
-        const paramKey = slugify(item.attribute_name);
-        const wanted = searchParams?.get(paramKey);
-        const wantedValue =
-          wanted &&
-          item.attribute_values.find(
-            (v) => slugify(v.attribute_value_name) === slugify(wanted),
-          );
-        initial[item.attribute_name] = wantedValue || item.attribute_values[0];
-      });
-      setSelectedVariations(initial);
-      const slug = Object.values(initial)
-        .map((v) => v.attribute_value_name)
-        .join("-");
-      const found = product?.variations?.find(
-        (v) => v.variation_name === slug && v.is_active !== false,
+      setLineThoughPrice(
+        found.variation_discount_price > 0 ? found.variation_price : null,
       );
-      setVariationProduct(found);
     }
-    // searchParams intentionally NOT in deps — we only want this to run on
-    // mount / product change. handleSelectVariation owns runtime URL updates.
+    setProductPrice(price);
+  };
+
+  // Product init — seed from URL params if present, else first value of every
+  // axis. URL pattern: ?<attribute_slug>=<value_slug> (legacy ObjectId-keyed
+  // links still resolved as fallback). Bug A audit fix — init now sets the
+  // resolved variation's price + lineThoughPrice too. Previously only set
+  // product-level base price, so after URL-driven re-render (router.replace
+  // triggers Next.js server re-fetch with cache:"no-store") the price would
+  // flicker to base then back to variation in handleSelectVariation.
+  useEffect(() => {
+    if (!product?.is_variation) {
+      setProductPrice(singleProductPrice(product));
+      if (product?.product_discount_price) {
+        setLineThoughPrice(product?.product_price);
+      } else {
+        setLineThoughPrice(null);
+      }
+      setStock(product?.product_quantity);
+      return;
+    }
+    // Fix #23 — initial selection prefers the first IN-STOCK active variation
+    // when the URL doesn't pin a specific one. Previously hard-coded
+    // axis.attribute_values[0] meant a product whose first listed color was OOS
+    // would show "স্টক শেষ" on landing even when other colors had stock,
+    // confusing buyers into thinking the whole product was unavailable.
+    const axisAttrs = variantAxisAttributes(product);
+    const hasUrlPinned = axisAttrs?.some((axis) => {
+      const axisKey = safeKey(axis.attribute_slug, axis.attribute_id);
+      return !!searchParams?.get(axisKey);
+    });
+    // If URL pins a value, honour it (deep-link / share / SEO use). Otherwise
+    // try to land on the first active+in-stock variation so the badge starts
+    // green when at least one combination is buyable.
+    let seedVariation = null;
+    if (!hasUrlPinned) {
+      seedVariation = (product?.variations || []).find(
+        (v) => v?.is_active !== false && Number(v?.variation_quantity) > 0,
+      );
+    }
+    const initial = {};
+    axisAttrs?.forEach((axis) => {
+      if (!axis?.attribute_values?.length) return;
+      const axisKey = safeKey(axis.attribute_slug, axis.attribute_id);
+      const wanted = searchParams?.get(axisKey);
+      const urlMatch = wanted
+        ? axis.attribute_values.find((v) => {
+            const valueKey = safeKey(v.attribute_value_slug, v._id);
+            return valueKey === wanted || String(v._id) === wanted;
+          })
+        : null;
+      // Seed-variation match: find the axis value that belongs to seedVariation.
+      const seedMatch =
+        seedVariation && Array.isArray(seedVariation.combination)
+          ? axis.attribute_values.find((v) =>
+              seedVariation.combination.some(
+                (id) => String(id) === String(v._id),
+              ),
+            )
+          : null;
+      initial[axis.attribute_name] =
+        urlMatch || seedMatch || axis.attribute_values[0];
+    });
+    setSelectedVariations(initial);
+    const found =
+      findVariationByValueIds(initial) ||
+      seedVariation ||
+      product?.variations?.find((v) => v?.is_active !== false) ||
+      null;
+    setVariationProduct(found);
+    if (found) {
+      applyVariationPriceStock(found);
+    } else {
+      // No usable variation at all — degrade to product-level pricing.
+      setProductPrice(singleProductPrice(product));
+      setLineThoughPrice(
+        product?.product_discount_price ? product?.product_price : null,
+      );
+      setStock(0);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
-  const generateSlug = (vars) =>
-    Object.values(vars)
-      .map((v) => v.attribute_value_name)
-      .join("-");
-  const findVariation = (slug) =>
-    // Match by legacy variation_name (admin still emits it slash-joined).
-    // Skip rows the admin has toggled off (Phase-1 `is_active === false`).
-    product?.variations?.find(
-      (v) => v.variation_name === slug && v.is_active !== false,
-    );
+  // Kept for the JSX that still references generateSlug + findVariation (e.g.
+  // badge-text lookup inside the chip render). Both now route through the
+  // ID-based path internally — the slug arg is ignored.
+  const generateSlug = (vars) => collectSelectedValueIds(vars).join("|");
+  const findVariation = (_slug, varsOverride = selectedVariations) =>
+    findVariationByValueIds(varsOverride);
 
   const handleSelectVariation = (value, attributeName) => {
     const newVars = { ...selectedVariations, [attributeName]: value };
     setSelectedVariations(newVars);
-    const slug = generateSlug(newVars);
-    const found = findVariation(slug);
+    const found = findVariationByValueIds(newVars);
     setVariationProduct(found || null);
 
-    // Sync the URL so reload / share / back preserve this selection.
-    // router.replace (not push) — back button shouldn't cycle through every
-    // variation tweak, only the page itself.
+    // URL sync — key by attribute_slug, value by attribute_value_slug
+    // (Phase E follow-up). Falls back to ObjectId if a slug is non-ASCII
+    // (legacy data that hasn't been migrated yet). Share-safe, reload-safe.
     try {
       const params = new URLSearchParams(searchParams?.toString() || "");
-      Object.entries(newVars).forEach(([attrName, v]) => {
-        params.set(slugify(attrName), slugify(v?.attribute_value_name || ""));
-      });
+      const axisAttrs = variantAxisAttributes(product);
+      // Drop any stale ObjectId-keyed params left over from older session URLs
+      // so we don't end up with both ?color=red AND ?<colorObjectId>=<...>.
+      for (const axis of axisAttrs || []) {
+        params.delete(String(axis.attribute_id));
+      }
+      for (const axis of axisAttrs || []) {
+        const picked = newVars[axis.attribute_name];
+        if (!picked?._id) continue;
+        const axisKey = safeKey(axis.attribute_slug, axis.attribute_id);
+        const valueKey = safeKey(picked.attribute_value_slug, picked._id);
+        params.set(axisKey, valueKey);
+      }
       navigate.replace(`${pathname}?${params.toString()}`, { scroll: false });
     } catch {
       /* no-op — URL sync is a nice-to-have, never block the pick */
     }
     if (found) {
-      setStock(found.variation_quantity);
       setQuantity(1);
-      let price = found.variation_discount_price || found.variation_price;
-      if (product?.flash_sale_details?.flash_sale_product) {
-        const fp = product.flash_sale_details.flash_sale_product;
-        if (fp?.flash_price_type)
-          price = calculatePrice(
-            price,
-            fp.flash_sale_product_price,
-            fp.flash_price_type,
-          );
-        setLineThoughPrice(found.variation_price);
-      } else if (product?.campaign_details?.campaign_product) {
-        const cp = product.campaign_details.campaign_product;
-        if (cp?.campaign_price_type)
-          price = calculatePrice(
-            price,
-            cp.campaign_product_price,
-            cp.campaign_price_type,
-          );
-        setLineThoughPrice(found.variation_price);
-      } else {
-        setLineThoughPrice(
-          found.variation_discount_price > 0 ? found.variation_price : null,
-        );
-      }
-      setProductPrice(price);
+      applyVariationPriceStock(found);
     }
   };
 
@@ -647,6 +727,19 @@ const SingleProduct = ({ product, theme }) => {
               {/* F2 — PDP price meta: flash countdown + sold count + tier + group hint. */}
               <PdpPriceMeta product={product} currencySymbol={currencySymbol} />
 
+              {/* SKU display — variation_sku when a specific variation is
+                  selected, otherwise the parent product_sku. Industry standard
+                  (Shopify pattern): small grey text below price for buyer
+                  reference + customer-support handoff. */}
+              {(variationProduct?.variation_sku || product?.product_sku) && (
+                <p className="text-xs text-gray-400 mt-1">
+                  SKU:{" "}
+                  <code className="font-mono text-gray-500 select-all">
+                    {variationProduct?.variation_sku || product?.product_sku}
+                  </code>
+                </p>
+              )}
+
               {/* Rating */}
               {(product?.avarage_review_ratting > 0 ||
                 product?.total_review_ratting > 0) && (
@@ -740,91 +833,23 @@ const SingleProduct = ({ product, theme }) => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* --- left: variant + qty --- */}
               <div className="space-y-5">
-                {/* Variations — axes only (spec-only attrs go in the Spec table). */}
+                {/* Variations — axes only (spec-only attrs go in the Spec table).
+                    V2 picker extracted to <VariationPicker> — handles swatch +
+                    button + dropdown + swatch-no-hex fallback + OOS visual cue
+                    + viewport overflow modal. State (selectedVariations) and
+                    handlers (handleSelectVariation, findVariation) stay here
+                    so the rest of this component (price/stock/cart/url-sync)
+                    keeps working unchanged. */}
                 {product?.is_variation &&
                   variantAxisAttributes(product)?.map((attr, ai) => (
-                    <div key={ai} className="space-y-2">
-                      <p
-                        className="text-sm font-semibold"
-                        style={{ color: "var(--heading-color)" }}
-                      >
-                        {attr?.attribute_name} সিলেক্ট করুন
-                      </p>
-                      <div className="flex flex-wrap gap-2.5">
-                        {attr?.attribute_values?.map((val) => {
-                          const selected =
-                            selectedVariations[attr?.attribute_name]
-                              ?.attribute_value_name ===
-                            val?.attribute_value_name;
-                          const isColor = isHexColor(val?.attribute_value_code);
-                          if (isColor) {
-                            return (
-                              <button
-                                key={val?._id}
-                                type="button"
-                                title={val?.attribute_value_name}
-                                onClick={() =>
-                                  handleSelectVariation(val, attr?.attribute_name)
-                                }
-                                className={`w-9 h-9 rounded-full border-2 transition-all ${
-                                  selected ? "scale-110" : "hover:scale-105"
-                                }`}
-                                style={{
-                                  backgroundColor: val?.attribute_value_code,
-                                  borderColor: selected
-                                    ? "var(--brand-primary)"
-                                    : "#e5e7eb",
-                                  boxShadow: selected
-                                    ? "0 0 0 2px var(--brand-primary)"
-                                    : "none",
-                                }}
-                              />
-                            );
-                          }
-                          const slug = generateSlug({
-                            ...selectedVariations,
-                            [attr?.attribute_name]: val,
-                          });
-                          const matchedVar = findVariation(slug);
-                          return (
-                            <button
-                              key={val?._id}
-                              type="button"
-                              onClick={() =>
-                                handleSelectVariation(val, attr?.attribute_name)
-                              }
-                              className="px-4 py-2 text-sm font-semibold border-2 transition-all min-w-[64px]"
-                              style={{
-                                borderRadius: "var(--button-radius, 8px)",
-                                borderColor: selected
-                                  ? "var(--brand-primary)"
-                                  : "#e5e7eb",
-                                background: selected
-                                  ? "var(--brand-primary)"
-                                  : "#fff",
-                                color: selected
-                                  ? "var(--button-text, #fff)"
-                                  : "var(--body-color)",
-                              }}
-                            >
-                              {val?.attribute_value_name}
-                              {matchedVar?.variation_badge_text && (
-                                <span
-                                  className="block text-[9px] font-bold mt-0.5"
-                                  style={{
-                                    color: selected
-                                      ? "var(--button-text)"
-                                      : "var(--brand-primary)",
-                                  }}
-                                >
-                                  {matchedVar.variation_badge_text}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                    <VariationPicker
+                      key={attr?.attribute_id || ai}
+                      product={product}
+                      attribute={attr}
+                      selectedVariations={selectedVariations}
+                      findVariation={findVariation}
+                      handleSelectVariation={handleSelectVariation}
+                    />
                   ))}
 
                 {/* Size chart */}
@@ -848,18 +873,23 @@ const SingleProduct = ({ product, theme }) => {
                   </>
                 )}
 
-                {/* Stock */}
+                {/* Stock — always show the live count alongside the badge so
+                    buyers + testers can verify per-variation stock changes. */}
                 <div className="flex items-center gap-2">
                   {stock > 0 ? (
                     <>
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-xs font-semibold text-emerald-700">
                         স্টকে আছে
-                        {stock <= 10 && (
-                          <span className="text-amber-600 ml-1.5">
-                            · মাত্র {stock}টি বাকি!
-                          </span>
-                        )}
+                        <span
+                          className={
+                            stock <= 10
+                              ? "text-amber-600 ml-1.5"
+                              : "text-emerald-700 ml-1.5"
+                          }
+                        >
+                          · {stock}টি{stock <= 10 ? " বাকি!" : ""}
+                        </span>
                       </span>
                     </>
                   ) : (
@@ -916,6 +946,14 @@ const SingleProduct = ({ product, theme }) => {
                     <span className="text-sm" style={{ color: "var(--body-color)" }}>
                       মোট:
                     </span>
+                    {/* Show strikethrough subtotal when there's a discount so
+                        the savings are visible on the inline total too. */}
+                    {shopSubtotals > shopTotal && (
+                      <span className="text-sm line-through text-gray-400">
+                        {currencySymbol}
+                        {shopSubtotals}
+                      </span>
+                    )}
                     <span
                       className="text-2xl font-black"
                       style={{ color: "var(--brand-primary)" }}

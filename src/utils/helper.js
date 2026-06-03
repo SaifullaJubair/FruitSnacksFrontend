@@ -357,16 +357,144 @@ export const useCartCalculations = ({
 };
 
 
-// PDP variation selector helper — return only the `attributes_details` entries
-// that are also variant axes for this product, so the buyer chip strip shows
-// "Color / Size" axes but not spec-only attributes (Warranty etc.). Falls back
-// to the full legacy list when variant_axes is missing (older products).
+// PDP variation selector helper — Phase C rewrite (CM1 + CM2).
+//
+// Returns one entry per variant axis with the source attribute_value ids
+// intact (so SingleProduct can match against variation.combination[] which
+// also holds source ids). Source: `product.product_attributes[]` populated
+// with the live attribute doc — NOT the `attributes_details` snapshot whose
+// nested value `_id`s are Mongoose autogen subdoc ids that don't line up
+// with combination[].
+//
+// Each emitted entry: {
+//   attribute_id,
+//   attribute_name,
+//   display_type,            // "swatch" | "button" | "dropdown"
+//   attribute_values: [{ _id, attribute_value_name, attribute_value_code }, …]
+// }
+//
+// Falls back to the legacy snapshot ONLY for pre-Phase-1 products that have
+// no product_attributes wired (extremely old data). On a fresh resale install
+// this branch is dead.
 export const variantAxisAttributes = (product) => {
-  const all = product?.attributes_details || [];
   const axes = product?.variant_axes || [];
-  if (!axes.length) return all;
-  // variant_axes holds attribute_ids; attributes_details rows ALSO carry _id
-  // (admin StepOneVariation copies the attribute._id into each snapshot row).
+  const productAttrs = product?.product_attributes || [];
+
+  if (axes.length && productAttrs.length) {
+    const axisIds = new Set(axes.map((a) => String(a?.attribute_id)));
+    const out = [];
+    for (const pa of productAttrs) {
+      const attrDoc = pa?.attribute_id; // populated attribute doc
+      if (!attrDoc || typeof attrDoc !== "object") continue;
+      const attrIdStr = String(attrDoc._id);
+      if (!axisIds.has(attrIdStr)) continue;
+      const chosenValueIds = new Set(
+        (pa.value_ids || []).map((id) => String(id)),
+      );
+      const values = (attrDoc.attribute_values || [])
+        .filter((v) => chosenValueIds.has(String(v._id)))
+        .map((v) => ({
+          _id: v._id,
+          attribute_value_name: v.attribute_value_name,
+          attribute_value_code: v.attribute_value_code,
+          // Phase E follow-up — surface attribute_value_slug for URL state.
+          // Backend now stores ASCII slugs (any-ascii migration); legacy
+          // Bangla-literal slugs are filtered out at the consumer side.
+          attribute_value_slug: v.attribute_value_slug,
+        }));
+      if (!values.length) continue;
+      out.push({
+        attribute_id: attrDoc._id,
+        attribute_name: attrDoc.attribute_name,
+        attribute_slug: attrDoc.attribute_slug, // for URL state on PDP
+        display_type: attrDoc.display_type || "button",
+        attribute_values: values,
+      });
+    }
+    if (out.length) return out;
+  }
+
+  // Legacy fallback (no Phase-1 product_attributes wiring): return the
+  // snapshot rows as-is. Picker will use string-name matching for these.
+  // Phase E audit Fix #3 — warn so a regression in the populate chain
+  // (any code path that returns a product with axes but unpopulated /
+  // missing product_attributes) is visible in browser devtools instead of
+  // silently degrading the PDP picker. On fresh resale installs this should
+  // never fire; if it does, the populate path was broken upstream.
+  if (
+    typeof console !== "undefined" &&
+    axes.length &&
+    productAttrs.length === 0
+  ) {
+    console.warn(
+      "[variantAxisAttributes] Falling back to legacy attributes_details snapshot — " +
+        "product_attributes was empty/unpopulated. Variation matching may be unreliable.",
+      { productId: product?._id, slug: product?.product_slug },
+    );
+  }
+  const snapshot = product?.attributes_details || [];
+  if (!axes.length) return snapshot;
   const axisIds = new Set(axes.map((a) => String(a?.attribute_id)));
-  return all.filter((a) => axisIds.has(String(a?._id)));
+  return snapshot.filter((a) => axisIds.has(String(a?.attribute_id)));
+};
+
+// Pre-compute availability across all variations so the PDP can grey out
+// chips with no stock instead of letting the buyer click into a dead end.
+// Returns Map<value_id_string, { hasInStock: boolean, anyActive: boolean }>.
+// Built once on mount; O(variations × combinationSize), O(1) chip lookup.
+export const buildVariationAvailabilityMap = (product) => {
+  const map = new Map();
+  const variations = product?.variations || [];
+  for (const v of variations) {
+    if (!Array.isArray(v?.combination)) continue;
+    const inStock = (v?.variation_quantity ?? 0) > 0;
+    const active = v?.is_active !== false;
+    for (const vid of v.combination) {
+      const key = String(vid);
+      const prev = map.get(key) || { hasInStock: false, anyActive: false };
+      map.set(key, {
+        hasInStock: prev.hasInStock || inStock,
+        anyActive: prev.anyActive || active,
+      });
+    }
+  }
+  return map;
+};
+
+// C9 — given current axis selection + a candidate value for one axis, would
+// the resulting full combination be active AND in stock? Used by the picker
+// to faded-out chips that lead to a dead combo. Returns true (don't fade)
+// when the trial combo is incomplete — incomplete combos shouldn't trigger
+// the OOS visual cue because the user hasn't finished picking yet.
+//
+// Works for 1-axis, 2-axis, N-axis products via combination[] set-intersection
+// (same algorithm as findVariationByValueIds in SingleProduct.jsx — kept here
+// in helper.js so both the picker and any future consumer can reuse it).
+export const wouldComboBeInStock = (
+  product,
+  currentVars,
+  attrName,
+  candidateVal,
+) => {
+  if (!product?.is_variation) return true;
+  const trial = { ...currentVars, [attrName]: candidateVal };
+  const axes = variantAxisAttributes(product) || [];
+  // Incomplete combo guard — if user hasn't selected every axis yet, don't
+  // pre-emptively fade chips. Surfaces fades only once a full combo can be
+  // judged.
+  for (const a of axes) {
+    if (!trial[a.attribute_name]?._id) return true;
+  }
+  const ids = Object.values(trial)
+    .map((v) => String(v?._id))
+    .filter(Boolean);
+  if (!ids.length) return true;
+  const target = new Set(ids);
+  const found = (product.variations || []).find((v) => {
+    if (v?.is_active === false) return false;
+    const combo = v?.combination;
+    if (!Array.isArray(combo) || combo.length !== target.size) return false;
+    return combo.every((id) => target.has(String(id)));
+  });
+  return found ? Number(found.variation_quantity) > 0 : false;
 };

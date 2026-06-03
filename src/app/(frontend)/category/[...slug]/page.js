@@ -12,7 +12,11 @@ const slugToName = (slug) =>
     .join(" ");
 
 export async function generateMetadata({ params }) {
-  const { slug } = params;
+  // Next.js 15+ — `params` is a Promise that must be awaited before
+  // destructuring. Without the await, `slug` ends up as undefined and
+  // every consumer (this metadata fn + the page below + CategoryViewSection)
+  // crashes downstream.
+  const { slug } = await params;
   // catch-all route — slug is the full chain root → … → leaf in the tree.
   const leafSlug = slug?.[slug.length - 1];
   const rootSlug = slug?.[0];
@@ -57,7 +61,8 @@ export async function generateMetadata({ params }) {
 }
 
 const CategoryPage = async ({ params }) => {
-  const { slug } = params;
+  // Next.js 15+ — `params` is a Promise; must await before destructuring.
+  const { slug } = await params;
   // Filter facets are scoped to the chosen leaf (subtree at the deepest crumb)
   // and the heading chips are the leaf's direct children.
   const leafSlug = slug?.[slug.length - 1];

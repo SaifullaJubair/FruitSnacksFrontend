@@ -17,6 +17,7 @@ import {
   calculatePrice,
   singleProductPrice,
   variantAxisAttributes,
+  buildVariationAvailabilityMap,
 } from "@/utils/helper";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
@@ -134,7 +135,72 @@ const SingleProduct = ({ product }) => {
 
   const maxQuantity = stock || product?.product_quantity || 1;
 
-  // Product init
+  // ── Phase C — variation picker state model ────────────────────────────────
+  // selectedVariations: { [axis_attribute_id_str]: full_value_obj_with_source_id }
+  // Replaces the old { [attribute_name]: value_obj } shape so matching can
+  // happen on attribute_value._id (combination[]) instead of name slugs.
+
+  // Pre-built availability + axis list. Recomputed only when the product
+  // identity / variation set changes.
+  const axisAttrs = variantAxisAttributes(product);
+  const availabilityMap = buildVariationAvailabilityMap(product);
+
+  // Match a selectedVariations map to a variation row via combination[] set
+  // equality. Order-agnostic; works with Bangla/emoji axis values.
+  const findVariationByValueIds = (valuesById) => {
+    const selectedIds = Object.values(valuesById)
+      .map((v) => v?._id && String(v._id))
+      .filter(Boolean);
+    if (!selectedIds.length) return null;
+    const target = new Set(selectedIds);
+    return (
+      product?.variations?.find((v) => {
+        if (v?.is_active === false) return false;
+        const combo = v?.combination;
+        if (!Array.isArray(combo) || combo.length !== target.size) return false;
+        for (const id of combo) {
+          if (!target.has(String(id))) return false;
+        }
+        return true;
+      }) || null
+    );
+  };
+
+  // Apply a found variation's price / stock / line-through into local state.
+  const applyVariation = (found) => {
+    setVariationProduct(found || null);
+    if (!found) return;
+    setStock(found.variation_quantity);
+    setQuantity(1);
+    let price = found.variation_discount_price || found.variation_price;
+    if (product?.flash_sale_details?.flash_sale_product) {
+      const fp = product.flash_sale_details.flash_sale_product;
+      if (fp?.flash_price_type)
+        price = calculatePrice(
+          price,
+          fp.flash_sale_product_price,
+          fp.flash_price_type,
+        );
+      setLineThoughPrice(found.variation_price);
+    } else if (product?.campaign_details?.campaign_product) {
+      const cp = product.campaign_details.campaign_product;
+      if (cp?.campaign_price_type)
+        price = calculatePrice(
+          price,
+          cp.campaign_product_price,
+          cp.campaign_price_type,
+        );
+      setLineThoughPrice(found.variation_price);
+    } else {
+      setLineThoughPrice(
+        found.variation_discount_price > 0 ? found.variation_price : null,
+      );
+    }
+    setProductPrice(price);
+  };
+
+  // Product init — seed selections from URL params if present, else first
+  // value of every axis. URL pattern: ?<axis_attribute_id>=<value_id>.
   useEffect(() => {
     setProductPrice(singleProductPrice(product));
     if (
@@ -145,76 +211,76 @@ const SingleProduct = ({ product }) => {
         product?.variations?.[0]?.variation_price || product?.product_price,
       );
     }
-    if (product?.is_variation) {
-      setVariationProduct(product?.variations?.[0]);
-      setStock(product?.variations?.[0]?.variation_quantity);
-    } else {
+    if (!product?.is_variation) {
       setStock(product?.product_quantity);
+      return;
     }
-    if (product?.is_variation) {
-      // Seed selectedVariations from variation AXES only (spec-only attrs do
-      // not generate combinations). Falls back to all attributes_details on
-      // older products that don't have variant_axes yet.
-      const axisAttrs = variantAxisAttributes(product);
-      const initial = {};
-      axisAttrs?.forEach((item) => {
-        if (item?.attribute_values?.length > 0)
-          initial[item.attribute_name] = item.attribute_values[0];
-      });
-      setSelectedVariations(initial);
-      const slug = Object.values(initial)
-        .map((v) => v.attribute_value_name)
-        .join("-");
-      const found = product?.variations?.find(
-        (v) => v.variation_name === slug && v.is_active !== false,
+
+    const urlParams =
+      typeof window !== "undefined"
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
+    const initial = {};
+    for (const axis of axisAttrs || []) {
+      const axisIdStr = String(axis.attribute_id);
+      const wantedValueId = urlParams.get(axisIdStr);
+      const match = wantedValueId
+        ? axis.attribute_values?.find((v) => String(v._id) === wantedValueId)
+        : null;
+      if (match) {
+        initial[axisIdStr] = match;
+      } else if (axis.attribute_values?.length > 0) {
+        initial[axisIdStr] = axis.attribute_values[0];
+      }
+    }
+    setSelectedVariations(initial);
+    const found = findVariationByValueIds(initial);
+    if (found) {
+      applyVariation(found);
+    } else {
+      // No exact match (URL combo doesn't exist) — fall back to first variation.
+      const fallback = product?.variations?.find(
+        (v) => v?.is_active !== false,
       );
-      setVariationProduct(found);
+      setVariationProduct(fallback || null);
+      setStock(fallback?.variation_quantity || 0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [product]);
 
-  const generateSlug = (vars) =>
-    Object.values(vars)
-      .map((v) => v.attribute_value_name)
-      .join("-");
-  const findVariation = (slug) =>
-    product?.variations?.find((v) => v.variation_name === slug && v.is_active !== false);
-
-  const handleSelectVariation = (value, attributeName) => {
-    const newVars = { ...selectedVariations, [attributeName]: value };
-    setSelectedVariations(newVars);
-    const slug = generateSlug(newVars);
-    const found = findVariation(slug);
-    setVariationProduct(found || null);
-    if (found) {
-      setStock(found.variation_quantity);
-      setQuantity(1);
-      let price = found.variation_discount_price || found.variation_price;
-      if (product?.flash_sale_details?.flash_sale_product) {
-        const fp = product.flash_sale_details.flash_sale_product;
-        if (fp?.flash_price_type)
-          price = calculatePrice(
-            price,
-            fp.flash_sale_product_price,
-            fp.flash_price_type,
-          );
-        setLineThoughPrice(found.variation_price);
-      } else if (product?.campaign_details?.campaign_product) {
-        const cp = product.campaign_details.campaign_product;
-        if (cp?.campaign_price_type)
-          price = calculatePrice(
-            price,
-            cp.campaign_product_price,
-            cp.campaign_price_type,
-          );
-        setLineThoughPrice(found.variation_price);
-      } else {
-        setLineThoughPrice(
-          found.variation_discount_price > 0 ? found.variation_price : null,
-        );
-      }
-      setProductPrice(price);
+  // Mirror current selection into URL (?<axis_id>=<value_id>) without page
+  // navigation so reload / share / back preserves state.
+  useEffect(() => {
+    if (!product?.is_variation || !selectedVariations) return;
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    for (const [axisId, val] of Object.entries(selectedVariations)) {
+      if (val?._id) params.set(axisId, String(val._id));
     }
+    const newSearch = params.toString();
+    const newUrl = `${window.location.pathname}${
+      newSearch ? `?${newSearch}` : ""
+    }${window.location.hash}`;
+    window.history.replaceState(null, "", newUrl);
+  }, [selectedVariations, product?.is_variation]);
+
+  const handleSelectVariation = (value, axisAttrId) => {
+    const key = String(axisAttrId);
+    const newVars = { ...selectedVariations, [key]: value };
+    setSelectedVariations(newVars);
+    const found = findVariationByValueIds(newVars);
+    applyVariation(found);
   };
+
+  // Picker-complete guard for add-to-cart: every axis must have a selection
+  // AND the resolved variation must exist + be in stock.
+  const allAxesSelected =
+    !product?.is_variation ||
+    (axisAttrs?.length > 0 &&
+      axisAttrs.every((a) => selectedVariations[String(a.attribute_id)]?._id));
+  const canAddToCart =
+    !product?.is_variation ||
+    (allAxesSelected && variationProduct && (stock || 0) > 0);
 
   const handleIncrement = () => {
     if (quantity < stock) setQuantity(quantity + 1);
@@ -226,6 +292,15 @@ const SingleProduct = ({ product }) => {
 
   // ✅ AddToCart
   const handleAddToCart = () => {
+    if (!canAddToCart) {
+      toast.error(
+        product?.is_variation && !allAxesSelected
+          ? "প্রথমে সব option select করুন।"
+          : "এই combination এখন stock-এ নেই।",
+        { autoClose: 1500 },
+      );
+      return;
+    }
     const cartItem = {
       productId: product?._id,
       quantity,
@@ -506,6 +581,9 @@ const SingleProduct = ({ product }) => {
                     handleWishlist={handleWishlist}
                     handleSelectVariation={handleSelectVariation}
                     selectedVariations={selectedVariations}
+                    axisAttrs={axisAttrs}
+                    availabilityMap={availabilityMap}
+                    canAddToCart={canAddToCart}
                     maxQuantity={maxQuantity}
                     handleAddToCart={handleAddToCart}
                   />

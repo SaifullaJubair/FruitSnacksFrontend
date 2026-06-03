@@ -561,6 +561,18 @@ const OrderInvoice = () => {
                         <p className="font-bold text-xs text-[#0D1B2A]">
                           {product?.product_id?.product_name}
                         </p>
+                        {/* SKU snapshot — write-once at order placement, so it
+                            stays correct even if product/variation SKU is later
+                            edited. Prefer variation SKU when this line is a
+                            variation. */}
+                        {(product?.variation_sku_snapshot ||
+                          product?.product_sku_snapshot) && (
+                          <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                            SKU:{" "}
+                            {product?.variation_sku_snapshot ||
+                              product?.product_sku_snapshot}
+                          </p>
+                        )}
                         {product?.variation_id && (
                           <p className="text-[10px] text-gray-400 mt-0.5">
                             {product?.variation_id?.variation_name}

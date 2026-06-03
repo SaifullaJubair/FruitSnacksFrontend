@@ -14,7 +14,7 @@ import { mergeTheme } from "@/lib/theme/mergeTheme";
 
 // Renders the lower content sections only. The hero + order + variant UI now
 // lives inside the themed SingleProduct hub, and ThemeStyleInjector +
-// AnnouncementBar are injected page-level (see products-themed/[slug]/page.js).
+// AnnouncementBar are injected page-level (see products/[slug]/page.js).
 // So this component is purely: benefits → use cases → nutrition → faq.
 export default function ProductThemedSections({ product, theme: passedTheme, setting, trustPoints }) {
   if (!product) return null;
