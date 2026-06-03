@@ -26,7 +26,14 @@ const Footer = ({ menuData }) => {
   }
 
   return (
-    <div className="bg-primary-900 border-t-2 border-primary mt-10 md:pb-0 pb-16">
+    <div
+      className="bg-primary-900 mt-10 md:pb-0 pb-16 border-t-4 overflow-x-hidden"
+      style={{
+        // Keep the dark footer (text is designed for a dark bg); only the top
+        // accent border picks up the theme colour on themed pages.
+        borderColor: "var(--brand-primary, #1B5E20)",
+      }}
+    >
       <Contain>
         <footer>
           <div className="mx-auto  px-4 pb-6 pt-16 sm:px-6 lg:px-8 ">
@@ -121,7 +128,7 @@ const Footer = ({ menuData }) => {
                 </ul>
               </div>
 
-              <div className="grid grid-cols-2 gap-8 sm:grid-cols-2 md:grid-cols-4 lg:col-span-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-8 md:grid-cols-4 lg:col-span-2">
                 <div className="">
                   <p className="text-lg font-medium text-primary-100">
                     Helpful Link
@@ -236,7 +243,7 @@ const Footer = ({ menuData }) => {
                           />
                         </svg>
 
-                        <span className="flex-1 text-gray-200">
+                        <span className="flex-1 text-gray-200 break-all">
                           {footerData?.email}
                         </span>
                       </a>
@@ -355,8 +362,8 @@ const Footer = ({ menuData }) => {
 
             <div className="mt-12 pt-6 border-t border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-secondary-200 text-xs">
-                © {new Date().getFullYear()} FruitSnacks. All rights
-                reserved.
+                © {new Date().getFullYear()} {footerData?.title || "FruitSnacks"}.
+                All rights reserved.
               </p>
               <Link
                 href="/terms-condition"

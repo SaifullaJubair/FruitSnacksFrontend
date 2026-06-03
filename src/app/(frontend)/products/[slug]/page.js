@@ -1,7 +1,15 @@
 // src/app/(frontend)/products/[slug]/page.js
+// Main customer-facing Product Details page (themed). Uses the self-contained
+// components under components/frontend/themedProduct/. A product without a
+// theme_id falls back to mergeTheme's DEFAULT (site brand green) — page never
+// looks broken. Old non-themed page is preserved at /products-original/[slug]
+// as a safety backup.
 import { BASE_URL } from "@/components/utils/baseURL";
-import SingleProduct from "@/components/frontend/singeProduct/SingleProduct";
-import ProductThemedSections from "@/components/theme/ProductThemedSections";
+import SingleProduct from "@/components/frontend/themedProduct/singeProduct/SingleProduct";
+import ProductThemedSections from "@/components/frontend/themedProduct/theme/ProductThemedSections";
+import ProductFloatingImages from "@/components/frontend/themedProduct/theme/ProductFloatingImages";
+import ThemeStyleInjector from "@/components/frontend/themedProduct/theme/ThemeStyleInjector";
+import { mergeTheme } from "@/lib/theme/mergeTheme";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getSeoConfig } from "@/components/lib/getSeoConfig";
@@ -38,7 +46,7 @@ const getProductImage = (product, fallback) => {
 };
 
 export async function generateMetadata({ params }) {
-  const { slug } = params;
+  const { slug } = await params;
   const seo = await getSeoConfig();
 
   const res = await fetch(`${BASE_URL}/product/${slug}`, {
@@ -66,7 +74,7 @@ export async function generateMetadata({ params }) {
 
   const description =
     product?.meta_description ||
-    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price ?? ""}। Genuine leather, premium quality। Cash on delivery সারাদেশে।`;
+    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price ?? ""}। Cash on delivery সারাদেশে।`;
 
   return {
     title: product?.product_name,
@@ -100,14 +108,22 @@ export async function generateMetadata({ params }) {
 }
 
 const ProductDetailsPage = async ({ params }) => {
-  const { slug } = params;
+  const { slug } = await params;
 
-  const [seo, productRes] = await Promise.all([
+  const [seo, productRes, settingRes, trustRes] = await Promise.all([
     getSeoConfig(),
     fetch(`${BASE_URL}/product/${slug}`, { cache: "no-store" }),
+    fetch(`${BASE_URL}/setting`, { next: { revalidate: 60 } }).catch(() => null),
+    fetch(`${BASE_URL}/trust-point`, { next: { revalidate: 60 } }).catch(() => null),
   ]);
 
   const data = await productRes.json();
+  const settingJson = settingRes ? await settingRes.json().catch(() => null) : null;
+  const setting = settingJson?.data?.[0] || settingJson?.data || null;
+
+  // Site-wide "আমাদের প্রতিশ্রুতি" list (its own module, not part of settings).
+  const trustJson = trustRes ? await trustRes.json().catch(() => null) : null;
+  const trustPoints = trustJson?.data?.points || [];
 
   if (data?.redirect_slug) {
     redirect(`/products/${data.redirect_slug}`);
@@ -144,6 +160,17 @@ const ProductDetailsPage = async ({ params }) => {
 
   const price = getProductPrice(product); // ✅ variation aware
 
+  // Resolve the product's theme once on the server; inject CSS vars page-level
+  // so the hero (inside SingleProduct) is themed from first paint. No theme_id
+  // on product → mergeTheme returns the default green fallback. Per-product
+  // color overrides were removed — a product's colors come solely from its
+  // assigned theme (create a new theme for a different palette).
+  const baseTheme =
+    product?.theme_id && typeof product.theme_id === "object"
+      ? product.theme_id
+      : null;
+  const theme = mergeTheme(baseTheme);
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -176,13 +203,28 @@ const ProductDetailsPage = async ({ params }) => {
   };
 
   return (
-    <section className="bg-[#F4F4F4] py-6">
+    <section
+      data-themed-pdp
+      className="relative overflow-hidden"
+      style={{ background: "var(--page-bg, #F4F4F4)", fontFamily: "var(--brand-font)" }}
+    >
+      <ThemeStyleInjector theme={theme} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <SingleProduct product={product} />
-      <ProductThemedSections product={product} />
+      {/* Per-product floating accent images across the whole page (behind/front) */}
+      <ProductFloatingImages images={product?.floating_images} />
+      {/* Content sits between behind (z0) and front (z5) floating layers */}
+      <div className="relative" style={{ zIndex: 1 }}>
+        <SingleProduct product={product} theme={theme} />
+        <ProductThemedSections
+          product={product}
+          theme={theme}
+          setting={setting}
+          trustPoints={trustPoints}
+        />
+      </div>
     </section>
   );
 };

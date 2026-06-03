@@ -12,9 +12,10 @@ import { IoTimeOutline } from "react-icons/io5";
 import { FiAward } from "react-icons/fi";
 import { EnglishDateWithTimeShort } from "@/components/utils/EnglishDateWithTimeShort";
 import useGetSettingData from "@/components/lib/getSettingData";
-import { isHexColor } from "@/utils/helper";
-import { useState } from "react";
+import { isHexColor, variantAxisAttributes } from "@/utils/helper";
+import { useEffect, useState } from "react";
 import ChartModal from "./ChartModal";
+import ModalAxisSelector from "./ModalAxisSelector";
 
 const StarRow = ({ rating }) => {
   const r = parseFloat(rating);
@@ -45,6 +46,9 @@ const ProductHighlightSection = ({
   handleWishlist,
   handleSelectVariation,
   selectedVariations,
+  axisAttrs: axisAttrsProp,
+  availabilityMap,
+  canAddToCart = true,
   maxQuantity,
   handleAddToCart,
   handleAddToCompare,
@@ -170,55 +174,16 @@ const ProductHighlightSection = ({
 
       <div className="border-t border-gray-100" />
 
-      {/* Variations */}
-      {product?.is_variation &&
-        product?.attributes_details?.map((attr, i) => (
-          <div key={i} className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-              {attr?.attribute_name}:{" "}
-              <span className="text-primary normal-case font-bold">
-                {selectedVariations[attr?.attribute_name]
-                  ?.attribute_value_name || `Select ${attr?.attribute_name}`}
-              </span>
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {attr?.attribute_values?.map((val) => {
-                const selected =
-                  selectedVariations[attr?.attribute_name]
-                    ?.attribute_value_name === val?.attribute_value_name;
-                const isColor = isHexColor(val?.attribute_value_code);
-                return (
-                  <div key={val?._id} className="relative group/tip">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleSelectVariation(val, attr?.attribute_name)
-                      }
-                      className={`transition-all duration-150
-                      ${
-                        isColor
-                          ? `w-8 h-8 rounded-full border-2 ${selected ? "ring-2 ring-primary ring-offset-2 border-white scale-110" : "border-gray-300 hover:scale-105"}`
-                          : `px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${selected ? "bg-primary text-white border-primary shadow-md" : "border-gray-200 text-gray-700 hover:border-primary hover:text-primary"}`
-                      }`}
-                      style={{
-                        backgroundColor: isColor
-                          ? val?.attribute_value_code
-                          : undefined,
-                      }}
-                    >
-                      {!isColor && val?.attribute_value_name}
-                    </button>
-                    {isColor && (
-                      <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10">
-                        {val?.attribute_value_name}
-                      </span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ))}
+      {/* Phase C — Variations driven by attribute.display_type. Variant axes
+          only; spec-only attributes still render on the Specifications table. */}
+      {product?.is_variation && (
+        <VariationPicker
+          axes={axisAttrsProp || variantAxisAttributes(product)}
+          selectedVariations={selectedVariations}
+          onSelect={handleSelectVariation}
+          availabilityMap={availabilityMap}
+        />
+      )}
 
       {/* Size Chart */}
       {product?.size_chart && (
@@ -316,7 +281,7 @@ const ProductHighlightSection = ({
 
       {/* Add to Cart — Desktop */}
       <div className="hidden md:block">
-        {stock <= 0 ? (
+        {stock <= 0 || !canAddToCart ? (
           <button
             type="button"
             disabled
@@ -378,7 +343,7 @@ const ProductHighlightSection = ({
 
       {/* Mobile Fixed Bottom CTA */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 px-4 pb-safe pt-2 bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-xl">
-        {stock <= 0 ? (
+        {stock <= 0 || !canAddToCart ? (
           <button
             type="button"
             disabled
@@ -403,3 +368,161 @@ const ProductHighlightSection = ({
 };
 
 export default ProductHighlightSection;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase C — variant axis picker (display_type-driven).
+//
+// One block per axis. Renders inline up to a per-device cap (8 mobile /
+// 16 desktop) for swatch + button; the rest spills into the ModalAxisSelector.
+// Dropdown display_type always opens the modal (search-first UX). OOS chips
+// are greyed + clickable (CM9) showing an OOS tooltip; aria-label on every
+// chip (CM10); availability map (CM6) is O(1) lookup per chip.
+// ─────────────────────────────────────────────────────────────────────────────
+const isHex = (v) =>
+  typeof v === "string" && /^#?[A-Fa-f0-9]{3,8}$/.test(v.trim());
+
+const VariationPicker = ({
+  axes = [],
+  selectedVariations = {},
+  onSelect,
+  availabilityMap,
+}) => {
+  // Single open-modal at a time (which axis's modal).
+  const [openAxisId, setOpenAxisId] = useState(null);
+  // Desktop / mobile cap. Resolve once per mount; resize edge case isn't worth
+  // a listener for a one-time cap decision (modal always available beyond it).
+  const [cap, setCap] = useState(16);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const apply = () => setCap(window.innerWidth < 768 ? 8 : 16);
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, []);
+
+  if (!axes?.length) return null;
+
+  return (
+    <>
+      {axes.map((attr) => {
+        const axisId = String(attr.attribute_id);
+        const selectedValue = selectedVariations?.[axisId];
+        const displayType = attr.display_type || "button";
+        const values = attr.attribute_values || [];
+        const useDropdownModal = displayType === "dropdown";
+        const inlineValues = useDropdownModal ? [] : values.slice(0, cap);
+        const overflowCount = useDropdownModal
+          ? values.length
+          : Math.max(0, values.length - inlineValues.length);
+
+        return (
+          <div key={axisId} className="space-y-2">
+            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+              {attr.attribute_name}:{" "}
+              <span className="text-primary normal-case font-bold">
+                {selectedValue?.attribute_value_name ||
+                  `Select ${attr.attribute_name}`}
+              </span>
+            </p>
+
+            {useDropdownModal ? (
+              <button
+                type="button"
+                onClick={() => setOpenAxisId(axisId)}
+                aria-label={`Choose ${attr.attribute_name}`}
+                className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg text-left text-gray-700 hover:border-primary"
+              >
+                {selectedValue?.attribute_value_name ||
+                  `Select ${attr.attribute_name}…`}
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {inlineValues.map((val) => {
+                  const valKey = String(val._id);
+                  const selected = String(selectedValue?._id) === valKey;
+                  const code = val?.attribute_value_code;
+                  const renderAsSwatch =
+                    displayType === "swatch" || isHex(code);
+                  const avail = availabilityMap?.get(valKey) || {};
+                  const inStock = avail.hasInStock !== false;
+                  const click = () => onSelect?.(val, axisId);
+
+                  if (renderAsSwatch) {
+                    const hex = isHex(code) ? code : null;
+                    return (
+                      <div key={valKey} className="relative group/tip">
+                        <button
+                          type="button"
+                          onClick={click}
+                          aria-label={val.attribute_value_name}
+                          aria-pressed={selected}
+                          className={`transition-all duration-150 w-8 h-8 rounded-full border-2 ${
+                            selected
+                              ? "ring-2 ring-primary ring-offset-2 border-white scale-110"
+                              : "border-gray-300 hover:scale-105"
+                          } ${!inStock ? "opacity-40" : ""}`}
+                          style={{
+                            backgroundColor: hex || "#e5e7eb",
+                          }}
+                        />
+                        <span className="absolute -top-7 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-[10px] px-2 py-0.5 rounded whitespace-nowrap opacity-0 group-hover/tip:opacity-100 transition-opacity pointer-events-none z-10">
+                          {val.attribute_value_name}
+                          {!inStock ? " · Out of stock" : ""}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return (
+                    <button
+                      key={valKey}
+                      type="button"
+                      onClick={click}
+                      aria-label={val.attribute_value_name}
+                      aria-pressed={selected}
+                      title={!inStock ? "Out of stock" : undefined}
+                      className={`relative px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                        selected
+                          ? "bg-primary text-white border-primary shadow-md"
+                          : "border-gray-200 text-gray-700 hover:border-primary hover:text-primary"
+                      } ${!inStock ? "opacity-50" : ""}`}
+                    >
+                      {val.attribute_value_name}
+                      {!inStock && (
+                        <span className="ml-1 text-[9px] text-amber-700">
+                          ⊘
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+
+                {overflowCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setOpenAxisId(axisId)}
+                    aria-label={`Show ${overflowCount} more ${attr.attribute_name} options`}
+                    className="px-3 py-1.5 text-xs font-medium rounded-lg border border-dashed border-primary text-primary hover:bg-primary/5"
+                  >
+                    +{overflowCount} আরো
+                  </button>
+                )}
+              </div>
+            )}
+
+            <ModalAxisSelector
+              open={openAxisId === axisId}
+              onClose={() => setOpenAxisId(null)}
+              axis={attr}
+              selectedValueId={selectedValue?._id}
+              availabilityMap={availabilityMap}
+              onSelect={(v) => {
+                onSelect?.(v, axisId);
+                setOpenAxisId(null);
+              }}
+            />
+          </div>
+        );
+      })}
+    </>
+  );
+};

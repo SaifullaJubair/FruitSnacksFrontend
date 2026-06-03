@@ -3,18 +3,25 @@
 // fields inherit from the theme. Keeps colors/button_style nested objects
 // merged at the field level, not replaced wholesale.
 
+// Default fallback theme used when a product has no `theme_id`. Values are
+// chosen to match the site-wide TweakCN-adapted green theme in globals.css
+// (`:root` block). Kept as hex (not oklch) so the themed PDP works in older
+// browsers if ever rendered outside the shadcn surface, and so admins can
+// preview the colors easily. The dark-mode equivalent isn't here because
+// themed PDP itself doesn't switch with day/night (the product's theme always
+// wins on themed pages); day/night affects the shadcn surface around it.
 const NEUTRAL_FALLBACK = {
-  theme_name: "Neutral",
-  theme_slug: "neutral-default",
+  theme_name: "Default",
+  theme_slug: "default",
   colors: {
-    primary: "#10B981",
-    primary_light: "#6EE7B7",
-    primary_dark: "#047857",
-    page_bg: "#FAFAFA",
-    section_bg: "#F3F4F6",
-    heading_text: "#111827",
-    body_text: "#374151",
-    accent: "#F59E0B",
+    primary: "#1B5E20",        // deep rich green — strong brand presence
+    primary_light: "#C8E6C9",  // soft fresh tint
+    primary_dark: "#0F2E11",   // very dark green
+    page_bg: "#F8F6F0",        // ≈ background (warm cream)
+    section_bg: "#EDE9DC",     // ≈ muted (light beige-green)
+    heading_text: "#2C2520",   // ≈ foreground
+    body_text: "#4A3F35",      // ≈ muted-foreground
+    accent: "#E6B547",         // warm gold — pairs well with green
     button_text: "#FFFFFF",
   },
   floating_assets: [],

@@ -60,8 +60,9 @@ const ProductDescription = ({ product }) => {
         </AccordionItem>
       )}
 
-      {/* Specifications */}
-      {product?.specifications?.length > 0 && (
+      {/* Specifications — driven by Phase-1 product_attributes (single source
+          of truth shared with the filter sidebar). */}
+      {product?.product_attributes?.length > 0 && (
         <AccordionItem
           title="Specifications"
           icon={<FiList size={13} />}
@@ -70,21 +71,31 @@ const ProductDescription = ({ product }) => {
           <div className="overflow-x-auto rounded-lg border border-gray-100">
             <table className="w-full text-sm">
               <tbody>
-                {product?.specifications?.map((spec, i) => (
-                  <tr
-                    key={spec._id}
-                    className={i % 2 === 0 ? "bg-white" : "bg-gray-50/60"}
-                  >
-                    <td className="px-4 py-2.5 font-medium text-gray-700 border-r border-gray-100 w-[40%]">
-                      {spec?.specification_id?.specification_name}
-                    </td>
-                    <td className="px-4 py-2.5 text-gray-600">
-                      {spec?.specification_id?.specification_values
-                        ?.map((v) => v?.specification_value_name)
-                        .join(", ")}
-                    </td>
-                  </tr>
-                ))}
+                {product.product_attributes.map((pa, i) => {
+                  const attr = pa?.attribute_id;
+                  if (!attr) return null;
+                  const chosenIds = new Set(
+                    (pa?.value_ids || []).map((v) => String(v)),
+                  );
+                  const labels = (attr.attribute_values || [])
+                    .filter((v) => chosenIds.has(String(v._id)))
+                    .map((v) => v?.attribute_value_name)
+                    .filter(Boolean);
+                  if (labels.length === 0) return null;
+                  return (
+                    <tr
+                      key={attr._id || i}
+                      className={i % 2 === 0 ? "bg-white" : "bg-gray-50/60"}
+                    >
+                      <td className="px-4 py-2.5 font-medium text-gray-700 border-r border-gray-100 w-[40%]">
+                        {attr.attribute_name}
+                      </td>
+                      <td className="px-4 py-2.5 text-gray-600">
+                        {labels.join(", ")}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

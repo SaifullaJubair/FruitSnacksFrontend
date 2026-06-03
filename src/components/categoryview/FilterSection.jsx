@@ -10,11 +10,12 @@ const FilterSection = ({
   setSelectedFilters,
   filterData,
 }) => {
+  // Per-attribute open/close map keyed by attribute slot index.
   const [openFilters, setOpenFilters] = useState({
     price: true,
     availability: true,
     brand: true,
-    specifications: {},
+    attributes: {},
   });
 
   // Toggle Filter Open/Close
@@ -25,12 +26,12 @@ const FilterSection = ({
     }));
   };
 
-  const toggleSpecificationFilter = (filterKey) => {
+  const toggleAttributeFilter = (filterKey) => {
     setOpenFilters((prev) => ({
       ...prev,
-      specifications: {
-        ...prev.specifications,
-        [filterKey]: !prev.specifications[filterKey],
+      attributes: {
+        ...prev.attributes,
+        [filterKey]: !prev.attributes[filterKey],
       },
     }));
   };
@@ -38,8 +39,15 @@ const FilterSection = ({
   // Handle Filter Click
   const handleFilterClick = (filterId, childFilterId) => {
     setSelectedFilters((prevSelectedFilters) => {
-      const prevSelectedChildFilters =
-        prevSelectedFilters.filters[filterId] || [];
+      // Fix #25 — guard for legacy initial filters=[] shape (array, not
+      // object). Coerce to object map every time so the toggle works whether
+      // the initial state was [] or {}.
+      const filtersMap =
+        prevSelectedFilters.filters &&
+        !Array.isArray(prevSelectedFilters.filters)
+          ? prevSelectedFilters.filters
+          : {};
+      const prevSelectedChildFilters = filtersMap[filterId] || [];
 
       const updatedChildFilters = prevSelectedChildFilters.includes(
         childFilterId
@@ -48,7 +56,7 @@ const FilterSection = ({
         : [...prevSelectedChildFilters, childFilterId];
 
       const updatedFilters = {
-        ...prevSelectedFilters.filters,
+        ...filtersMap,
         [filterId]: updatedChildFilters,
       };
 
@@ -121,6 +129,8 @@ const FilterSection = ({
             <PriceRangeFilter
               onChange={handleSetPrice}
               filterData={filterData}
+              initialMin={selectedFilters?.min_price}
+              initialMax={selectedFilters?.max_price}
             />
           </div>
         </div>
@@ -220,49 +230,60 @@ const FilterSection = ({
         </div>
       )}
       {/* ✅ Specifications Filter */}
-      {filterData?.specifications?.length > 0 && (
+      {filterData?.attributes?.length > 0 && (
         <div className="space-y-2">
-          {filterData?.specifications?.map((item, i) => (
+          {filterData?.attributes?.map((item, i) => (
             <div key={i} className="border   bg-white">
               <div
                 className={`flex cursor-pointer items-center justify-between px-4 py-3  hover:bg-gray-100 ${
-                  openFilters.specifications[`spec-${i}`]
+                  openFilters.attributes[`spec-${i}`]
                     ? " border-b-2"
                     : "border-b-0"
                 }`}
-                onClick={() => toggleSpecificationFilter(`spec-${i}`)}
+                onClick={() => toggleAttributeFilter(`spec-${i}`)}
               >
                 <p className="text-sm font-medium">
                   {item?.attribute_name}
                 </p>
                 <IoIosArrowDown
                   className={`w-5 h-5 transition-transform ${
-                    openFilters.specifications[`spec-${i}`] ? "rotate-180" : ""
+                    openFilters.attributes[`spec-${i}`] ? "rotate-180" : ""
                   }`}
                 />
               </div>
               <div
                 className={`transition-all duration-300 overflow-hidden ${
-                  openFilters.specifications[`spec-${i}`]
+                  openFilters.attributes[`spec-${i}`]
                     ? "max-h-60 opacity-100"
                     : "max-h-0 opacity-0"
                 }`}
               >
                 <div className="px-4 py-2  space-y-2 max-h-40 overflow-y-auto">
-                  {item?.attribute_values?.map((childFilter) => (
-                    <label
-                      key={childFilter?._id}
-                      className="flex items-center gap-2"
-                    >
-                      <input
-                        type="checkbox"
-                        onChange={() =>
-                          handleFilterClick(item?._id, childFilter?._id)
-                        }
-                      />
-                      <span>{childFilter?.attribute_value_name}</span>
-                    </label>
-                  ))}
+                  {item?.attribute_values?.map((childFilter) => {
+                    // Fix #25 — was missing `checked` prop. With URL-driven
+                    // state (Fix #26 below), the checkbox must reflect the
+                    // current selection so refresh / back-navigation keeps the
+                    // UI in sync with the query string.
+                    const filtersMap = selectedFilters?.filters || {};
+                    const isChecked = (filtersMap[item?._id] || []).includes(
+                      childFilter?._id,
+                    );
+                    return (
+                      <label
+                        key={childFilter?._id}
+                        className="flex items-center gap-2 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() =>
+                            handleFilterClick(item?._id, childFilter?._id)
+                          }
+                        />
+                        <span>{childFilter?.attribute_value_name}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
             </div>

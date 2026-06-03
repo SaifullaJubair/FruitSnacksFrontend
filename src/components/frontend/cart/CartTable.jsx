@@ -130,15 +130,28 @@ const CartTable = ({
                   <td className="whitespace-nowrap p-4">{index + 1}</td>
 
                   <td>
-                    <PhotoView src={product?.main_image}>
-                      <Image
-                        src={product?.main_image}
-                        className="w-20 h-[72px] cursor-zoom-in border"
-                        height={100}
-                        width={100}
-                        alt={product?.product_name}
-                      />
-                    </PhotoView>
+                    {(() => {
+                      // Variation image priority: multi-image gallery first
+                      // element (Batch 2 primary) → legacy single variation_image
+                      // → product main_image fallback. So a variation product
+                      // shows its own image in the cart, not the parent's.
+                      const variationImg =
+                        product?.variations?.variation_images?.[0] ||
+                        product?.variations?.variation_image ||
+                        null;
+                      const cartImg = variationImg || product?.main_image;
+                      return (
+                        <PhotoView src={cartImg}>
+                          <Image
+                            src={cartImg}
+                            className="w-20 h-[72px] cursor-zoom-in border"
+                            height={100}
+                            width={100}
+                            alt={product?.product_name}
+                          />
+                        </PhotoView>
+                      );
+                    })()}
                   </td>
 
                   <td className="min-w-[260px] py-2.5 text-gray-700 px-4">

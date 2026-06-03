@@ -14,6 +14,12 @@ const nextConfig = {
         pathname: "**",
       },
       {
+        // Legacy bucket — existing DB still references old Artisan Leather images.
+        protocol: "https",
+        hostname: "artisen-leather.sgp1.cdn.digitaloceanspaces.com",
+        pathname: "**",
+      },
+      {
         protocol: "https",
         hostname: "sin1.contabostorage.com",
         pathname: "**",

@@ -30,7 +30,11 @@ const OrderSummaryTable = ({ orderData }) => {
                     <td className="whitespace-nowrap p-4">{idx + 1}</td>
                     <td className="py-2">
                       <img
-                        src={product?.main_image}
+                        src={
+                          product?.variations?.variation_images?.[0] ||
+                          product?.variations?.variation_image ||
+                          product?.main_image
+                        }
                         className="w-20 h-[72px]   border"
                         alt=""
                       />
