@@ -5,11 +5,16 @@
 
 import { useCallback } from "react";
 import { ttq } from "@/components/frontend/tiktokPixel/TikTokPixelScript";
+import useGetSettingData from "@/components/lib/getSettingData";
+import { getCurrencyCode } from "@/utils/currency";
 
 // ✅ value সব সময় Number
 const toNumber = (val) => parseFloat(val) || 0;
 
 const useTikTokPixel = () => {
+  // M28 (2026-06-04) — currency code from settings (BDT fallback in helper).
+  const { data: settingsData } = useGetSettingData();
+  const currency = getCurrencyCode(settingsData);
   // ViewContent — product details page
   const trackViewContent = useCallback((product, eventId) => {
     ttq(
@@ -19,14 +24,14 @@ const useTikTokPixel = () => {
         content_id: String(product?._id),
         content_name: product?.product_name,
         content_type: "product",
-        currency: "BDT",
+        currency,
         value: toNumber(
           product?.product_discount_price || product?.product_price,
         ),
       },
       { event_id: eventId },
     );
-  }, []);
+  }, [currency]);
 
   // AddToCart
   const trackAddToCart = useCallback(
@@ -43,14 +48,14 @@ const useTikTokPixel = () => {
           content_id: String(variationProduct?._id || product?._id),
           content_name: product?.product_name,
           content_type: "product",
-          currency: "BDT",
+          currency,
           value: toNumber(price) * quantity,
           quantity,
         },
         { event_id: eventId },
       );
     },
-    [],
+    [currency],
   );
 
   // AddToWishlist
@@ -63,7 +68,7 @@ const useTikTokPixel = () => {
           content_id: String(variationProduct?._id || product?._id),
           content_name: product?.product_name,
           content_type: "product",
-          currency: "BDT",
+          currency,
           value: toNumber(
             variationProduct?.variation_discount_price ||
               variationProduct?.variation_price ||
@@ -74,7 +79,7 @@ const useTikTokPixel = () => {
         { event_id: eventId },
       );
     },
-    [],
+    [currency],
   );
 
   // InitiateCheckout
@@ -83,13 +88,13 @@ const useTikTokPixel = () => {
       "track",
       "InitiateCheckout",
       {
-        currency: "BDT",
+        currency,
         value: toNumber(data?.value),
         quantity: data?.num_items || 1,
       },
       { event_id: eventId },
     );
-  }, []);
+  }, [currency]);
 
   // Purchase
   const trackPurchase = useCallback((orderData, eventId) => {
@@ -97,14 +102,14 @@ const useTikTokPixel = () => {
       "track",
       "CompletePayment",
       {
-        currency: "BDT",
+        currency,
         value: toNumber(orderData?.grand_total_amount),
         quantity: orderData?.order_products?.length || 1,
         order_id: orderData?.purchase_event_id,
       },
       { event_id: eventId },
     );
-  }, []);
+  }, [currency]);
 
   // Search
   const trackSearch = useCallback((searchTerm, eventId) => {

@@ -387,6 +387,7 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
                       product={product}
                       openModal={openModal}
                       setViewProduct={setViewProduct}
+                      activeFilters={selectedFilters?.filters}
                     />
                   ))}
                 </div>

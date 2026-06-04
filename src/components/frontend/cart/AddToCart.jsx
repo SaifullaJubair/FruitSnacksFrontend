@@ -393,7 +393,7 @@ const AddToCart = () => {
       <form onSubmit={handleSubmit(handleOrderProduct)}>
         <Contain>
           <div className="pt-6">
-            <h1 className="font-thin text-text-default">Your Cart</h1>
+            <h1 className="font-thin text-text-default">Checkout</h1>
             <p className="font-thin text-text-default">
               There are {products?.length} products in this list
             </p>

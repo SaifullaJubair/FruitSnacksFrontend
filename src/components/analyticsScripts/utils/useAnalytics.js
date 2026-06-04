@@ -5,6 +5,7 @@ import { sendServerEvent } from "./metaPixel/metaServerEvent";
 import { sendTikTokServerEvent } from "./tiktokPixel/TiktokServerEvent";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { generateEventId } from "./metaPixel/useMetaPixel";
+import { getCurrencyCode } from "@/utils/currency";
 
 // ── helpers ────────────────────────────────────────────
 const fbq = (...args) => {
@@ -41,6 +42,10 @@ const useAnalytics = () => {
   const tiktokEnabled = !!settings?.tiktok_pixel_enabled;
   const tiktokCapiEnabled = !!settings?.tiktok_capi_enabled;
   const gtmEnabled = !!settings?.gtm_enabled;
+  // M28 (2026-06-04) — currency code from settings, fallback "BDT" baked
+  // into the helper. Every analytics event below uses this instead of the
+  // hardcoded string so a clone client only edits settings, not code.
+  const currency = getCurrencyCode(settingsData);
 
   // ── ViewContent ────────────────────────────────────
   const trackViewContent = useCallback(
@@ -58,7 +63,7 @@ const useAnalytics = () => {
             content_ids: toStringIds([product?._id]),
             content_name: product?.product_name,
             content_type: "product",
-            currency: "BDT",
+            currency,
             value: price,
           },
           { eventID: eventId },
@@ -73,7 +78,7 @@ const useAnalytics = () => {
               content_ids: toStringIds([product?._id]),
               content_name: product?.product_name,
               content_type: "product",
-              currency: "BDT",
+              currency,
               value: price,
             },
           });
@@ -86,7 +91,7 @@ const useAnalytics = () => {
           {
             content_id: String(product?._id),
             content_name: product?.product_name,
-            currency: "BDT",
+            currency,
             value: price,
           },
           { event_id: eventId },
@@ -100,7 +105,7 @@ const useAnalytics = () => {
               content_id: String(product?._id),
               content_name: product?.product_name,
               content_type: "product",
-              currency: "BDT",
+              currency,
               value: price,
             },
           });
@@ -111,7 +116,7 @@ const useAnalytics = () => {
         pushDataLayer({
           event: "view_item",
           ecommerce: {
-            currency: "BDT",
+            currency,
             value: price,
             items: [
               {
@@ -154,7 +159,7 @@ const useAnalytics = () => {
             content_ids: [itemId],
             content_name: product?.product_name,
             content_type: "product",
-            currency: "BDT",
+            currency,
             value: totalValue,
             num_items: quantity,
           },
@@ -170,7 +175,7 @@ const useAnalytics = () => {
               content_ids: [itemId],
               content_name: product?.product_name,
               content_type: "product",
-              currency: "BDT",
+              currency,
               value: totalValue,
               num_items: quantity,
             },
@@ -184,7 +189,7 @@ const useAnalytics = () => {
           {
             content_id: itemId,
             content_name: product?.product_name,
-            currency: "BDT",
+            currency,
             value: totalValue,
             quantity,
           },
@@ -199,7 +204,7 @@ const useAnalytics = () => {
               content_id: itemId,
               content_name: product?.product_name,
               content_type: "product",
-              currency: "BDT",
+              currency,
               value: totalValue,
               quantity,
             },
@@ -211,7 +216,7 @@ const useAnalytics = () => {
         pushDataLayer({
           event: "add_to_cart",
           ecommerce: {
-            currency: "BDT",
+            currency,
             value: totalValue,
             items: [
               {
@@ -250,7 +255,7 @@ const useAnalytics = () => {
           {
             content_ids: contentIds,
             content_type: "product",
-            currency: "BDT",
+            currency,
             value,
             num_items: orderData?.order_products?.length || 0,
           },
@@ -265,7 +270,7 @@ const useAnalytics = () => {
             custom_data: {
               content_ids: contentIds,
               content_type: "product",
-              currency: "BDT",
+              currency,
               value,
               num_items: orderData?.order_products?.length || 0,
             },
@@ -277,7 +282,7 @@ const useAnalytics = () => {
         ttq(
           "CompletePayment",
           {
-            currency: "BDT",
+            currency,
             value,
             quantity: orderData?.order_products?.length || 1,
           },
@@ -289,7 +294,7 @@ const useAnalytics = () => {
             event_id: eventId,
             user_data: userData,
             properties: {
-              currency: "BDT",
+              currency,
               value,
               quantity: orderData?.order_products?.length || 1,
             },
@@ -302,7 +307,7 @@ const useAnalytics = () => {
           event: "purchase",
           ecommerce: {
             transaction_id: String(orderData?._id),
-            currency: "BDT",
+            currency,
             value,
             items: orderData?.order_products?.map((p) => ({
               item_id: String(p?.product_id),
@@ -336,7 +341,7 @@ const useAnalytics = () => {
           {
             content_ids: toStringIds(orderData?.content_ids),
             content_type: "product",
-            currency: "BDT",
+            currency,
             value,
             num_items: orderData?.num_items || 1,
           },
@@ -350,7 +355,7 @@ const useAnalytics = () => {
             user_data: userData,
             custom_data: {
               content_ids: toStringIds(orderData?.content_ids),
-              currency: "BDT",
+              currency,
               value,
             },
           });
@@ -360,7 +365,7 @@ const useAnalytics = () => {
       if (tiktokEnabled) {
         ttq(
           "InitiateCheckout",
-          { currency: "BDT", value, quantity: orderData?.num_items || 1 },
+          { currency, value, quantity: orderData?.num_items || 1 },
           { event_id: eventId },
         );
         if (tiktokCapiEnabled) {
@@ -369,7 +374,7 @@ const useAnalytics = () => {
             event_id: eventId,
             user_data: userData,
             properties: {
-              currency: "BDT",
+              currency,
               value,
               quantity: orderData?.num_items || 1,
             },
@@ -380,7 +385,7 @@ const useAnalytics = () => {
       if (gtmEnabled) {
         pushDataLayer({
           event: "begin_checkout",
-          ecommerce: { currency: "BDT", value },
+          ecommerce: { currency, value },
         });
       }
     },
@@ -402,7 +407,7 @@ const useAnalytics = () => {
         fbq(
           "track",
           "Search",
-          { search_string: searchString, currency: "BDT" },
+          { search_string: searchString, currency },
           { eventID: eventId },
         );
       if (tiktokEnabled)
@@ -509,7 +514,7 @@ const useAnalytics = () => {
             content_ids: [itemId],
             content_name: product?.product_name,
             content_type: "product",
-            currency: "BDT",
+            currency,
             value: price,
           },
           { eventID: eventId },
@@ -522,7 +527,7 @@ const useAnalytics = () => {
           {
             content_id: itemId,
             content_name: product?.product_name,
-            currency: "BDT",
+            currency,
             value: price,
           },
           { event_id: eventId },
@@ -533,7 +538,7 @@ const useAnalytics = () => {
         pushDataLayer({
           event: "add_to_wishlist",
           ecommerce: {
-            currency: "BDT",
+            currency,
             value: price,
             items: [
               { item_id: itemId, item_name: product?.product_name, price },

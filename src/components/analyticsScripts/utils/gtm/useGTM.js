@@ -4,7 +4,13 @@
 // GTM dataLayer এ custom events push করার hook
 // GA4 এই events গুলো automatically track করবে
 
+import useGetSettingData from "@/components/lib/getSettingData";
+import { getCurrencyCode } from "@/utils/currency";
+
 export const useGTM = () => {
+  // M28 (2026-06-04) — currency code from settings (BDT fallback inside helper).
+  const { data: settingsData } = useGetSettingData();
+  const currency = getCurrencyCode(settingsData);
   const pushEvent = (eventName, eventData = {}) => {
     if (typeof window === "undefined") return;
     window.dataLayer = window.dataLayer || [];
@@ -19,7 +25,7 @@ export const useGTM = () => {
   // Product দেখলে
   const trackViewItem = (product) => {
     pushEvent("view_item", {
-      currency: "BDT",
+      currency,
       value: product.price,
       items: [
         {
@@ -37,7 +43,7 @@ export const useGTM = () => {
   // Cart এ add করলে
   const trackAddToCart = (product, quantity = 1) => {
     pushEvent("add_to_cart", {
-      currency: "BDT",
+      currency,
       value: product.price * quantity,
       items: [
         {
@@ -55,7 +61,7 @@ export const useGTM = () => {
   // Wishlist এ add করলে
   const trackAddToWishlist = (product) => {
     pushEvent("add_to_wishlist", {
-      currency: "BDT",
+      currency,
       value: product.price,
       items: [
         {
@@ -71,7 +77,7 @@ export const useGTM = () => {
   // Checkout শুরু করলে
   const trackBeginCheckout = (cartItems, totalValue) => {
     pushEvent("begin_checkout", {
-      currency: "BDT",
+      currency,
       value: totalValue,
       items: cartItems.map((item) => ({
         item_id: item._id,
@@ -86,7 +92,7 @@ export const useGTM = () => {
   const trackPurchase = (order) => {
     pushEvent("purchase", {
       transaction_id: order._id,
-      currency: "BDT",
+      currency,
       value: order.total_amount,
       items:
         order.orderItems?.map((item) => ({

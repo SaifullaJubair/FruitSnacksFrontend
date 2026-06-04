@@ -481,7 +481,7 @@ const SecondNavbar = ({ menuData }) => {
 
             <div className="h-6 w-px bg-primary-200 hidden md:flex"></div>
             <Link
-              href="/cart"
+              href="/checkout"
               className=" text-text-semiLight  flex-col hidden md:flex items-center  justify-center relative"
             >
               <FiShoppingCart className="text-text-default" size={20} />

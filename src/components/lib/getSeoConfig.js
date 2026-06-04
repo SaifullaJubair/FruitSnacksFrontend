@@ -47,6 +47,12 @@ export async function getSeoConfig() {
     seoKeywords,
     logo: s?.logo || FALLBACK_IMAGE, // ✅ fallback
     favicon: s?.favicon || "/favicon.ico",
+    // M28 (2026-06-04) — currency tri-field for SSR contexts (JSON-LD
+    // priceCurrency, sitemap, OG metadata). Mirrors the client `currencyOf`
+    // helper. Clone clients only edit DB settings; no code change needed.
+    currencyCode: s?.currency_code || "BDT",
+    currencySymbol: s?.currency_symbol || "৳",
+    currencyName: s?.currency_name || "টাকা",
     facebook: s?.facebook || "",
     instagram: s?.instagram || "",
     youtube: s?.you_tube || "",

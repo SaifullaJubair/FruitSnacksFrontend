@@ -13,7 +13,6 @@ export default async function robots() {
           "/user-profile/",
           "/orders/",
           "/order-success/",
-          "/cart/",
           "/checkout/",
           "/verify/",
           "/change-password/",

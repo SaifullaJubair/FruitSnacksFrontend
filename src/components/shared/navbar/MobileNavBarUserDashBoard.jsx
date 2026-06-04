@@ -163,7 +163,7 @@ export default function MobileNavBarUserDashBoard() {
       </Link>
 
       <Link
-        href="/cart"
+        href="/checkout"
         className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
           isActive("/user-profile?tab=purchase-history")
             ? "text-primary"

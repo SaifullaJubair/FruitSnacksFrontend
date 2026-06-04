@@ -12,7 +12,7 @@ import { isHexColor, lineThroughPrice, productPrice } from "@/utils/helper";
 import useGetSettingData from "../lib/getSettingData";
 import { averageRatingStar } from "@/utils/average";
 
-const CategoryViewCard = ({ product, openModal, setViewProduct }) => {
+const CategoryViewCard = ({ product, openModal, setViewProduct, activeFilters }) => {
   // const savePrice = product?.product_price - product?.product_discount_price;
 
   // const router = useRouter();
@@ -22,10 +22,34 @@ const CategoryViewCard = ({ product, openModal, setViewProduct }) => {
 
   const currencySymbol = settingsData?.data[0];
 
+  // M16 (2026-06-04) — when arriving from a filtered listing, pre-select
+  // matching variation axes on the PDP via ?<attribute_id>=<value_id>.
+  // Only forward axes whose chosen value actually appears in THIS product's
+  // attribute_values pool; otherwise PDP would silently fall back to the
+  // first variation and the user would wonder why their filter "lost".
+  const buildPdpHref = () => {
+    const base = `/products/${product?.product_slug}`;
+    if (!activeFilters || !product?.attributes_details?.length) return base;
+    const params = new URLSearchParams();
+    for (const [attrId, valueIds] of Object.entries(activeFilters)) {
+      if (!Array.isArray(valueIds) || valueIds.length === 0) continue;
+      const attr = product.attributes_details.find(
+        (a) => String(a?._id) === String(attrId),
+      );
+      if (!attr) continue;
+      const pickedValue = valueIds.find((vid) =>
+        attr.attribute_values?.some((av) => String(av?._id) === String(vid)),
+      );
+      if (pickedValue) params.set(String(attrId), String(pickedValue));
+    }
+    const qs = params.toString();
+    return qs ? `${base}?${qs}` : base;
+  };
+
   return (
     <>
       <Link
-        href={`/products/${product?.product_slug}`}
+        href={buildPdpHref()}
         className="group block overflow-hidden"
       >
         <div className="w-full relative aspect-[2/3] overflow-hidden">

@@ -72,13 +72,24 @@ export async function generateMetadata({ params }) {
   const price = getProductPrice(product); // ✅ variation aware
   const productImage = getProductImage(product, seo.logo); // ✅ variation aware
 
+  // S3b (2026-06-04) — full per-product SEO field wiring. Admin sets these
+  // in the product form / page-content editor; PDP falls back gracefully
+  // when a field is empty so older docs without SEO still render correctly.
+  const pageTitle = product?.meta_title || product?.product_name;
   const description =
     product?.meta_description ||
-    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ৳${price ?? ""}। Cash on delivery সারাদেশে।`;
+    `${product?.product_name} – ${seo.siteName} এ পাচ্ছেন মাত্র ${seo.currencySymbol}${price ?? ""}। Cash on delivery সারাদেশে।`;
+  const keywordsList = Array.isArray(product?.meta_keywords)
+    ? product.meta_keywords.filter(Boolean)
+    : [];
+  const ogTitle = product?.og_title || pageTitle;
+  const ogDescription = product?.og_description || description;
+  const ogImage = product?.og_image || productImage;
 
   return {
-    title: product?.product_name,
+    title: pageTitle,
     description,
+    ...(keywordsList.length > 0 && { keywords: keywordsList }),
     alternates: {
       canonical: seo.joinUrl(seo.siteUrl, `products/${slug}`),
     },
@@ -87,22 +98,22 @@ export async function generateMetadata({ params }) {
       locale: "bn_BD",
       siteName: seo.siteName,
       url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
-      title: product?.product_name,
-      description,
+      title: ogTitle,
+      description: ogDescription,
       images: [
         {
-          url: productImage,
+          url: ogImage,
           width: 800,
           height: 800,
-          alt: product?.product_name,
+          alt: ogTitle,
         },
       ],
     },
     twitter: {
       card: "summary_large_image",
-      title: product?.product_name,
-      description,
-      images: [productImage],
+      title: ogTitle,
+      description: ogDescription,
+      images: [ogImage],
     },
   };
 }
@@ -171,24 +182,41 @@ const ProductDetailsPage = async ({ params }) => {
       : null;
   const theme = mergeTheme(baseTheme);
 
+  // S3b (2026-06-04) — Product JSON-LD now includes SKU (when available)
+  // and uses brand_name from product.brand_id when admin set a brand;
+  // falls back to site name otherwise. availability flips between InStock
+  // and OutOfStock based on real stock.
+  const totalStock = product?.is_variation
+    ? (product?.variations || []).reduce(
+        (acc, v) =>
+          acc + (v?.is_active === false ? 0 : v?.variation_quantity || 0),
+        0,
+      )
+    : product?.product_quantity || 0;
+  const brandName = product?.brand_id?.brand_name || seo.siteName;
+  const productSku = product?.product_sku || product?.variations?.[0]?.variation_sku;
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Product",
     name: product?.product_name,
     image: getProductImage(product, seo.logo),
     description: product?.meta_description || product?.product_name,
-    brand: { "@type": "Brand", name: seo.siteName },
+    brand: { "@type": "Brand", name: brandName },
+    ...(productSku && { sku: productSku }),
     offers: {
       "@type": "Offer",
       url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
-      priceCurrency: "BDT",
+      priceCurrency: seo.currencyCode,
       price,
       priceValidUntil: new Date(
         new Date().setFullYear(new Date().getFullYear() + 1),
       )
         .toISOString()
         .split("T")[0],
-      availability: "https://schema.org/InStock",
+      availability:
+        totalStock > 0
+          ? "https://schema.org/InStock"
+          : "https://schema.org/OutOfStock",
       seller: { "@type": "Organization", name: seo.siteName },
     },
     ...(product?.avarage_review_ratting && {
@@ -202,6 +230,47 @@ const ProductDetailsPage = async ({ params }) => {
     }),
   };
 
+  // S3a (2026-06-04) — BreadcrumbList JSON-LD. Helps Google render
+  // "Home › Category › Product" chips in search results. Category segment
+  // is only added when the product has an active category.
+  const breadcrumbItems = [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: seo.siteUrl,
+    },
+  ];
+  if (product?.category_id?.category_slug) {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 2,
+      name: product.category_id.category_name,
+      item: seo.joinUrl(
+        seo.siteUrl,
+        `category/${product.category_id.category_slug}`,
+      ),
+    });
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 3,
+      name: product?.product_name,
+      item: seo.joinUrl(seo.siteUrl, `products/${slug}`),
+    });
+  } else {
+    breadcrumbItems.push({
+      "@type": "ListItem",
+      position: 2,
+      name: product?.product_name,
+      item: seo.joinUrl(seo.siteUrl, `products/${slug}`),
+    });
+  }
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: breadcrumbItems,
+  };
+
   return (
     <section
       data-themed-pdp
@@ -212,6 +281,10 @@ const ProductDetailsPage = async ({ params }) => {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       {/* Per-product floating accent images across the whole page (behind/front) */}
       <ProductFloatingImages images={product?.floating_images} />

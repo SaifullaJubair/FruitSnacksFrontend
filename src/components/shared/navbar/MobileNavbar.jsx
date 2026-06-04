@@ -135,9 +135,9 @@ const MobileNavbar = ({
           />
 
           <MenuItem
-            href="/cart"
-            label="Cart"
-            isActive={isActive("/cart")}
+            href="/checkout"
+            label="Checkout"
+            isActive={isActive("/checkout")}
             closeSideBar={closeSideBar}
           />
           <MenuItem

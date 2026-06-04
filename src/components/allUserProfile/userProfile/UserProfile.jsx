@@ -13,7 +13,7 @@ import PurchaseHistory from "./PurchaseHistory";
 import UserDashboardWishList from "./UserDashboardWishList";
 import LoyaltyHistory from "./LoyaltyHistory";
 import WalletHistory from "./WalletHistory";
-import { FaGift, FaWallet } from "react-icons/fa";
+import { FaGift, FaWallet, FaShippingFast } from "react-icons/fa";
 import Cookies from "js-cookie";
 import ShowProfileDetails from "./ShowProfileDetails";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -136,11 +136,15 @@ const UserProfile = () => {
                   icon: BiPurchaseTag,
                   label: "Purchase History",
                 },
-                // {
-                //   name: "offer-history",
-                //   icon: GiFlame,
-                //   label: "Offer History",
-                // },
+                // S7 (2026-06-04) — public order-tracking page, opens its own
+                // route instead of switching tabs inside the dashboard.
+                {
+                  name: "order-tracking",
+                  icon: FaShippingFast,
+                  label: "Order Tracking",
+                  href: "/orders/order-tracking",
+                  external: true,
+                },
 
                 // F3 — loyalty + wallet history (read-only ledgers).
                 { name: "loyalty", icon: FaGift, label: "Loyalty Points" },
@@ -158,7 +162,7 @@ const UserProfile = () => {
                   className={`hover:bg-primary-500/90 hover:text-white flex items-center gap-3 font-medium py-2 px-4 w-full  ${
                     activeNavButton === item.name ? "bg-primary text-white" : ""
                   }`}
-                  href={`?tab=${item.name}`}
+                  href={item.external ? item.href : `?tab=${item.name}`}
                 >
                   <span className="flex items-center justify-center w-8 h-8">
                     <item.icon size={25} />

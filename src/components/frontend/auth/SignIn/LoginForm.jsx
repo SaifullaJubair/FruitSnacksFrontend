@@ -92,9 +92,23 @@ const LoginForm = () => {
         await syncWishlistAfterLogin();
         router.push(successRedirect || "/");
       } else {
-        toast.error(res?.error?.data?.message || "Something went wrong", {
-          autoClose: 1000,
-        });
+        // B1 FE (2026-06-04) — when a guest-checkout user (auto-created
+        // account, no password set) tries to log in with any password, BE
+        // returns the "Account exists but no password set" 400. We deep-link
+        // them straight to /forget-password with the phone prefilled so
+        // they don't have to retype it. Other login errors keep the toast.
+        const errMsg = res?.error?.data?.message || "Something went wrong";
+        if (/no password set/i.test(errMsg)) {
+          toast.info(
+            "Account exists — set your password via OTP to sign in.",
+            { autoClose: 2500 },
+          );
+          router.push(
+            `/forget-password?phone=${encodeURIComponent(user_phone || "")}`,
+          );
+          return;
+        }
+        toast.error(errMsg, { autoClose: 1000 });
       }
     } catch (error) {
       console.error(error);

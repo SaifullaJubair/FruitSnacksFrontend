@@ -96,10 +96,16 @@ export const PAGE_SEO = {
     path: "sign-up",
     noIndex: true,
   },
-  cart: {
-    title: "Shopping Cart | Checkout",
+  checkout: {
+    title: "Checkout",
     description: "",
-    path: "cart",
+    path: "checkout",
+    noIndex: true,
+  },
+  "order-tracking": {
+    title: "Order Tracking",
+    description: "Track your order status — enter your invoice ID to see live delivery progress.",
+    path: "orders/order-tracking",
     noIndex: true,
   },
   wishlist: {

@@ -153,12 +153,12 @@ const MobileMenu = ({ isOpen, onClose, pathname }) => {
               Wishlist
             </Link>
             <Link
-              href="/cart"
+              href="/checkout"
               className="flex items-center gap-2 px-3 py-2 hover:bg-accent rounded-md"
               onClick={onClose}
             >
               <FiShoppingCart className="w-4 h-4" />
-              Cart
+              Checkout
             </Link>
             <Link
               href="/account"

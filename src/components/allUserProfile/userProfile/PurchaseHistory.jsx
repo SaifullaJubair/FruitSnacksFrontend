@@ -5,8 +5,10 @@ import { EnglishDateWithTimeShort } from "@/components/utils/EnglishDateWithTime
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import Link from "next/link";
 import { useState } from "react";
-import { FiExternalLink } from "react-icons/fi";
+import { FiExternalLink, FiPackage } from "react-icons/fi";
 import { FaTruck } from "react-icons/fa";
+import useGetSettingData from "@/components/lib/getSettingData";
+import { currencyOf } from "@/utils/currency";
 
 const ORDER_STATUS_COLOR = {
   pending: "bg-orange-100 text-orange-600",
@@ -30,90 +32,124 @@ const PurchaseHistory = () => {
     searchTerm,
   });
 
+  // M28 (2026-06-04) — currency symbol from settings.
+  const { data: settingsData } = useGetSettingData();
+  const cur = currencyOf(settingsData);
+
   if (isLoading || orderLoading) return <CustomLoader />;
+
+  const orderRows = allOrders?.data || [];
 
   return (
     <div>
       <h4 className="bg-primary p-4 text-white mb-6">Purchase History</h4>
 
-      <div className="overflow-x-auto scrollbar-thin">
-        <table className="divide-y bg-white text-sm min-w-full border">
-          <thead>
-            <tr className="font-semibold text-center text-gray-900">
-              <td className="whitespace-nowrap p-4">SL No</td>
-              <td className="whitespace-nowrap p-4">Invoice ID</td>
-              <td className="whitespace-nowrap p-4">Order Date</td>
-              <td className="whitespace-nowrap p-4">Order Status</td>
-              <td className="whitespace-nowrap p-4">Grand Total</td>
-              <td className="whitespace-nowrap p-4">Track</td>
-              <td className="whitespace-nowrap p-4">Details</td>
-            </tr>
-          </thead>
-          <tbody className="divide-y text-center">
-            {allOrders?.data?.map((item, index) => (
-              <tr
-                key={item?._id}
-                className={index % 2 === 0 ? "" : "bg-gray-50"}
-              >
-                <td className="whitespace-nowrap p-4">{index + 1}</td>
-                <td className="whitespace-nowrap p-4 font-bold">
-                  <Link
-                    href={`/orders/${userInfo?.data?._id}/${item?._id}`}
-                    className="text-primary hover:underline"
-                  >
-                    {item?.invoice_id}
-                  </Link>
-                </td>
-                <td className="whitespace-nowrap p-4 text-gray-500 text-xs">
-                  {item?.createdAt && EnglishDateWithTimeShort(item?.createdAt)}
-                </td>
-                <td className="whitespace-nowrap p-4">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                      ORDER_STATUS_COLOR[item?.order_status] ||
-                      "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {item?.order_status}
-                  </span>
-                </td>
-                <td className="whitespace-nowrap p-4 font-semibold">
-                  ৳{item?.grand_total_amount}
-                </td>
-
-                {/* ── Track button ────────────────────────────── */}
-                <td className="whitespace-nowrap p-4">
-                  <Link
-                    href={`/orders/order-tracking/${item?.invoice_id}`}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 transition"
-                  >
-                    <FaTruck size={11} /> Track
-                  </Link>
-                </td>
-
-                <td className="whitespace-nowrap p-4">
-                  <Link
-                    href={`/orders/${item?._id}`}
-                    className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
-                  >
-                    View <FiExternalLink size={13} />
-                  </Link>
-                </td>
+      {orderRows.length === 0 ? (
+        // S8 (2026-06-04) — empty state for first-time buyers / users who
+        // have never placed an order. Replaces a blank table that previously
+        // looked like a broken page.
+        <div className="flex flex-col items-center justify-center py-16 bg-white border rounded">
+          <FiPackage className="text-gray-300 mb-3" size={56} />
+          <p className="text-gray-700 font-medium">No orders yet.</p>
+          <p className="text-sm text-gray-400 mt-1 mb-4">
+            Your purchase history will appear here once you place your first order.
+          </p>
+          <Link
+            href="/"
+            className="bg-primary text-white text-sm px-5 py-2 rounded hover:opacity-90 transition"
+          >
+            Start shopping
+          </Link>
+        </div>
+      ) : (
+        <div className="overflow-x-auto scrollbar-thin">
+          <table className="divide-y bg-white text-sm min-w-full border">
+            <thead>
+              <tr className="font-semibold text-center text-gray-900">
+                <td className="whitespace-nowrap p-4">SL No</td>
+                <td className="whitespace-nowrap p-4">Invoice ID</td>
+                <td className="whitespace-nowrap p-4">Order Date</td>
+                <td className="whitespace-nowrap p-4">Order Status</td>
+                <td className="whitespace-nowrap p-4">Grand Total</td>
+                <td className="whitespace-nowrap p-4">Track</td>
+                <td className="whitespace-nowrap p-4">Details</td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y text-center">
+              {orderRows.map((item, index) => (
+                <tr
+                  key={item?._id}
+                  className={index % 2 === 0 ? "" : "bg-gray-50"}
+                >
+                  <td className="whitespace-nowrap p-4">
+                    {(page - 1) * limit + index + 1}
+                  </td>
+                  <td className="whitespace-nowrap p-4 font-bold">
+                    {/* S8 (2026-06-04) — was /orders/<user_id>/<order_id>
+                        which 404s (real route is /orders/[orderId]). Matches
+                        the View link below now. */}
+                    <Link
+                      href={`/orders/${item?._id}`}
+                      className="text-primary hover:underline"
+                    >
+                      {item?.invoice_id}
+                    </Link>
+                  </td>
+                  <td className="whitespace-nowrap p-4 text-gray-500 text-xs">
+                    {item?.createdAt &&
+                      EnglishDateWithTimeShort(item?.createdAt)}
+                  </td>
+                  <td className="whitespace-nowrap p-4">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                        ORDER_STATUS_COLOR[item?.order_status] ||
+                        "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {item?.order_status}
+                    </span>
+                  </td>
+                  <td className="whitespace-nowrap p-4 font-semibold">
+                    {cur.symbol}
+                    {item?.grand_total_amount}
+                  </td>
 
-      <div className="flex justify-end mt-6">
-        <PaginationWithPageBtn
-          page={page}
-          setPage={setPage}
-          rows={limit}
-          setRows={setLimit}
-          totalData={allOrders?.totalData}
-        />
-      </div>
+                  {/* ── Track button ────────────────────────────── */}
+                  <td className="whitespace-nowrap p-4">
+                    <Link
+                      href={`/orders/order-tracking/${item?.invoice_id}`}
+                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 transition"
+                    >
+                      <FaTruck size={11} /> Track
+                    </Link>
+                  </td>
+
+                  <td className="whitespace-nowrap p-4">
+                    <Link
+                      href={`/orders/${item?._id}`}
+                      className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
+                    >
+                      View <FiExternalLink size={13} />
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {orderRows.length > 0 && (
+        <div className="flex justify-end mt-6">
+          <PaginationWithPageBtn
+            page={page}
+            setPage={setPage}
+            rows={limit}
+            setRows={setLimit}
+            totalData={allOrders?.totalData}
+          />
+        </div>
+      )}
     </div>
   );
 };

@@ -568,6 +568,7 @@ const SingleProduct = ({ product }) => {
                 <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
                   <ProductHighlightSection
                     product={product}
+                    variationProduct={variationProduct}
                     productPrice={productPrice}
                     lineThoughPrice={lineThoughPrice}
                     stock={stock}
