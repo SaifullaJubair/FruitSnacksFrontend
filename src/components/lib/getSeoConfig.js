@@ -60,23 +60,31 @@ export async function getSeoConfig() {
     tiktok: s?.tik_tok || "",
     twitter: s?.twitter || "",
 
-    // ── Analytics — enabled toggles DB থেকে, IDs .env থেকে ───
-    // ✅ enabled check DB থেকে
+    // ── Analytics — enabled toggles + IDs both from DB now (Phase 1A).
+    // .env stays as fallback for back-compat with early clones that
+    // haven't migrated their values to the Admin Settings UI yet.
     metaPixelEnabled: !!s?.meta_pixel_enabled,
     tiktokPixelEnabled: !!s?.tiktok_pixel_enabled,
     gtmEnabled: !!s?.gtm_enabled,
     ga4Enabled: !!s?.ga4_enabled,
     clarityEnabled: !!s?.clarity_enabled,
 
-    // ✅ IDs .env থেকে — DB তে নেই, API response এ আসবে না
     metaPixelId: s?.meta_pixel_enabled
-      ? process.env.META_PIXEL_ID || null
+      ? s?.meta_pixel_id || process.env.META_PIXEL_ID || null
       : null,
     tiktokPixelId: s?.tiktok_pixel_enabled
-      ? process.env.TIKTOK_PIXEL_ID || null
+      ? s?.tiktok_pixel_id || process.env.TIKTOK_PIXEL_ID || null
       : null,
-    gtmId: s?.gtm_enabled ? process.env.GTM_ID || null : null,
-    ga4Id: s?.ga4_enabled ? process.env.GA4_ID || null : null,
-    clarityId: s?.clarity_enabled ? process.env.CLARITY_ID || null : null,
+    gtmId: s?.gtm_enabled
+      ? s?.gtm_id || process.env.GTM_ID || null
+      : null,
+    ga4Id: s?.ga4_enabled
+      ? s?.ga4_id || process.env.GA4_ID || null
+      : null,
+    clarityId: s?.clarity_enabled
+      ? s?.clarity_id || process.env.CLARITY_ID || null
+      : null,
+    googleVerification:
+      s?.google_verification_meta || process.env.GOOGLE_VERIFICATION || null,
   };
 }

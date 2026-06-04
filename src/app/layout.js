@@ -44,8 +44,10 @@ export async function generateMetadata() {
     },
 
     // ── 3. Verification ───────────────────────────────────
+    // S4+S5 Phase 1A — DB-driven via Admin Site Settings → Analytics
+    // tab, .env fallback for back-compat.
     verification: {
-      google: process.env.GOOGLE_VERIFICATION,
+      google: seo.googleVerification || undefined,
     },
 
     // ── 4. Icons ──────────────────────────────────────────
