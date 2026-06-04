@@ -45,8 +45,13 @@ const AddToCart = () => {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm();
+  // S6 (2026-06-04) — saved addresses (logged-in only). Used by
+  // DeliveryInformation to render an address picker that pre-fills the
+  // form. Anonymous checkout never triggers the fetch.
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [mounted, setMounted] = useState(false);
   const initiateCheckoutFired = useRef(false);
   useEffect(() => setMounted(true), []);
@@ -87,6 +92,68 @@ const AddToCart = () => {
     if (userInfo?.data?.user_phone)
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
   }, [userInfo?.data?.user_phone]);
+
+  // S6 (2026-06-04) — fetch saved addresses once a logged-in user is
+  // confirmed. Anonymous (FB-ads) checkout never hits this — userInfo is
+  // null/undefined for them, so the picker stays hidden and the inline
+  // billing fields work exactly like before.
+  useEffect(() => {
+    if (!userInfo?.data?._id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/user/addresses`, {
+          credentials: "include",
+        });
+        const data = await res.json();
+        if (!cancelled && data?.success) {
+          setSavedAddresses(data?.data || []);
+        }
+      } catch {
+        /* silent — saved addresses are optional polish */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [userInfo?.data?._id]);
+
+  // S6 — apply a saved address to the checkout form. Only fills BLANK
+  // fields by default so we never clobber what the buyer already typed.
+  // Phone is filled when empty; division/district drive the controlled
+  // city/zone state so the courier zone API refetches automatically.
+  const applySavedAddress = (addr) => {
+    if (!addr) return;
+    if (addr.recipient_name) setValue("customer_name", addr.recipient_name);
+    if (addr.recipient_phone) {
+      const phoneStripped = String(addr.recipient_phone).replace(/\D/g, "").slice(-11);
+      setUserPhone(phoneStripped);
+      setValue("customer_phone", phoneStripped);
+    }
+    if (addr.division && addr.division !== division) {
+      setDivision(addr.division);
+      setDistrict();
+      setDistrictId();
+      setIsOpenDistrict(true);
+    }
+    if (addr.district) setDistrict(addr.district);
+    if (addr.address_line) setValue("address", addr.address_line);
+  };
+
+  // Auto-apply default address ONCE on first load — fills blank form on
+  // page open. Buyer can still pick another address via the picker or
+  // type over the fields.
+  const autoFilledRef = useRef(false);
+  useEffect(() => {
+    if (autoFilledRef.current) return;
+    if (!savedAddresses?.length) return;
+    const def = savedAddresses.find((a) => a.is_default) || savedAddresses[0];
+    if (def) {
+      autoFilledRef.current = true;
+      applySavedAddress(def);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedAddresses]);
 
   const {
     data: zoneData,
@@ -433,6 +500,8 @@ const AddToCart = () => {
                     refetchZone={refetchZone}
                     zoneLoading={zoneLoading}
                     zoneData={zoneData}
+                    savedAddresses={savedAddresses}
+                    onPickSavedAddress={applySavedAddress}
                   />
                 )}
               </div>

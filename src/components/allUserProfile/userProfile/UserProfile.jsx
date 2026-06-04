@@ -13,7 +13,8 @@ import PurchaseHistory from "./PurchaseHistory";
 import UserDashboardWishList from "./UserDashboardWishList";
 import LoyaltyHistory from "./LoyaltyHistory";
 import WalletHistory from "./WalletHistory";
-import { FaGift, FaWallet, FaShippingFast } from "react-icons/fa";
+import Addresses from "./Addresses";
+import { FaGift, FaWallet, FaShippingFast, FaMapMarkedAlt } from "react-icons/fa";
 import Cookies from "js-cookie";
 import ShowProfileDetails from "./ShowProfileDetails";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -136,6 +137,12 @@ const UserProfile = () => {
                   icon: BiPurchaseTag,
                   label: "Purchase History",
                 },
+                // S6 (2026-06-04) — saved shipping addresses, in-dashboard tab.
+                {
+                  name: "addresses",
+                  icon: FaMapMarkedAlt,
+                  label: "Addresses",
+                },
                 // S7 (2026-06-04) — public order-tracking page, opens its own
                 // route instead of switching tabs inside the dashboard.
                 {
@@ -192,6 +199,7 @@ const UserProfile = () => {
             {activeNavButton === "dashboard" && <Dashboard />}
             {activeNavButton === "purchase-history" && <PurchaseHistory />}
             {activeNavButton === "wishlist" && <UserDashboardWishList />}
+            {activeNavButton === "addresses" && <Addresses />}
             {activeNavButton === "offer-history" && <OfferHistory />}
             {activeNavButton === "loyalty" && <LoyaltyHistory />}
             {activeNavButton === "wallet" && <WalletHistory />}

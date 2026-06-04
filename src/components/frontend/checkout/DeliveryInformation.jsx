@@ -1,6 +1,7 @@
 import { cities } from "@/data/cites";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import Select from "react-select";
+import { FaMapMarkedAlt, FaStar } from "react-icons/fa";
 import "react-phone-number-input/style.css";
 const DeliveryInformation = ({
   register,
@@ -21,12 +22,58 @@ const DeliveryInformation = ({
   refetchZone,
   zoneLoading,
   zoneData,
+  // S6 (2026-06-04) — saved-addresses picker. Both props are optional;
+  // anonymous (FB-ads) checkout flows never receive them.
+  savedAddresses = [],
+  onPickSavedAddress,
 }) => {
   return (
     <div className="bg-white shadow-md    p-4">
-      <div>
-        <p className="text-xl mb-3">Delivery Information</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xl">Delivery Information</p>
+        {savedAddresses?.length > 0 && (
+          <span className="text-[10px] text-gray-400 hidden sm:block">
+            Pick a saved address to auto-fill
+          </span>
+        )}
       </div>
+
+      {/* S6 — Saved address picker. Renders ONLY for logged-in users with
+          at least one saved address; never shown for guest / FB-ads flow. */}
+      {savedAddresses?.length > 0 && (
+        <div className="border border-gray-100 rounded-lg p-3 mb-4 bg-gray-50">
+          <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
+            <FaMapMarkedAlt size={12} className="text-primary" />
+            Saved addresses
+          </p>
+          <div className="flex gap-2 overflow-x-auto pb-1">
+            {savedAddresses.map((addr) => (
+              <button
+                key={addr._id}
+                type="button"
+                onClick={() => onPickSavedAddress?.(addr)}
+                className={`shrink-0 text-left text-xs px-3 py-2 rounded-lg border transition min-w-[180px] max-w-[220px] bg-white hover:border-primary ${
+                  addr.is_default
+                    ? "border-primary"
+                    : "border-gray-200"
+                }`}
+              >
+                <div className="flex items-center gap-1 mb-0.5">
+                  <span className="font-semibold text-gray-800 truncate">
+                    {addr.label || addr.recipient_name || "Address"}
+                  </span>
+                  {addr.is_default && (
+                    <FaStar size={9} className="text-primary shrink-0" />
+                  )}
+                </div>
+                <p className="text-[11px] text-gray-500 line-clamp-2">
+                  {addr.address_line}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div>
           <label htmlFor="" className="block text-xs font-medium text-gray-700">
