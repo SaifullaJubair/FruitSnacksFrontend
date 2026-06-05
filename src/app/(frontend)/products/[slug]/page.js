@@ -7,6 +7,7 @@
 import { BASE_URL } from "@/components/utils/baseURL";
 import SingleProduct from "@/components/frontend/themedProduct/singeProduct/SingleProduct";
 import ProductThemedSections from "@/components/frontend/themedProduct/theme/ProductThemedSections";
+import OfferDiscoveryBanner from "@/components/frontend/themedProduct/theme/sections/OfferDiscoveryBanner";
 import ProductFloatingImages from "@/components/frontend/themedProduct/theme/ProductFloatingImages";
 import ThemeStyleInjector from "@/components/frontend/themedProduct/theme/ThemeStyleInjector";
 import { mergeTheme } from "@/lib/theme/mergeTheme";
@@ -291,6 +292,11 @@ const ProductDetailsPage = async ({ params }) => {
       {/* Content sits between behind (z0) and front (z5) floating layers */}
       <div className="relative" style={{ zIndex: 1 }}>
         <SingleProduct product={product} theme={theme} />
+        {/* Mounted at the page level (not inside ProductThemedSections) so
+            sparse products with no themed content but an active offer still
+            surface the discovery banner. Component self-hides when product
+            isn't in any active offer. */}
+        <OfferDiscoveryBanner productId={product?._id} />
         <ProductThemedSections
           product={product}
           theme={theme}

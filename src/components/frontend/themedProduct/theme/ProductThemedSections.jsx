@@ -9,7 +9,9 @@ import NutritionSection from "./sections/NutritionSection";
 import ReviewsSection from "./sections/ReviewsSection";
 import FaqSection from "./sections/FaqSection";
 import OfferBanner from "./sections/OfferBanner";
-import OfferDiscoveryBanner from "./sections/OfferDiscoveryBanner";
+// OfferDiscoveryBanner intentionally NOT imported here — it now mounts at
+// page level (products/[slug]/page.js) so sparse products without other
+// themed content still surface bundle offers. See Item 11α audit follow-up.
 import RelatedProductsThemed from "./sections/RelatedProductsThemed";
 import DescriptionCard from "./DescriptionCard";
 import { mergeTheme } from "@/lib/theme/mergeTheme";
@@ -48,7 +50,6 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
     <div className="themed-product-page" style={{ background: "var(--page-bg)" }}>
       <VideoSection product={product} theme={theme} />
       <BenefitsUseCasesSection product={product} theme={theme} />
-      <OfferDiscoveryBanner productId={product?._id} />
       <NutritionSection product={product} theme={theme} trustPoints={trustPoints} />
       <div className="max-w-6xl mx-auto px-4 mt-8">
         <DescriptionCard html={product?.description} />

@@ -20,17 +20,19 @@
 //   - Coupon per-user usage caps + total-available caps (need DB)
 //   - BOGO coupon           (schema exists, application deferred)
 //   - Advance payment       (settings-driven)
+//   - Campaign              NOT mirrored here. productPrice() reads
+//     product.campaign_details from the hydrated cart cache, which can go
+//     stale between page load and checkout. The BE recompute pulls the
+//     campaign fresh from DB at order placement and OVERWRITES the line
+//     price. Result: cart UI may show campaign price for ~minutes after a
+//     campaign ends; checkout corrects to the non-campaign price. Owner
+//     accepted this trade-off; do not add a campaign layer here without
+//     also solving the staleness problem.
 //
 // Keep the call signature stable — if the resolver / coupon shape changes
 // in the BE, mirror the change here and ship FE+BE together.
 
 import { productPrice } from "./helper";
-
-const applyCampaignMath = (base, amount, type) => {
-  if (type === "percent") return Math.round(base - (base * amount) / 100);
-  if (type === "fixed") return base - amount;
-  return base;
-};
 
 // Discount a single line by a product-level coupon (if it targets this product).
 // Returns the unit price after coupon, or the original price if not eligible.
