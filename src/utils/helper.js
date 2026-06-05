@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from "react";
+import { useMemo } from "react";
+import { applyCartLayers } from "./applyCartLayers";
 // export const productPrice = (product) => {
 //   if (product?.flash_sale_details?.flash_sale_product) {
 //     return product?.flash_sale_details?.flash_sale_product
@@ -201,160 +202,30 @@ export const isVideo = (url) => {
   return /\.(mp4|webm|mov|avi|mkv|flv|wmv|mpeg|mpg|3gp)$/i.test(url);
 };
 
-// Define helper functions with proper dependency injection
+// Cart calculator — delegates to applyCartLayers (which mirrors the BE
+// recompute layer sequence exactly). Adds shippingCharge to the final total
+// for the cart UI; the BE will recompute shipping authoritatively at checkout.
+// `customerGroup` is optional — pass it when the logged-in user has wholesale
+// / vip status to mirror the BE's group-price layer.
 export const useCartCalculations = ({
   cartData,
   products,
   couponData,
   shippingCharge,
-}) => {
-  // Calculate price after applying coupon to a single product
-  const calculationCouponProductPrice = useCallback(
-    (price, productId, variationId = null) => {
-      if (!couponData || !price) return price;
-
-      // Check if product is eligible for specific coupon
-      const isSpecificProduct =
-        couponData.coupon_product_type === "specific" &&
-        couponData.coupon_specific_product?.some((item) =>
-          variationId
-            ? item.product_id === productId // For variations, check against parent product ID
-            : item.product_id === productId,
-        );
-
-      // Only apply coupon if it's for all products or this specific product/variation
-      if (couponData.coupon_product_type === "specific" && !isSpecificProduct) {
-        return price;
-      }
-
-      // Fixed amount coupon
-      if (couponData.coupon_type === "fixed") {
-        return Math.max(price - couponData.coupon_amount, 0);
-      }
-
-      // Percentage coupon
-      if (couponData.coupon_type === "percent") {
-        const discountAmount = Math.round(
-          (price * couponData.coupon_amount) / 100,
-        );
-        const maxDiscount = couponData.coupon_max_amount || Infinity;
-        const finalDiscount = Math.min(discountAmount, maxDiscount);
-        return Math.max(price - finalDiscount, 0);
-      }
-
-      return price;
-    },
-    [couponData],
-  );
-
-  // Calculate grand total after applying cart-level coupons
-  const calculateShopGrandTotals = useCallback(
-    (subTotal) => {
-      if (!couponData || couponData.coupon_product_type === "specific") {
-        return subTotal; // Specific product coupons already applied at product level
-      }
-
-      // Fixed amount coupon for all products
-      if (couponData.coupon_type === "fixed") {
-        return Math.max(subTotal - couponData.coupon_amount, 0);
-      }
-
-      // Percentage coupon for all products
-      if (couponData.coupon_type === "percent") {
-        const discountAmount = Math.round(
-          (subTotal * couponData.coupon_amount) / 100,
-        );
-        const maxDiscount = couponData.coupon_max_amount || Infinity;
-        const finalDiscount = Math.min(discountAmount, maxDiscount);
-        return Math.max(subTotal - finalDiscount, 0);
-      }
-
-      return subTotal;
-    },
-    [couponData],
-  );
-
-  return useMemo(() => {
-    if (!cartData?.length)
-      return {
-        shopSubtotals: 0,
-        shopGrandTotals: 0,
-        totalDiscount: 0,
-        adjustedPrices: {},
-      };
-
-    // Calculate initial subtotal without any coupons
-    const calculateInitialSubtotal = (product) => {
-      const price = productPrice(product);
-      const quantity =
-        products?.find(
-          (item) =>
-            item?.productId === product?._id &&
-            (!product?.variations?._id ||
-              item?.variation_product_id === product?.variations?._id),
-        )?.quantity || 1;
-      return price * quantity;
-    };
-
-    const initialSubtotal = cartData.reduce(
-      (sum, product) => sum + calculateInitialSubtotal(product),
-      0,
-    );
-
-    // Calculate adjusted prices and subtotal with product-level coupons
-    const adjustedPrices = {};
-    let subtotalWithProductCoupons = 0;
-
-    cartData.forEach((product) => {
-      const originalPrice = productPrice(product);
-      const quantity =
-        products?.find(
-          (item) =>
-            item?.productId === product?._id &&
-            (!product?.variations?._id ||
-              item?.variation_product_id === product?.variations?._id),
-        )?.quantity || 1;
-
-      // Create unique key for each product/variation combination
-      const priceKey = product?.variations?._id
-        ? `${product._id}-${product.variations._id}`
-        : product._id;
-
-      // Apply product-level coupons if applicable
-      const finalPrice = calculationCouponProductPrice(
-        originalPrice,
-        product._id,
-        product?.variations?._id,
-      );
-
-      adjustedPrices[priceKey] = finalPrice;
-      subtotalWithProductCoupons += finalPrice * quantity;
+  customerGroup,
+}) =>
+  useMemo(() => {
+    const layered = applyCartLayers({
+      cartData,
+      products,
+      couponData,
+      customerGroup,
     });
-
-    // Apply cart-level coupons if applicable
-    const grandTotals = calculateShopGrandTotals(
-      couponData?.coupon_product_type === "specific"
-        ? subtotalWithProductCoupons
-        : initialSubtotal,
-    );
-
-    const totalDiscount = initialSubtotal - grandTotals;
-
     return {
-      shopSubtotals: initialSubtotal,
-      shopGrandTotals: grandTotals + shippingCharge,
-      totalDiscount,
-      adjustedPrices,
+      ...layered,
+      shopGrandTotals: layered.shopGrandTotals + (shippingCharge || 0),
     };
-  }, [
-    cartData,
-    products,
-    couponData,
-    shippingCharge,
-    calculationCouponProductPrice,
-    calculateShopGrandTotals,
-  ]);
-};
+  }, [cartData, products, couponData, shippingCharge, customerGroup]);
 
 
 // PDP variation selector helper — Phase C rewrite (CM1 + CM2).
