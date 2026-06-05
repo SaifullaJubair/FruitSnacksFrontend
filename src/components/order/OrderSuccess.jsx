@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { FaCheckCircle, FaFileInvoice } from "react-icons/fa";
-import { FiPackage, FiTruck, FiShield, FiLogIn } from "react-icons/fi";
+import { toast } from "react-toastify";
+import { FaCheckCircle, FaFileInvoice, FaEnvelope } from "react-icons/fa";
+import { FiPackage, FiTruck, FiShield, FiLogIn, FiX } from "react-icons/fi";
 import Contain from "../common/Contain";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -49,6 +50,55 @@ const OrderSuccessContent = () => {
 
   const customerPhone = orderData?.customer_phone;
   const isVerified = orderData?.customer_id?.user_verified === true;
+
+  // S4+S5 Phase 1C — opt-in email prompt. Shows when neither the
+  // logged-in user nor the order has an email yet. Skip-able +
+  // dismissible. Hits /user/me/email (logged-in) or /order/:id/email
+  // (guest path).
+  const userHasEmail = !!userInfo?.data?.user_email;
+  const orderHasEmail = !!orderData?.customer_email;
+  const emailAlreadyPresent = isLoggedIn ? userHasEmail : orderHasEmail;
+  const [emailPromptDismissed, setEmailPromptDismissed] = useState(false);
+  const [emailValue, setEmailValue] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailSaved, setEmailSaved] = useState(false);
+  const showEmailPrompt =
+    orderData && !emailAlreadyPresent && !emailPromptDismissed && !emailSaved;
+
+  const saveEmailForOrder = async () => {
+    const val = (emailValue || "").trim();
+    if (!val || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+    setEmailSaving(true);
+    try {
+      const url = isLoggedIn
+        ? `${BASE_URL}/user/me/email`
+        : `${BASE_URL}/order/${orderId}/email`;
+      const body = isLoggedIn
+        ? { user_email: val }
+        : { customer_email: val };
+      const res = await fetch(url, {
+        method: "PATCH",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data?.success) {
+        toast.success("Thanks! Email saved.", { autoClose: 1200 });
+        setEmailSaved(true);
+        if (isLoggedIn) refetchUser();
+      } else {
+        toast.error(data?.message || "Failed to save email.");
+      }
+    } catch {
+      toast.error("Network error.");
+    } finally {
+      setEmailSaving(false);
+    }
+  };
 
   // ✅ Logic — isGuest URL param independent
   // showSetPassword: order আছে + user unverified + logged in না + modal success না
@@ -159,6 +209,63 @@ const OrderSuccessContent = () => {
               <FaCheckCircle className="text-green-500 text-xl shrink-0" />
               <p className="text-green-800 font-semibold text-sm">
                 Logged in successfully! Now you can track your order.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Phase 1C — opt-in email prompt. Skip-able + dismissible. */}
+        {showEmailPrompt && (
+          <div className="bg-gradient-to-br from-amber-50 via-white to-amber-50 border border-amber-200 rounded-2xl p-5 mb-7 max-w-md w-full relative">
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => setEmailPromptDismissed(true)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            >
+              <FiX size={16} />
+            </button>
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center shrink-0 mt-0.5">
+                <FaEnvelope size={14} className="text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-gray-800 font-semibold text-sm mb-1">
+                  Want a receipt + tracking link?
+                </p>
+                <p className="text-gray-500 text-xs mb-3 leading-relaxed">
+                  Add your email — we'll send the invoice + courier updates.
+                  Optional, you can skip.
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    type="email"
+                    value={emailValue}
+                    onChange={(e) => setEmailValue(e.target.value)}
+                    placeholder="you@example.com"
+                    maxLength={120}
+                    className="border px-3 py-2 text-sm rounded outline-amber-500 flex-1 min-w-[180px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={saveEmailForOrder}
+                    disabled={emailSaving}
+                    className="bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold px-4 py-2 rounded inline-flex items-center gap-1 disabled:opacity-50"
+                  >
+                    {emailSaving ? "Saving…" : "Save"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {emailSaved && (
+          <div className="bg-green-50 border border-green-200 rounded-2xl p-4 mb-6 max-w-md w-full">
+            <div className="flex items-center gap-3">
+              <FaCheckCircle className="text-green-500 text-xl shrink-0" />
+              <p className="text-green-800 font-semibold text-sm">
+                Email saved. We'll send your invoice + tracking shortly.
               </p>
             </div>
           </div>
