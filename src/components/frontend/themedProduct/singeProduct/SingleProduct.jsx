@@ -12,7 +12,8 @@ import ChartModal from "./productHighLightSection/ChartModal";
 import WhatsAppOrderButton from "../theme/WhatsAppOrderButton";
 import HeroGallery from "../theme/HeroGallery";
 import FloatingAssets from "../theme/FloatingAssets";
-import DescriptionCard from "../theme/DescriptionCard";
+// DescriptionCard moved to ProductThemedSections (renders between Nutrition
+// and Reviews now) — was too prominent right after hero per mockup review.
 import DynamicIcon from "@/lib/icons/DynamicIcon";
 import PdpPriceMeta from "./PdpPriceMeta";
 import ViewCountFire from "./ViewCountFire";
@@ -826,9 +827,6 @@ const SingleProduct = ({ product, theme }) => {
               />
             </div>
           </section>
-
-          {/* ════════ Product description — compact card right after hero ════════ */}
-          <DescriptionCard html={product?.description} />
 
           {/* ════════════ ORDER SECTION ════════════ */}
           <section
