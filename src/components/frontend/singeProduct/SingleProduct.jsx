@@ -1,5 +1,7 @@
 "use client";
 // src/components/frontend/singeProduct/SingleProduct.jsx
+import { splitName } from "@/utils/nameSplit";
+import { firePurchaseOnce } from "@/utils/purchaseDedup";
 import Contain from "@/components/common/Contain";
 import ProductPhotoSelect from "./productDetails/ProductPhotoSelect";
 import ProductHighlightSection from "./productHighLightSection/ProductHighlightSection";
@@ -505,15 +507,28 @@ const SingleProduct = ({ product }) => {
       });
       const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        // ✅ Purchase — Meta + TikTok + GTM একটাই call
-        await trackPurchase(
-          { ...sendData, _id: result?.data?.order_id },
-          {
-            ph: customer_phone,
-            fn: data?.customer_name || userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-        );
+        // ✅ Purchase — Phase 1B B6 dedup + B4 form-data CAPI pass.
+        const newOrderId = result?.data?.order_id
+          ? String(result.data.order_id)
+          : null;
+        firePurchaseOnce(newOrderId, () => {
+          const { fn, ln } = splitName(
+            data?.customer_name || userInfo?.data?.user_name,
+          );
+          trackPurchase(
+            { ...sendData, _id: newOrderId },
+            {
+              ph: customer_phone,
+              fn,
+              ln,
+              em: userInfo?.data?.user_email,
+              ct: district,
+              st: division,
+              country: "bd",
+              external_id: userInfo?.data?._id,
+            },
+          );
+        });
 
         toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,

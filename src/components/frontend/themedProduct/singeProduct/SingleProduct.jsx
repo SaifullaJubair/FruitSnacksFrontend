@@ -4,6 +4,8 @@
 // cart, wishlist, single-order form, analytics) is preserved verbatim from the
 // original SingleProduct; only the JSX is redesigned per the theme mockups and
 // driven by CSS variables (--brand-primary etc.) injected by ThemeStyleInjector.
+import { splitName } from "@/utils/nameSplit";
+import { firePurchaseOnce } from "@/utils/purchaseDedup";
 import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
 import ChartModal from "./productHighLightSection/ChartModal";
 import WhatsAppOrderButton from "../theme/WhatsAppOrderButton";
@@ -560,14 +562,27 @@ const SingleProduct = ({ product, theme }) => {
       });
       const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        await trackPurchase(
-          { ...sendData, _id: result?.data?.order_id },
-          {
-            ph: customer_phone,
-            fn: data?.customer_name || userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-        );
+        const newOrderId = result?.data?.order_id
+          ? String(result.data.order_id)
+          : null;
+        firePurchaseOnce(newOrderId, () => {
+          const { fn, ln } = splitName(
+            data?.customer_name || userInfo?.data?.user_name,
+          );
+          trackPurchase(
+            { ...sendData, _id: newOrderId },
+            {
+              ph: customer_phone,
+              fn,
+              ln,
+              em: userInfo?.data?.user_email,
+              ct: district,
+              st: division,
+              country: "bd",
+              external_id: userInfo?.data?._id,
+            },
+          );
+        });
 
         toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,

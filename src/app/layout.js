@@ -9,6 +9,7 @@ import "react-toastify/dist/ReactToastify.css";
 import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
 import AnalyticsAdvancedMatching from "@/components/analyticsScripts/utils/AnalyticsAdvancedMatching";
+import FbclidCapture from "@/components/analyticsScripts/utils/FbclidCapture";
 import TikTokPixelScript from "@/components/analyticsScripts/tiktokPixel/TikTokPixelScript";
 import MetaPixelScript from "@/components/analyticsScripts/metaPixel/MetaPixelScript";
 import GoogleTagManager, {
@@ -119,6 +120,11 @@ export default async function RootLayout({ children }) {
         {seo.metaPixelId && <MetaPixelScript pixelId={seo.metaPixelId} />}
         {seo.tiktokPixelId && <TikTokPixelScript pixelId={seo.tiktokPixelId} />}
         {seo.clarityId && <MicrosoftClarity clarityId={seo.clarityId} />}
+
+        {/* Phase 1B B7 — convert ?fbclid= URL param into _fbc cookie BEFORE
+            first event fires, so ad-click visitors are Meta-attributable
+            from their very first ViewContent. */}
+        <FbclidCapture />
 
         <Providers>
           <QueryProviders>

@@ -247,6 +247,15 @@ const useAnalytics = () => {
       const contentIds = toStringIds(
         orderData?.order_products?.map((p) => p?.product_id),
       );
+      // S4+S5 Phase 1B B2 — num_items should be the SUM of quantities,
+      // not the count of distinct product lines. 3 products with qty 2
+      // each = 6 num_items, not 3. Meta uses value/num_items for AOV.
+      const numItems =
+        orderData?.order_products?.reduce(
+          (s, p) => s + (p?.quantity || 1),
+          0,
+        ) || 0;
+      const orderId = orderData?._id ? String(orderData._id) : undefined;
 
       if (metaEnabled) {
         fbq(
@@ -257,7 +266,7 @@ const useAnalytics = () => {
             content_type: "product",
             currency,
             value,
-            num_items: orderData?.order_products?.length || 0,
+            num_items: numItems,
           },
           { eventID: eventId },
         );
@@ -272,7 +281,8 @@ const useAnalytics = () => {
               content_type: "product",
               currency,
               value,
-              num_items: orderData?.order_products?.length || 0,
+              num_items: numItems,
+              order_id: orderId, // Phase 1B B6 — server-side dedup key
             },
           });
         }
@@ -284,7 +294,7 @@ const useAnalytics = () => {
           {
             currency,
             value,
-            quantity: orderData?.order_products?.length || 1,
+            quantity: numItems,
           },
           { event_id: eventId },
         );
@@ -296,7 +306,8 @@ const useAnalytics = () => {
             properties: {
               currency,
               value,
-              quantity: orderData?.order_products?.length || 1,
+              quantity: numItems,
+              order_id: orderId, // Phase 1B B6 — server-side dedup key
             },
           });
         }
@@ -306,7 +317,7 @@ const useAnalytics = () => {
         pushDataLayer({
           event: "purchase",
           ecommerce: {
-            transaction_id: String(orderData?._id),
+            transaction_id: orderId,
             currency,
             value,
             items: orderData?.order_products?.map((p) => ({
@@ -325,6 +336,7 @@ const useAnalytics = () => {
       tiktokEnabled,
       tiktokCapiEnabled,
       gtmEnabled,
+      currency,
     ],
   );
 

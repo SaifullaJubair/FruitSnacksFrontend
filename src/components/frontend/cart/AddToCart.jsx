@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { splitName } from "@/utils/nameSplit";
+import { firePurchaseOnce } from "@/utils/purchaseDedup";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -172,19 +174,41 @@ const AddToCart = () => {
   const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
     useCartCalculations({ cartData, products, couponData, shippingCharge });
 
-  // ✅ InitiateCheckout
+  // ✅ InitiateCheckout — Phase 1B B5 value>0 guard + form-data CAPI pass.
   const handlePhoneChangeWithTracking = useCallback(
     (value) => {
       setUserPhone(value);
-      if (!initiateCheckoutFired.current && value) {
+      // Skip when cart total is 0 — Meta's Purchase-optimisation campaigns
+      // weight 0-value events poorly and they pollute funnel analytics.
+      if (
+        !initiateCheckoutFired.current &&
+        value &&
+        (shopGrandTotals || 0) > 0
+      ) {
         initiateCheckoutFired.current = true;
+        const { fn, ln } = splitName(userInfo?.data?.user_name);
+        // num_items = sum of cart qty, not distinct lines (Phase 1B B2).
+        const numItems =
+          cartData?.reduce((s, c) => s + (c?.quantity || 1), 0) || 1;
         trackInitiateCheckout(
           {
             content_ids: cartData?.map((p) => p?._id) || [],
             value: shopGrandTotals || 0,
-            num_items: cartData?.length || 1,
+            num_items: numItems,
           },
-          { ph: value, external_id: userInfo?.data?._id },
+          {
+            ph: value,
+            external_id: userInfo?.data?._id,
+            fn,
+            ln,
+            em: userInfo?.data?.user_email,
+            // Form may not be filled yet at this point — fall back to
+            // logged-in user's saved address; backend will further fall
+            // back to IP-derived geo.
+            ct: userInfo?.data?.user_district,
+            st: userInfo?.data?.user_division,
+            country: "bd",
+          },
         );
       }
     },
@@ -356,15 +380,28 @@ const AddToCart = () => {
           }).catch(() => {});
         }
 
-        // ✅ Purchase
-        trackPurchase(
-          { ...orderData, _id: result?.data?.order_id },
-          {
-            ph: customer_phone,
-            fn: formData.customer_name || userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-        );
+        // ✅ Purchase — Phase 1B B6 (dedup) + B4 (form-data CAPI passthrough).
+        const newOrderId = result?.data?.order_id
+          ? String(result.data.order_id)
+          : null;
+        firePurchaseOnce(newOrderId, () => {
+          const { fn, ln } = splitName(
+            formData.customer_name || userInfo?.data?.user_name,
+          );
+          trackPurchase(
+            { ...orderData, _id: newOrderId },
+            {
+              ph: customer_phone,
+              fn,
+              ln,
+              em: userInfo?.data?.user_email,
+              ct: district, // form-derived shipping district wins over IP
+              st: division,
+              country: "bd",
+              external_id: userInfo?.data?._id,
+            },
+          );
+        });
 
         const orderId = result?.data?.order_id;
         const invoiceId = result?.data?.invoice_id;
