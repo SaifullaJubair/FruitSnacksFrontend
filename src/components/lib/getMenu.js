@@ -34,9 +34,14 @@ const adaptTreeToLegacyMenu = (tree = []) =>
       category_slug: root?.category_slug,
       category_logo: root?.category_logo,
       category_status: root?.category_status,
-      // FeatureCategories.jsx filters by this flag; without it the section
-      // renders empty for every clone.
+      // FeatureCategories.jsx + NewFeatureCategories filter by this flag;
+      // without it the homepage featured section renders empty.
       feature_category_show: root?.feature_category_show,
+      // Navbar Explore dropdown, Footer category list, SecondNavbar (live in
+      // (user-profile) layout), and BottomNavbar all filter by this flag.
+      // Without it the user-profile "Explore" menu and the footer category
+      // links render empty for every clone.
+      explore_category_show: root?.explore_category_show,
     },
     sub_categories: (root?.children || []).map(mapSubLevel),
   }));
