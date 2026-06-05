@@ -6,6 +6,7 @@
 // driven by CSS variables (--brand-primary etc.) injected by ThemeStyleInjector.
 import { splitName } from "@/utils/nameSplit";
 import { firePurchaseOnce } from "@/utils/purchaseDedup";
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
 import ChartModal from "./productHighLightSection/ChartModal";
 import WhatsAppOrderButton from "../theme/WhatsAppOrderButton";
@@ -62,14 +63,10 @@ const SingleProduct = ({ product, theme }) => {
     trackAddToWishlist,
   } = useAnalytics();
 
-  // ✅ ViewContent — product load হলে একবার fire
+  // ✅ ViewContent — Phase 1B EMQ user_data via shared helper.
   useEffect(() => {
     if (!product?._id) return;
-    trackViewContent(product, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackViewContent(product, buildAnalyticsUserData(userInfo));
   }, [product?._id]);
 
   const {
@@ -380,11 +377,12 @@ const SingleProduct = ({ product, theme }) => {
     setCartAnim(true);
     setTimeout(() => setCartAnim(false), 1500);
 
-    trackAddToCart(product, variationProduct, quantity, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackAddToCart(
+      product,
+      variationProduct,
+      quantity,
+      buildAnalyticsUserData(userInfo),
+    );
   };
 
   // Wishlist & compare sync

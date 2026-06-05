@@ -2,6 +2,7 @@
 // src/components/frontend/singeProduct/SingleProduct.jsx
 import { splitName } from "@/utils/nameSplit";
 import { firePurchaseOnce } from "@/utils/purchaseDedup";
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import Contain from "@/components/common/Contain";
 import ProductPhotoSelect from "./productDetails/ProductPhotoSelect";
 import ProductHighlightSection from "./productHighLightSection/ProductHighlightSection";
@@ -59,14 +60,10 @@ const SingleProduct = ({ product }) => {
     trackAddToWishlist,
   } = useAnalytics();
 
-  // ✅ ViewContent — product load হলে একবার fire
+  // ✅ ViewContent — product load হলে একবার fire (Phase 1B EMQ user_data).
   useEffect(() => {
     if (!product?._id) return;
-    trackViewContent(product, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackViewContent(product, buildAnalyticsUserData(userInfo));
   }, [product?._id]);
 
   const {
@@ -322,12 +319,13 @@ const SingleProduct = ({ product }) => {
     dispatch(addToCart(cartItem));
     toast.success("Added to cart!", { autoClose: 1500 });
 
-    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
-    trackAddToCart(product, variationProduct, quantity, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    // ✅ AddToCart — Phase 1B EMQ user_data via shared helper.
+    trackAddToCart(
+      product,
+      variationProduct,
+      quantity,
+      buildAnalyticsUserData(userInfo),
+    );
   };
 
   // Wishlist & compare sync

@@ -1,5 +1,6 @@
 "use client";
 
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import { MdDeleteForever } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -108,16 +109,12 @@ const WishList = () => {
     toast.success("Successfully added to cart", { autoClose: 1500 });
     queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
 
-    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
+    // ✅ AddToCart — Phase 1B EMQ user_data via shared helper.
     trackAddToCart(
       product,
       product?.is_variation ? product?.variations : null,
       1,
-      {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
+      buildAnalyticsUserData(userInfo),
     );
   };
 
