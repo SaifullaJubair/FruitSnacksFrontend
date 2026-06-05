@@ -5,9 +5,11 @@
 
 export const PAGE_SEO = {
   home: {
-    title: "Premium Genuine Leather Wallets, Ladies Bags & Belts in Bangladesh",
+    // Generic Bangla fallback — admin overrides via /page-seo "home" entry
+    // for actual product-line copy (replaces this for each clone).
+    title: "প্রিমিয়াম মানসম্পন্ন পণ্য | ফাস্ট ক্যাশ অন ডেলিভারি",
     description:
-      "বাংলাদেশে ১০০% খাঁটি চামড়ার মানিব্যাগ (Money Bag), স্টাইলিশ লেডিস ব্যাগ ও মজবুত বেল্টের বিশাল কালেকশন। প্রিমিয়াম কোয়ালিটি ও ফাস্ট ক্যাশ অন ডেলিভারি সুবিধা।",
+      "প্রিমিয়াম কোয়ালিটির পণ্য সংগ্রহ। সারা বাংলাদেশে দ্রুত হোম ডেলিভারি ও ক্যাশ অন ডেলিভারি সুবিধা।",
     path: "",
   },
   allProducts: {

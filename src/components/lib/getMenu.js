@@ -34,6 +34,9 @@ const adaptTreeToLegacyMenu = (tree = []) =>
       category_slug: root?.category_slug,
       category_logo: root?.category_logo,
       category_status: root?.category_status,
+      // FeatureCategories.jsx filters by this flag; without it the section
+      // renders empty for every clone.
+      feature_category_show: root?.feature_category_show,
     },
     sub_categories: (root?.children || []).map(mapSubLevel),
   }));
