@@ -250,9 +250,12 @@ const useAnalytics = () => {
       // S4+S5 Phase 1B B2 — num_items should be the SUM of quantities,
       // not the count of distinct product lines. 3 products with qty 2
       // each = 6 num_items, not 3. Meta uses value/num_items for AOV.
+      // AddToCart.jsx / SingleProduct.jsx ship order_products with
+      // `product_quantity` key (backend convention), some legacy code
+      // may still send `quantity` — read either.
       const numItems =
         orderData?.order_products?.reduce(
-          (s, p) => s + (p?.quantity || 1),
+          (s, p) => s + (p?.product_quantity || p?.quantity || 1),
           0,
         ) || 0;
       const orderId = orderData?._id ? String(orderData._id) : undefined;
@@ -324,7 +327,7 @@ const useAnalytics = () => {
               item_id: String(p?.product_id),
               item_name: p?.product_name,
               price: toNumber(p?.product_price),
-              quantity: p?.quantity || 1,
+              quantity: p?.product_quantity || p?.quantity || 1,
             })),
           },
         });

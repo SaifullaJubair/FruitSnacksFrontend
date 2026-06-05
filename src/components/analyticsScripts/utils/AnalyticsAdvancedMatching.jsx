@@ -49,16 +49,23 @@ const AnalyticsAdvancedMatching = ({ metaPixelId, tiktokPixelId }) => {
     return () => clearTimeout(timer);
   }, [phone, metaPixelId, fn, ln, email, city, state, externalId]);
 
-  // TikTok Advanced Matching
+  // TikTok Advanced Matching — wrap in same 500ms timeout as Meta so
+  // ttq is actually attached to window before identify fires.
   useEffect(() => {
-    if (!phone || !tiktokPixelId || !window.ttq) return;
-    const identify = {
-      phone_number: phone,
-      external_id: externalId ? String(externalId) : undefined,
-    };
-    if (email) identify.email = email;
-    window.ttq.identify(identify);
-  }, [phone, tiktokPixelId, email, externalId]);
+    if (!phone || !tiktokPixelId) return;
+    const timer = setTimeout(() => {
+      if (!window.ttq) return;
+      const identify = {
+        phone_number: phone,
+        external_id: externalId ? String(externalId) : undefined,
+      };
+      if (fn) identify.first_name = fn;
+      if (ln) identify.last_name = ln;
+      if (email) identify.email = email;
+      window.ttq.identify(identify);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [phone, tiktokPixelId, fn, ln, email, externalId]);
 
   return null;
 };
