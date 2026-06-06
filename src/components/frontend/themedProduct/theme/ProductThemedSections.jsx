@@ -54,7 +54,7 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
       <div className="max-w-6xl mx-auto px-4 mt-8">
         <DescriptionCard html={product?.description} />
       </div>
-      <ReviewsSection product={product} theme={theme} />
+      {(setting?.enable_reviews ?? true) && <ReviewsSection product={product} theme={theme} />}
       <RelatedProductsThemed product_slug={product?.product_slug} />
       <FaqSection product={product} theme={theme} />
       <OfferBanner product={product} setting={setting} />

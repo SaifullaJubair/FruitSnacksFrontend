@@ -55,6 +55,8 @@ const ProductHighlightSection = ({
   handleAddToCart,
   handleAddToCompare,
   isCompare,
+  showSoldCount = true,
+  showStockCountOnPdp = false,
 }) => {
   const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data[0]?.currency_symbol;
@@ -122,7 +124,7 @@ const ProductHighlightSection = ({
           <span className="text-xs text-gray-400">
             ({product?.total_review_ratting || 0} reviews)
           </span>
-          {product?.total_order_count > 0 && (
+          {showSoldCount && product?.total_order_count > 0 && (
             <>
               <span className="text-gray-200">|</span>
               <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -224,7 +226,7 @@ const ProductHighlightSection = ({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs text-emerald-700 font-semibold">
               In Stock
-              {stock <= 10 && (
+              {showStockCountOnPdp && stock <= 10 && (
                 <span className="text-amber-600 ml-1.5">
                   · Only {stock} left!
                 </span>

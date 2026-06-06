@@ -151,6 +151,10 @@ const SingleProduct = ({ product, theme }) => {
 
   const currencySymbol = settingData?.data?.[0]?.currency_symbol || "৳";
   const whatsappNumber = settingData?.data?.[0]?.watsapp;
+  // C13 PDP toggles
+  const showSoldCount = settingData?.data?.[0]?.show_sold_count ?? true;
+  const showStockCountOnPdp = settingData?.data?.[0]?.show_stock_count_on_pdp ?? false;
+  const allowImageDownload = settingData?.data?.[0]?.allow_image_download ?? false;
 
   const shippingCharge =
     division === "Dhaka"
@@ -756,7 +760,7 @@ const SingleProduct = ({ product, theme }) => {
               </div>
 
               {/* F2 — PDP price meta: flash countdown + sold count + tier + group hint. */}
-              <PdpPriceMeta product={product} currencySymbol={currencySymbol} />
+              <PdpPriceMeta product={product} currencySymbol={currencySymbol} showSoldCount={showSoldCount} />
 
               {/* SKU display — variation_sku when a specific variation is
                   selected, otherwise the parent product_sku. Industry standard
@@ -826,7 +830,10 @@ const SingleProduct = ({ product, theme }) => {
             </div>
 
             {/* Right — product photo */}
-            <div className="order-1 lg:order-2 relative">
+            <div
+              className="order-1 lg:order-2 relative"
+              onContextMenu={allowImageDownload ? undefined : (e) => e.preventDefault()}
+            >
               {product?.hero_corner_badge && (
                 <span
                   className="absolute top-3 left-3 z-20 text-xs font-bold px-3 py-1.5 rounded-full shadow-md"
@@ -909,15 +916,17 @@ const SingleProduct = ({ product, theme }) => {
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-xs font-semibold text-emerald-700">
                         স্টকে আছে
-                        <span
-                          className={
-                            stock <= 10
-                              ? "text-amber-600 ml-1.5"
-                              : "text-emerald-700 ml-1.5"
-                          }
-                        >
-                          · {stock}টি{stock <= 10 ? " বাকি!" : ""}
-                        </span>
+                        {showStockCountOnPdp && (
+                          <span
+                            className={
+                              stock <= 10
+                                ? "text-amber-600 ml-1.5"
+                                : "text-emerald-700 ml-1.5"
+                            }
+                          >
+                            · {stock}টি{stock <= 10 ? " বাকি!" : ""}
+                          </span>
+                        )}
                       </span>
                     </>
                   ) : (

@@ -26,6 +26,8 @@ const DeliveryInformation = ({
   // anonymous (FB-ads) checkout flows never receive them.
   savedAddresses = [],
   onPickSavedAddress,
+  // C13 — toggle from Admin → Storefront Behaviour settings.
+  showEmailField = true,
 }) => {
   return (
     <div className="bg-white shadow-md    p-4">
@@ -222,6 +224,24 @@ const DeliveryInformation = ({
             </p>
           )}
         </div>
+
+        {showEmailField && (
+          <div className="">
+            <label
+              htmlFor="customer_email"
+              className="block text-xs font-medium text-gray-700"
+            >
+              Email (optional)
+            </label>
+            <input
+              {...register("customer_email")}
+              type="email"
+              defaultValue={userInfo?.data?.user_email}
+              placeholder="your@email.com"
+              className="mt-2 w-full border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

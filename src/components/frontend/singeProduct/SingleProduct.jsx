@@ -135,6 +135,11 @@ const SingleProduct = ({ product }) => {
     division === "Dhaka"
       ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
       : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0;
+  // C13 PDP toggles
+  const showSoldCount = settingData?.data?.[0]?.show_sold_count ?? true;
+  const showStockCountOnPdp = settingData?.data?.[0]?.show_stock_count_on_pdp ?? false;
+  const enableReviews = settingData?.data?.[0]?.enable_reviews ?? true;
+  const allowImageDownload = settingData?.data?.[0]?.allow_image_download ?? false;
 
   const maxQuantity = stock || product?.product_quantity || 1;
 
@@ -589,7 +594,10 @@ const SingleProduct = ({ product }) => {
           <form onSubmit={handleSubmit(handleOrderProduct)}>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-0">
-                <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
+                <div
+                  className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100"
+                  onContextMenu={allowImageDownload ? undefined : (e) => e.preventDefault()}
+                >
                   <ProductPhotoSelect
                     product={product}
                     variationProduct={variationProduct}
@@ -617,6 +625,8 @@ const SingleProduct = ({ product }) => {
                     canAddToCart={canAddToCart}
                     maxQuantity={maxQuantity}
                     handleAddToCart={handleAddToCart}
+                    showSoldCount={showSoldCount}
+                    showStockCountOnPdp={showStockCountOnPdp}
                   />
                 </div>
                 <div className="lg:col-span-4 p-4 md:p-5 bg-gray-50/40">
@@ -675,7 +685,7 @@ const SingleProduct = ({ product }) => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
                 <ProductDescription product={product} />
-                <ProductReviewAccordion product={product} />
+                {enableReviews && <ProductReviewAccordion product={product} />}
                 <MobileDeliveryInfoAccordion
                   product={product}
                   settingData={settingData}

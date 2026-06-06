@@ -170,6 +170,10 @@ const AddToCart = () => {
         : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0,
     [division, settingData],
   );
+  // C13 checkout toggles
+  const showEmailField = settingData?.data?.[0]?.show_email_field_checkout ?? true;
+  const enablePromoAtCheckout = settingData?.data?.[0]?.enable_promo_at_checkout ?? true;
+  const minOrderAmount = settingData?.data?.[0]?.min_order_amount ?? 0;
 
   const { shopSubtotals, shopGrandTotals, totalDiscount, adjustedPrices } =
     useCartCalculations({ cartData, products, couponData, shippingCharge });
@@ -539,6 +543,7 @@ const AddToCart = () => {
                     zoneData={zoneData}
                     savedAddresses={savedAddresses}
                     onPickSavedAddress={applySavedAddress}
+                    showEmailField={showEmailField}
                   />
                 )}
               </div>
@@ -561,6 +566,8 @@ const AddToCart = () => {
                   handleRemoveCoupon={handleRemoveCoupon}
                   loading={loading}
                   division={division}
+                  enablePromoAtCheckout={enablePromoAtCheckout}
+                  minOrderAmount={minOrderAmount}
                 />
               )}
             </div>
