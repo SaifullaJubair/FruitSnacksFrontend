@@ -4,7 +4,13 @@ import signupImage from "./signup_image.png";
 import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { useUserRegistrationMutation } from "@/redux/feature/auth/authApi";
-import { FaEye, FaEyeSlash, FaRegUser, FaShoppingBag } from "react-icons/fa";
+import {
+  FaEnvelope,
+  FaEye,
+  FaEyeSlash,
+  FaRegUser,
+  FaShoppingBag,
+} from "react-icons/fa";
 import { CiLock } from "react-icons/ci";
 import Link from "next/link";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
@@ -61,10 +67,13 @@ const SignUpForm = () => {
         return;
       }
 
+      // Phase 1C — optional email passed through if provided.
+      const email = (data?.user_email || "").trim();
       const res = await userRegistration({
         user_name: data?.user_name,
         user_phone,
         user_password: data?.user_password,
+        ...(email ? { user_email: email } : {}),
       });
 
       if (res.data?.statusCode === 200 && res.data?.success === true) {
@@ -122,6 +131,39 @@ const SignUpForm = () => {
                 {errors.user_name && (
                   <span className="text-xs text-danger">
                     {errors?.user_name?.message}
+                  </span>
+                )}
+              </div>
+              {/* Phase 1C — optional email. Skip-able, only validated
+                  when the buyer actually types something. */}
+              <div>
+                <label htmlFor="user_email" className="font-medium">
+                  Email{" "}
+                  <span className="text-xs text-gray-400 font-normal">
+                    (optional)
+                  </span>
+                </label>
+                <div className="relative text-white-dark">
+                  <input
+                    id="user_email"
+                    name="user_email"
+                    type="email"
+                    placeholder="you@example.com"
+                    className="w-full border border-white-light bg-white px-4 py-2 text-sm text-black !outline-none ps-10 placeholder:text-white-dark"
+                    {...register("user_email", {
+                      pattern: {
+                        value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        message: "Invalid email format",
+                      },
+                    })}
+                  />
+                  <span className="absolute start-4 top-1/2 -translate-y-1/2">
+                    <FaEnvelope size={13} />
+                  </span>
+                </div>
+                {errors.user_email && (
+                  <span className="text-xs text-danger">
+                    {errors?.user_email?.message}
                   </span>
                 )}
               </div>

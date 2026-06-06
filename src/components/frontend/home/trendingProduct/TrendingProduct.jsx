@@ -6,7 +6,6 @@ import Link from "next/link";
 import { IoIosArrowRoundForward } from "react-icons/io";
 import TrendingSlider from "./TrendingSlider";
 import { titleFont } from "@/utils/font";
-import { data } from "autoprefixer";
 
 const TrendingProduct = () => {
   const { data: products = [], isLoading } = useGetTrendingProducts();

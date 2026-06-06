@@ -4,6 +4,7 @@ import { getMenu } from "@/components/lib/getMenu";
 import UnverifiedBanner from "@/components/common/unverifiedBanner/UnverifiedBanner";
 import { getServerSettingData } from "@/components/lib/getServerSettingData";
 import AnnouncementBar from "@/components/theme/AnnouncementBar";
+import FloatingWhatsApp from "@/components/shared/FloatingWhatsApp";
 
 const MainLayout = async ({ children }) => {
   const dataArray = await getMenu();
@@ -25,6 +26,7 @@ const MainLayout = async ({ children }) => {
       <UnverifiedBanner />
       {/* pb-16 — mobile bottom nav এর জন্য space */}
       <div className="min-h-screen pb-16 md:pb-0">{children}</div>
+      <FloatingWhatsApp />
       <Footer menuData={menuData} />
     </div>
   );

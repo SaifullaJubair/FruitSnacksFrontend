@@ -1,5 +1,6 @@
 "use client";
 
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import { MdDeleteForever } from "react-icons/md";
 import { useDispatch, useSelector } from "react-redux";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,6 +20,7 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import WishlistTableSkeleton from "@/components/shared/loader/WishlistTableSkeleton";
 import { CART_QUERY_KEY } from "../cart/AddToCart";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import { removeFromWishlistRemote } from "@/utils/wishlistSync";
 
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
@@ -76,6 +78,12 @@ const WishList = () => {
     setWishList(updatedWishlist);
     localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
+    // D15 — logged-in হলে BE-তেও remove fire করি (cross-device sync)
+    removeFromWishlistRemote(
+      wishListItem.productId,
+      wishListItem.variation_product_id,
+      !!userInfo?.data?._id,
+    );
     toast.error("Product removed from your wishlist", { autoClose: 1500 });
   };
 
@@ -108,16 +116,12 @@ const WishList = () => {
     toast.success("Successfully added to cart", { autoClose: 1500 });
     queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
 
-    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
+    // ✅ AddToCart — Phase 1B EMQ user_data via shared helper.
     trackAddToCart(
       product,
       product?.is_variation ? product?.variations : null,
       1,
-      {
-        ph: userInfo?.data?.user_phone,
-        fn: userInfo?.data?.user_name,
-        external_id: userInfo?.data?._id,
-      },
+      buildAnalyticsUserData(userInfo),
     );
   };
 

@@ -16,6 +16,7 @@ import { isHexColor, variantAxisAttributes } from "@/utils/helper";
 import { useEffect, useState } from "react";
 import ChartModal from "./ChartModal";
 import ModalAxisSelector from "./ModalAxisSelector";
+import DynamicIcon from "@/lib/icons/DynamicIcon";
 
 const StarRow = ({ rating }) => {
   const r = parseFloat(rating);
@@ -35,6 +36,7 @@ const StarRow = ({ rating }) => {
 
 const ProductHighlightSection = ({
   product,
+  variationProduct,
   productPrice,
   lineThoughPrice,
   stock,
@@ -53,6 +55,8 @@ const ProductHighlightSection = ({
   handleAddToCart,
   handleAddToCompare,
   isCompare,
+  showSoldCount = true,
+  showStockCountOnPdp = false,
 }) => {
   const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data[0]?.currency_symbol;
@@ -102,6 +106,15 @@ const ProductHighlightSection = ({
         {product?.product_name}
       </h1>
 
+      {/* SKU — M9 (2026-06-04). Shows variation SKU when a variation is
+          selected, else parent product SKU. Hidden when neither is set so
+          older docs without SKU don't show an empty label. */}
+      {(variationProduct?.variation_sku || product?.product_sku) && (
+        <div className="text-[11px] text-gray-400 font-mono tracking-wide">
+          SKU: {variationProduct?.variation_sku || product?.product_sku}
+        </div>
+      )}
+
       {/* Rating + Orders */}
       {(product?.avarage_review_ratting > 0 ||
         product?.total_review_ratting > 0) && (
@@ -111,7 +124,7 @@ const ProductHighlightSection = ({
           <span className="text-xs text-gray-400">
             ({product?.total_review_ratting || 0} reviews)
           </span>
-          {product?.total_order_count > 0 && (
+          {showSoldCount && product?.total_order_count > 0 && (
             <>
               <span className="text-gray-200">|</span>
               <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -182,6 +195,7 @@ const ProductHighlightSection = ({
           selectedVariations={selectedVariations}
           onSelect={handleSelectVariation}
           availabilityMap={availabilityMap}
+          variations={product?.variations}
         />
       )}
 
@@ -212,7 +226,7 @@ const ProductHighlightSection = ({
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-xs text-emerald-700 font-semibold">
               In Stock
-              {stock <= 10 && (
+              {showStockCountOnPdp && stock <= 10 && (
                 <span className="text-amber-600 ml-1.5">
                   · Only {stock} left!
                 </span>
@@ -257,6 +271,11 @@ const ProductHighlightSection = ({
               <HiOutlinePlus size={13} className="text-gray-700" />
             </button>
           </div>
+          {quantity >= stock && stock > 0 && (
+            <p className="text-xs text-orange-500 font-medium w-full mt-1">
+              সর্বোচ্চ {stock}টি যোগ করা যাবে
+            </p>
+          )}
 
           {/* Wishlist */}
           <button
@@ -381,11 +400,36 @@ export default ProductHighlightSection;
 const isHex = (v) =>
   typeof v === "string" && /^#?[A-Fa-f0-9]{3,8}$/.test(v.trim());
 
+// A4 (2026-06-04) — given the would-be selection (current axes + new value
+// V on axis A), return the matching active variation row. Used to surface
+// per-variation badge (text + icon) on the chip before the user picks.
+const findVariationForValue = (variations, currentSel, axisId, val) => {
+  if (!Array.isArray(variations) || variations.length === 0) return null;
+  const next = { ...currentSel, [String(axisId)]: val };
+  const ids = Object.values(next)
+    .map((v) => v?._id && String(v._id))
+    .filter(Boolean);
+  if (!ids.length) return null;
+  const target = new Set(ids);
+  return (
+    variations.find((v) => {
+      if (v?.is_active === false) return false;
+      const combo = v?.combination;
+      if (!Array.isArray(combo) || combo.length !== target.size) return false;
+      for (const id of combo) {
+        if (!target.has(String(id))) return false;
+      }
+      return true;
+    }) || null
+  );
+};
+
 const VariationPicker = ({
   axes = [],
   selectedVariations = {},
   onSelect,
   availabilityMap,
+  variations = [],
 }) => {
   // Single open-modal at a time (which axis's modal).
   const [openAxisId, setOpenAxisId] = useState(null);
@@ -472,6 +516,15 @@ const VariationPicker = ({
                       </div>
                     );
                   }
+                  // A4 (2026-06-04) — look up the variation that would result
+                  // from picking THIS value (combined with current other axis
+                  // selections) so its badge can render under the chip.
+                  const matchedVar = findVariationForValue(
+                    variations,
+                    selectedVariations,
+                    axisId,
+                    val,
+                  );
                   return (
                     <button
                       key={valKey}
@@ -490,6 +543,22 @@ const VariationPicker = ({
                       {!inStock && (
                         <span className="ml-1 text-[9px] text-amber-700">
                           ⊘
+                        </span>
+                      )}
+                      {(matchedVar?.variation_badge_text ||
+                        matchedVar?.variation_badge_icon_key) && (
+                        <span
+                          className={`flex items-center justify-center gap-0.5 text-[9px] font-bold mt-0.5 ${
+                            selected ? "text-white" : "text-primary"
+                          }`}
+                        >
+                          {matchedVar?.variation_badge_icon_key && (
+                            <DynamicIcon
+                              name={matchedVar.variation_badge_icon_key}
+                              size={9}
+                            />
+                          )}
+                          {matchedVar?.variation_badge_text}
                         </span>
                       )}
                     </button>

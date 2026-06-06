@@ -13,6 +13,7 @@ const CartSummary = ({
   couponData,
   shopProduct,
   setCouponCode,
+  couponCode,
   panelOwnerIds,
   isApplyingCoupon,
   handleApplyCoupon,
@@ -20,6 +21,8 @@ const CartSummary = ({
   handleShowCouponInput,
   division,
   loading,
+  enablePromoAtCheckout = true,
+  minOrderAmount = 0,
 }) => {
   const { data: settingsData, isLoading: siteSettingLoading } =
     useGetSettingData();
@@ -62,9 +65,18 @@ const CartSummary = ({
 
         <hr className="mt-1" />
 
-        {/* Coupon Section */}
-        <div>
-          {userInfo?.data?._id ? (
+        {/* C13 — min order amount client-side hint */}
+        {minOrderAmount > 0 && shopSubtotals < minOrderAmount && (
+          <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
+            Minimum order: {currencySymbol?.currency_symbol}{minOrderAmount}. Add{" "}
+            {currencySymbol?.currency_symbol}{minOrderAmount - shopSubtotals} more to place your order.
+          </div>
+        )}
+
+        {/* Coupon Section — 11β D6: anonymous allowed. BE accepts BOGO codes
+            without customer_id; non-BOGO codes for anon users get a 400 toast. */}
+        {enablePromoAtCheckout && <div>
+          {(
             <div className="">
               {couponData ? (
                 <div className="flex justify-between items-center mt-4 p-4    shadow-md">
@@ -130,27 +142,8 @@ const CartSummary = ({
                 </>
               )}
             </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-end text-text-Lightest mr-16">
-                <Link href={"/sign-in"}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="link"
-                    className="text-text-Lighter text-base hover:text-blue-500"
-                  >
-                    <FaLock /> Login
-                  </Button>
-                </Link>
-                <p> for Apply Coupon</p>
-              </div>
-            </div>
           )}
-        </div>
-        <hr className="mt-1" />
-
-        {/* Coupon Section */}
+        </div>}
 
         <div className="flex justify-between mt-4">
           <p className="text-text-Lightest">Total Discount</p>

@@ -4,12 +4,16 @@
 // cart, wishlist, single-order form, analytics) is preserved verbatim from the
 // original SingleProduct; only the JSX is redesigned per the theme mockups and
 // driven by CSS variables (--brand-primary etc.) injected by ThemeStyleInjector.
+import { splitName } from "@/utils/nameSplit";
+import { firePurchaseOnce } from "@/utils/purchaseDedup";
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
 import ChartModal from "./productHighLightSection/ChartModal";
 import WhatsAppOrderButton from "../theme/WhatsAppOrderButton";
 import HeroGallery from "../theme/HeroGallery";
 import FloatingAssets from "../theme/FloatingAssets";
-import DescriptionCard from "../theme/DescriptionCard";
+// DescriptionCard moved to ProductThemedSections (renders between Nutrition
+// and Reviews now) — was too prominent right after hero per mockup review.
 import DynamicIcon from "@/lib/icons/DynamicIcon";
 import PdpPriceMeta from "./PdpPriceMeta";
 import ViewCountFire from "./ViewCountFire";
@@ -27,6 +31,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import {
+  addToWishlistRemote,
+  removeFromWishlistRemote,
+} from "@/utils/wishlistSync";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -60,14 +68,10 @@ const SingleProduct = ({ product, theme }) => {
     trackAddToWishlist,
   } = useAnalytics();
 
-  // ✅ ViewContent — product load হলে একবার fire
+  // ✅ ViewContent — Phase 1B EMQ user_data via shared helper.
   useEffect(() => {
     if (!product?._id) return;
-    trackViewContent(product, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackViewContent(product, buildAnalyticsUserData(userInfo));
   }, [product?._id]);
 
   const {
@@ -147,6 +151,10 @@ const SingleProduct = ({ product, theme }) => {
 
   const currencySymbol = settingData?.data?.[0]?.currency_symbol || "৳";
   const whatsappNumber = settingData?.data?.[0]?.watsapp;
+  // C13 PDP toggles
+  const showSoldCount = settingData?.data?.[0]?.show_sold_count ?? true;
+  const showStockCountOnPdp = settingData?.data?.[0]?.show_stock_count_on_pdp ?? false;
+  const allowImageDownload = settingData?.data?.[0]?.allow_image_download ?? false;
 
   const shippingCharge =
     division === "Dhaka"
@@ -378,11 +386,12 @@ const SingleProduct = ({ product, theme }) => {
     setCartAnim(true);
     setTimeout(() => setCartAnim(false), 1500);
 
-    trackAddToCart(product, variationProduct, quantity, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackAddToCart(
+      product,
+      variationProduct,
+      quantity,
+      buildAnalyticsUserData(userInfo),
+    );
   };
 
   // Wishlist & compare sync
@@ -422,15 +431,28 @@ const SingleProduct = ({ product, theme }) => {
         i.productId === product?._id &&
         i.variation_product_id === (variationProduct?._id || null),
     );
+    const isLoggedIn = !!userInfo?.data?._id;
     if (idx !== -1) {
       list.splice(idx, 1);
       setIsWishlisted(false);
       toast.error("Removed from wishlist", { autoClose: 1500 });
+      // D15 — logged-in হলে BE-তেও remove fire করি
+      removeFromWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     } else {
       list.push(item);
       setIsWishlisted(true);
       toast.success("Added to wishlist", { autoClose: 1500 });
       trackAddToWishlist(product, variationProduct);
+      // D15 — logged-in হলে BE-তেও upsert fire করি
+      addToWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     }
     localStorage.setItem("wishlist", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));
@@ -560,14 +582,27 @@ const SingleProduct = ({ product, theme }) => {
       });
       const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        await trackPurchase(
-          { ...sendData, _id: result?.data?.order_id },
-          {
-            ph: customer_phone,
-            fn: data?.customer_name || userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-        );
+        const newOrderId = result?.data?.order_id
+          ? String(result.data.order_id)
+          : null;
+        firePurchaseOnce(newOrderId, () => {
+          const { fn, ln } = splitName(
+            data?.customer_name || userInfo?.data?.user_name,
+          );
+          trackPurchase(
+            { ...sendData, _id: newOrderId },
+            {
+              ph: customer_phone,
+              fn,
+              ln,
+              em: userInfo?.data?.user_email,
+              ct: district,
+              st: division,
+              country: "bd",
+              external_id: userInfo?.data?._id,
+            },
+          );
+        });
 
         toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,
@@ -725,7 +760,7 @@ const SingleProduct = ({ product, theme }) => {
               </div>
 
               {/* F2 — PDP price meta: flash countdown + sold count + tier + group hint. */}
-              <PdpPriceMeta product={product} currencySymbol={currencySymbol} />
+              <PdpPriceMeta product={product} currencySymbol={currencySymbol} showSoldCount={showSoldCount} />
 
               {/* SKU display — variation_sku when a specific variation is
                   selected, otherwise the parent product_sku. Industry standard
@@ -795,7 +830,10 @@ const SingleProduct = ({ product, theme }) => {
             </div>
 
             {/* Right — product photo */}
-            <div className="order-1 lg:order-2 relative">
+            <div
+              className="order-1 lg:order-2 relative"
+              onContextMenu={allowImageDownload ? undefined : (e) => e.preventDefault()}
+            >
               {product?.hero_corner_badge && (
                 <span
                   className="absolute top-3 left-3 z-20 text-xs font-bold px-3 py-1.5 rounded-full shadow-md"
@@ -813,9 +851,6 @@ const SingleProduct = ({ product, theme }) => {
               />
             </div>
           </section>
-
-          {/* ════════ Product description — compact card right after hero ════════ */}
-          <DescriptionCard html={product?.description} />
 
           {/* ════════════ ORDER SECTION ════════════ */}
           <section
@@ -881,15 +916,17 @@ const SingleProduct = ({ product, theme }) => {
                       <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                       <span className="text-xs font-semibold text-emerald-700">
                         স্টকে আছে
-                        <span
-                          className={
-                            stock <= 10
-                              ? "text-amber-600 ml-1.5"
-                              : "text-emerald-700 ml-1.5"
-                          }
-                        >
-                          · {stock}টি{stock <= 10 ? " বাকি!" : ""}
-                        </span>
+                        {showStockCountOnPdp && (
+                          <span
+                            className={
+                              stock <= 10
+                                ? "text-amber-600 ml-1.5"
+                                : "text-emerald-700 ml-1.5"
+                            }
+                          >
+                            · {stock}টি{stock <= 10 ? " বাকি!" : ""}
+                          </span>
+                        )}
                       </span>
                     </>
                   ) : (

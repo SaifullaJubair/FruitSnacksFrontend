@@ -1,5 +1,6 @@
 "use client";
 
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -122,12 +123,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         }
         setGalleryImages(images.filter(Boolean));
 
-        // ✅ ViewContent — Meta + TikTok + GTM একটাই call
-        trackViewContent(p, {
-          ph: userInfo?.data?.user_phone,
-          fn: userInfo?.data?.user_name,
-          external_id: userInfo?.data?._id,
-        });
+        // ✅ ViewContent — Phase 1B EMQ user_data via shared helper.
+        trackViewContent(p, buildAnalyticsUserData(userInfo));
 
         // Initial price & stock
         if (p?.is_variation && p?.variations?.length > 0) {
@@ -278,12 +275,13 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     toast.success("Added to cart!", { autoClose: 1500 });
     setTimeout(() => setAddedToCart(false), 1500);
 
-    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
-    trackAddToCart(product, variationProduct, quantity, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    // ✅ AddToCart — Phase 1B EMQ user_data.
+    trackAddToCart(
+      product,
+      variationProduct,
+      quantity,
+      buildAnalyticsUserData(userInfo),
+    );
   }, [
     product,
     variationProduct,

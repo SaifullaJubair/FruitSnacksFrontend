@@ -939,7 +939,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
 
                 {/* Cart */}
                 <Link
-                  href="/cart"
+                  href="/checkout"
                   className="flex flex-col items-center gap-0.5 p-2 text-gray-600 hover:text-primary transition-colors relative group"
                 >
                   <FiShoppingCart

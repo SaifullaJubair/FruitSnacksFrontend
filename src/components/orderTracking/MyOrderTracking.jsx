@@ -40,6 +40,8 @@ import {
 } from "react-icons/fi";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import useGetSettingData from "@/components/lib/getSettingData";
+import { currencyOf } from "@/utils/currency";
 
 // Status configurations
 const STATUS_LABEL = {
@@ -220,6 +222,9 @@ const StatusBadge = ({ status, size = "md", type = "order" }) => {
 };
 
 const CourierTrackingCard = ({ order }) => {
+  // M28 (2026-06-04) — currency symbol from settings.
+  const { data: settingsData } = useGetSettingData();
+  const cur = currencyOf(settingsData);
   const isSteadfast = order?.courier_type === "steadfast";
   const isPathao = order?.courier_type === "pathao";
 
@@ -304,7 +309,7 @@ const CourierTrackingCard = ({ order }) => {
           <div className="bg-blue-50 rounded-lg p-3">
             <p className="text-xs text-blue-600 mb-1">Delivery Fee</p>
             <p className="font-medium text-gray-800">
-              ৳{order.pathao_delivery_fee}
+              {cur.symbol}{order.pathao_delivery_fee}
             </p>
           </div>
           {order?.pathao_delivery_time && (
@@ -347,6 +352,9 @@ const MyOrderTracking = ({ order, productOrder }) => {
   const [expandedSections, setExpandedSections] = useState({
     summary: true,
   });
+  // M28 (2026-06-04) — currency symbol from settings (BDT fallback in helper).
+  const { data: settingsData } = useGetSettingData();
+  const cur = currencyOf(settingsData);
 
   useEffect(() => {
     const total = productOrder?.reduce(
@@ -403,7 +411,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
 
           <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-4 min-w-[160px]">
             <p className="text-white/80 text-sm mb-1">Grand Total</p>
-            <p className="text-3xl font-bold">৳{order?.grand_total_amount}</p>
+            <p className="text-3xl font-bold">{cur.symbol}{order?.grand_total_amount}</p>
           </div>
         </div>
       </div>
@@ -536,7 +544,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
         <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
           <span className="text-gray-600">Shipping Cost</span>
           <span className="font-medium text-gray-800">
-            ৳{order?.shipping_cost || 0}
+            {cur.symbol}{order?.shipping_cost || 0}
           </span>
         </div>
 
@@ -680,11 +688,11 @@ const MyOrderTracking = ({ order, productOrder }) => {
                         )}
                         <div className="flex items-center gap-4 mt-2 flex-wrap">
                           <span className="text-sm text-gray-600">
-                            {product?.product_quantity} × ৳
+                            {product?.product_quantity} × {cur.symbol}
                             {product?.product_unit_final_price}
                           </span>
                           <span className="font-bold text-primary">
-                            ৳
+                            {cur.symbol}
                             {product?.product_quantity *
                               product?.product_unit_final_price}
                           </span>
@@ -718,7 +726,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
           <div className="flex justify-between items-center p-3 bg-white rounded-xl">
             <span className="text-gray-600">Sub Total</span>
             <span className="font-semibold text-gray-800">
-              ৳{order?.sub_total_amount || totalAmount}
+              {cur.symbol}{order?.sub_total_amount || totalAmount}
             </span>
           </div>
 
@@ -729,7 +737,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
                 Discount
               </span>
               <span className="font-semibold text-green-600">
-                - ৳{order?.discount_amount}
+                - {cur.symbol}{order?.discount_amount}
               </span>
             </div>
           )}
@@ -741,7 +749,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
                 Shipping
               </span>
               <span className="font-semibold text-blue-600">
-                + ৳{order?.shipping_cost}
+                + {cur.symbol}{order?.shipping_cost}
               </span>
             </div>
           )}
@@ -749,7 +757,7 @@ const MyOrderTracking = ({ order, productOrder }) => {
           <div className="flex justify-between items-center p-4 bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl mt-4">
             <span className="font-bold text-gray-800 text-lg">Grand Total</span>
             <span className="font-bold text-primary text-2xl">
-              ৳{order?.grand_total_amount}
+              {cur.symbol}{order?.grand_total_amount}
             </span>
           </div>
         </div>

@@ -30,15 +30,32 @@ const ProductPhotoSelect = ({ product, variationProduct }) => {
     }
   }, [variationProduct?._id]);
 
+  // M14 (2026-06-04) — when buyer picks a variation, the gallery now
+  // surfaces the variation's full image set (variation_images[] from product
+  // form Batch 2) plus any legacy single variation_image / variation_video.
+  // Falls back to product.main_image when a variation has no media of its
+  // own, and product.other_images[] are always appended last so buyers still
+  // see the full catalog of supporting shots.
+  //
+  // S2 audit note (2026-06-04) — `product.video_link` (admin-set YouTube /
+  // Vimeo URL, mutually exclusive with uploaded main_video) is intentionally
+  // NOT rendered here. Embedding requires a sanitized iframe player which is
+  // a Layer 4 task (see deferred backlog). Until then, video_link is ignored
+  // on the PDP and only main_video / variation_video play inline.
+  const variationGallery =
+    variationProduct?.variation_images?.filter(Boolean) || [];
+  const primaryVariationImage =
+    variationProduct?.variation_image || variationGallery[0] || null;
+
   // ✅ Main media priority:
-  // User-selected → Variation image/video → Product main
+  // User-selected → Variation video → Variation primary image → Product main
   const mainMedia = selectedVideo
     ? selectedVideo
     : selectedImage
       ? selectedImage
       : variationProduct
         ? variationProduct?.variation_video ||
-          variationProduct?.variation_image ||
+          primaryVariationImage ||
           product?.main_image
         : product?.main_video || product?.main_image;
 
@@ -49,8 +66,16 @@ const ProductPhotoSelect = ({ product, variationProduct }) => {
   if (variationProduct) {
     if (variationProduct?.variation_video)
       thumbs.push({ src: variationProduct.variation_video, vid: true });
-    if (variationProduct?.variation_image)
-      thumbs.push({ src: variationProduct.variation_image, varImg: true });
+    // Multi-image gallery: each variation image becomes its own thumb so the
+    // buyer can step through them like the parent product gallery.
+    const seen = new Set();
+    const pushVarImg = (src) => {
+      if (!src || seen.has(src)) return;
+      seen.add(src);
+      thumbs.push({ src, varImg: true });
+    };
+    pushVarImg(primaryVariationImage);
+    variationGallery.forEach(pushVarImg);
   } else {
     if (product?.main_video)
       thumbs.push({ src: product.main_video, vid: true });
@@ -67,13 +92,23 @@ const ProductPhotoSelect = ({ product, variationProduct }) => {
     return idx === 0; // first thumb active by default
   };
 
-  // Mobile media
-  const mobileSrcs = [
+  // Mobile media — when a variation is active, the swiper leads with its
+  // video + every variation_images[] entry, then product.other_images. This
+  // mirrors desktop thumbs so the buyer sees the same set on both layouts.
+  const mobileSrcs = (
     variationProduct
-      ? variationProduct?.variation_video || variationProduct?.variation_image
-      : product?.main_video || product?.main_image,
-    ...(product?.other_images?.map((o) => o.other_image) || []),
-  ].filter(Boolean);
+      ? [
+          variationProduct?.variation_video,
+          primaryVariationImage,
+          ...variationGallery,
+        ]
+      : [product?.main_video || product?.main_image]
+  )
+    .concat(product?.other_images?.map((o) => o.other_image) || [])
+    .filter(Boolean)
+    // Drop duplicates (legacy variation_image is often the same URL as
+    // variation_images[0]).
+    .filter((src, i, arr) => arr.indexOf(src) === i);
 
   // Magnifier handlers
   const onEnter = useCallback(() => {

@@ -1,5 +1,8 @@
 "use client";
 // src/components/frontend/singeProduct/SingleProduct.jsx
+import { splitName } from "@/utils/nameSplit";
+import { firePurchaseOnce } from "@/utils/purchaseDedup";
+import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import Contain from "@/components/common/Contain";
 import ProductPhotoSelect from "./productDetails/ProductPhotoSelect";
 import ProductHighlightSection from "./productHighLightSection/ProductHighlightSection";
@@ -25,6 +28,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import {
+  addToWishlistRemote,
+  removeFromWishlistRemote,
+} from "@/utils/wishlistSync";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useRouter } from "next/navigation";
 import {
@@ -57,14 +64,10 @@ const SingleProduct = ({ product }) => {
     trackAddToWishlist,
   } = useAnalytics();
 
-  // ✅ ViewContent — product load হলে একবার fire
+  // ✅ ViewContent — product load হলে একবার fire (Phase 1B EMQ user_data).
   useEffect(() => {
     if (!product?._id) return;
-    trackViewContent(product, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    trackViewContent(product, buildAnalyticsUserData(userInfo));
   }, [product?._id]);
 
   const {
@@ -132,6 +135,11 @@ const SingleProduct = ({ product }) => {
     division === "Dhaka"
       ? settingData?.data?.[0]?.inside_dhaka_shipping_charge || 0
       : settingData?.data?.[0]?.outside_dhaka_shipping_charge || 0;
+  // C13 PDP toggles
+  const showSoldCount = settingData?.data?.[0]?.show_sold_count ?? true;
+  const showStockCountOnPdp = settingData?.data?.[0]?.show_stock_count_on_pdp ?? false;
+  const enableReviews = settingData?.data?.[0]?.enable_reviews ?? true;
+  const allowImageDownload = settingData?.data?.[0]?.allow_image_download ?? false;
 
   const maxQuantity = stock || product?.product_quantity || 1;
 
@@ -320,12 +328,13 @@ const SingleProduct = ({ product }) => {
     dispatch(addToCart(cartItem));
     toast.success("Added to cart!", { autoClose: 1500 });
 
-    // ✅ AddToCart — Meta + TikTok + GTM একটাই call
-    trackAddToCart(product, variationProduct, quantity, {
-      ph: userInfo?.data?.user_phone,
-      fn: userInfo?.data?.user_name,
-      external_id: userInfo?.data?._id,
-    });
+    // ✅ AddToCart — Phase 1B EMQ user_data via shared helper.
+    trackAddToCart(
+      product,
+      variationProduct,
+      quantity,
+      buildAnalyticsUserData(userInfo),
+    );
   };
 
   // Wishlist & compare sync
@@ -365,10 +374,17 @@ const SingleProduct = ({ product }) => {
         i.productId === product?._id &&
         i.variation_product_id === (variationProduct?._id || null),
     );
+    const isLoggedIn = !!userInfo?.data?._id;
     if (idx !== -1) {
       list.splice(idx, 1);
       setIsWishlisted(false);
       toast.error("Removed from wishlist", { autoClose: 1500 });
+      // D15 — logged-in হলে BE-তেও remove fire করি (cross-device sync)
+      removeFromWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     } else {
       list.push(item);
       setIsWishlisted(true);
@@ -376,6 +392,12 @@ const SingleProduct = ({ product }) => {
 
       // ✅ AddToWishlist — Meta + TikTok + GTM একটাই call
       trackAddToWishlist(product, variationProduct);
+      // D15 — logged-in হলে BE-তেও upsert fire করি
+      addToWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     }
     localStorage.setItem("wishlist", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));
@@ -505,15 +527,28 @@ const SingleProduct = ({ product }) => {
       });
       const result = await res.json();
       if (result?.statusCode === 200 && result?.success === true) {
-        // ✅ Purchase — Meta + TikTok + GTM একটাই call
-        await trackPurchase(
-          { ...sendData, _id: result?.data?.order_id },
-          {
-            ph: customer_phone,
-            fn: data?.customer_name || userInfo?.data?.user_name,
-            external_id: userInfo?.data?._id,
-          },
-        );
+        // ✅ Purchase — Phase 1B B6 dedup + B4 form-data CAPI pass.
+        const newOrderId = result?.data?.order_id
+          ? String(result.data.order_id)
+          : null;
+        firePurchaseOnce(newOrderId, () => {
+          const { fn, ln } = splitName(
+            data?.customer_name || userInfo?.data?.user_name,
+          );
+          trackPurchase(
+            { ...sendData, _id: newOrderId },
+            {
+              ph: customer_phone,
+              fn,
+              ln,
+              em: userInfo?.data?.user_email,
+              ct: district,
+              st: division,
+              country: "bd",
+              external_id: userInfo?.data?._id,
+            },
+          );
+        });
 
         toast.success(result?.message || "Order placed successfully!", {
           autoClose: 1000,
@@ -559,7 +594,10 @@ const SingleProduct = ({ product }) => {
           <form onSubmit={handleSubmit(handleOrderProduct)}>
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-0">
-                <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
+                <div
+                  className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100"
+                  onContextMenu={allowImageDownload ? undefined : (e) => e.preventDefault()}
+                >
                   <ProductPhotoSelect
                     product={product}
                     variationProduct={variationProduct}
@@ -568,6 +606,7 @@ const SingleProduct = ({ product }) => {
                 <div className="lg:col-span-4 p-4 md:p-5 border-b lg:border-b-0 lg:border-r border-gray-100">
                   <ProductHighlightSection
                     product={product}
+                    variationProduct={variationProduct}
                     productPrice={productPrice}
                     lineThoughPrice={lineThoughPrice}
                     stock={stock}
@@ -586,6 +625,8 @@ const SingleProduct = ({ product }) => {
                     canAddToCart={canAddToCart}
                     maxQuantity={maxQuantity}
                     handleAddToCart={handleAddToCart}
+                    showSoldCount={showSoldCount}
+                    showStockCountOnPdp={showStockCountOnPdp}
                   />
                 </div>
                 <div className="lg:col-span-4 p-4 md:p-5 bg-gray-50/40">
@@ -644,7 +685,7 @@ const SingleProduct = ({ product }) => {
             <div className="lg:col-span-2">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
                 <ProductDescription product={product} />
-                <ProductReviewAccordion product={product} />
+                {enableReviews && <ProductReviewAccordion product={product} />}
                 <MobileDeliveryInfoAccordion
                   product={product}
                   settingData={settingData}

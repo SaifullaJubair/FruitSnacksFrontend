@@ -154,7 +154,7 @@ const ProductDetailsPage = async ({ params }) => {
     offers: {
       "@type": "Offer",
       url: seo.joinUrl(seo.siteUrl, `products/${slug}`),
-      priceCurrency: "BDT",
+      priceCurrency: seo.currencyCode,
       price,
       priceValidUntil: new Date(
         new Date().setFullYear(new Date().getFullYear() + 1),

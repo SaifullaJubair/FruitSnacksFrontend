@@ -141,7 +141,7 @@ const GroupHint = ({ groupPrices, customerGroup, currencySymbol = "৳" }) => {
   );
 };
 
-const PdpPriceMeta = ({ product, currencySymbol = "৳" }) => {
+const PdpPriceMeta = ({ product, currencySymbol = "৳", showSoldCount = true }) => {
   const { data: userInfo } = useUserInfoQuery();
   const customerGroup =
     userInfo?.data?.customer_group || userInfo?.customer_group || "retail";
@@ -160,7 +160,7 @@ const PdpPriceMeta = ({ product, currencySymbol = "৳" }) => {
   const showAnything =
     flash?.product_entry ||
     (tiers && tiers.length > 0) ||
-    (Number(soldCount) || 0) >= 5 ||
+    (showSoldCount && (Number(soldCount) || 0) >= 5) ||
     groupMatch;
 
   if (!showAnything) return null;
@@ -168,7 +168,7 @@ const PdpPriceMeta = ({ product, currencySymbol = "৳" }) => {
   return (
     <div className="space-y-2 pt-2">
       <FlashCountdown flash={flash} currencySymbol={currencySymbol} />
-      {(Number(soldCount) || 0) >= 5 && <SoldBadge soldCount={soldCount} />}
+      {showSoldCount && (Number(soldCount) || 0) >= 5 && <SoldBadge soldCount={soldCount} />}
       <TierHint tierPrices={tiers} currencySymbol={currencySymbol} />
       <GroupHint
         groupPrices={groupPrices}

@@ -16,6 +16,7 @@ import Link from "next/link";
 import { fetchCartDetails } from "@/utils/fetchCartDetails";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import { removeFromWishlistRemote } from "@/utils/wishlistSync";
 import CustomLoader from "@/components/shared/loader/CustomLoader";
 import WishlistEmpty from "@/components/shared/wishListEmpty/WishListEmpty";
 import useGetSettingData from "@/components/lib/getSettingData";
@@ -28,6 +29,7 @@ const UserDashboardWishList = () => {
   const dispatch = useDispatch();
   const cartProducts = useSelector((state) => state.cart.products);
   const [isCartProduct, setIsCartProduct] = useState(false);
+  const { data: userInfo } = useUserInfoQuery();
   useEffect(() => {
     try {
       const wishlist = JSON.parse(localStorage.getItem("wishlist")) || [];
@@ -119,6 +121,12 @@ const UserDashboardWishList = () => {
     setWishList(updatedWishlist);
     localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
+    // D15 — logged-in হলে BE-তেও remove fire করি (cross-device sync)
+    removeFromWishlistRemote(
+      wishListItem.productId,
+      wishListItem.variation_product_id,
+      !!userInfo?.data?._id,
+    );
     // Refetch data to update `cartDetails`
     await refetch()
       .then(() => {

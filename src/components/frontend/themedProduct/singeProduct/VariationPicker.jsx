@@ -19,6 +19,7 @@ import { useEffect, useMemo, useState } from "react";
 import { toast } from "react-toastify";
 import { isHexColor, wouldComboBeInStock } from "@/utils/helper";
 import OverflowValuesModal from "./OverflowValuesModal";
+import DynamicIcon from "@/lib/icons/DynamicIcon";
 
 // Viewport breakpoints align with Tailwind defaults:
 //   default      → mobile (< 768px) → 8 chips
@@ -208,14 +209,23 @@ const VariationPicker = ({
         }}
       >
         {val?.attribute_value_name}
-        {matchedVar?.variation_badge_text && (
+        {(matchedVar?.variation_badge_text ||
+          matchedVar?.variation_badge_icon_key) && (
           <span
-            className="block text-[9px] font-bold mt-0.5"
+            className="flex items-center justify-center gap-1 text-[9px] font-bold mt-0.5"
             style={{
               color: selected ? "var(--button-text)" : "var(--brand-primary)",
             }}
           >
-            {matchedVar.variation_badge_text}
+            {/* A4 (2026-06-04) — variation badge icon from IconPicker. Renders
+                alongside text; either or both may be set. */}
+            {matchedVar?.variation_badge_icon_key && (
+              <DynamicIcon
+                name={matchedVar.variation_badge_icon_key}
+                size={10}
+              />
+            )}
+            {matchedVar?.variation_badge_text}
           </span>
         )}
       </button>

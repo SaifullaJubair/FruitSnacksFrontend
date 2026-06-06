@@ -51,6 +51,17 @@ const nextConfig = {
       },
     ],
   },
+  async redirects() {
+    // S1 (2026-06-04) — /cart route renamed to /checkout. Keep old bookmarks
+    // + indexed links working with a permanent 301.
+    return [
+      {
+        source: "/cart",
+        destination: "/checkout",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
