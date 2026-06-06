@@ -18,7 +18,6 @@
 //   - VAT                   (per-line override + settings, applied post-discount)
 //   - Shipping recompute    (zone + per-product delivery_mode + free rules)
 //   - Coupon per-user usage caps + total-available caps (need DB)
-//   - BOGO coupon           (schema exists, application deferred)
 //   - Advance payment       (settings-driven)
 //   - Campaign              NOT mirrored here. productPrice() reads
 //     product.campaign_details from the hydrated cart cache, which can go
@@ -62,6 +61,8 @@ const applyCartCoupon = (subTotal, coupon) => {
   if (!coupon || subTotal <= 0) return subTotal;
   // Specific-product coupons fold in at line level — don't double-apply.
   if (coupon.coupon_product_type === "specific") return subTotal;
+  // BOGO handled by applyBogoCoupon — never touched by cart-level layer.
+  if (coupon.coupon_type === "bogo") return subTotal;
 
   if (coupon.coupon_type === "fixed") {
     return Math.max(subTotal - (coupon.coupon_amount || 0), 0);
@@ -73,6 +74,42 @@ const applyCartCoupon = (subTotal, coupon) => {
     return Math.max(subTotal - off, 0);
   }
   return subTotal;
+};
+
+// 11β BLOCKER 1 — FE mirror of BE recompute BOGO branch (order.recompute.ts).
+// Input shape:
+//   cartLines = [{ productId, unitFinal (post layers 1-3), quantity }, ...]
+// Coupon scope: `coupon_specific_product` (if set) — else whole cart.
+// Skip lines where unitFinal <= 0 (campaign zero) so BOGO can't double-apply.
+// Discount = cheapest qualifying unitFinal × bogo_get_qty × pct/100.
+// Returns 0 if the cart doesn't satisfy buy_qty + get_qty.
+const applyBogoCoupon = (cartLines, coupon) => {
+  if (!coupon || coupon.coupon_type !== "bogo") return 0;
+  const buyQty = Math.max(1, Number(coupon.bogo_buy_qty) || 1);
+  const getQty = Math.max(1, Number(coupon.bogo_get_qty) || 1);
+  const pct = Math.max(
+    0,
+    Math.min(100, Number(coupon.bogo_get_discount_pct) || 0),
+  );
+  const targetIds = Array.isArray(coupon.coupon_specific_product)
+    ? coupon.coupon_specific_product
+        .map((p) => String(p?.product_id || ""))
+        .filter(Boolean)
+    : [];
+  const eligible = cartLines.filter((ln) => {
+    if (Number(ln.unitFinal) <= 0) return false;
+    if (targetIds.length === 0) return true;
+    return targetIds.includes(String(ln.productId));
+  });
+  const totalEligibleQty = eligible.reduce(
+    (s, ln) => s + Number(ln.quantity || 0),
+    0,
+  );
+  if (totalEligibleQty < buyQty + getQty || eligible.length === 0) return 0;
+  const cheapest = eligible.reduce((min, ln) =>
+    Number(ln.unitFinal) < Number(min.unitFinal) ? ln : min,
+  );
+  return Math.round((Number(cheapest.unitFinal) * getQty * pct) / 100);
 };
 
 // Tier price (qty-based). Picks the largest min_qty tier the buyer qualifies
@@ -137,6 +174,8 @@ export const applyCartLayers = ({
   const adjustedPrices = {};
   let originalSubtotal = 0;
   let subtotalAfterLineCoupons = 0;
+  // 11β — collect post-layers-1/2/3 line snapshots for BOGO scan after the loop.
+  const bogoLines = [];
 
   for (const product of cartData) {
     const variationId = product?.variations?._id;
@@ -167,10 +206,24 @@ export const applyCartLayers = ({
       ? `${product?._id}-${variationId}`
       : String(product?._id);
     adjustedPrices[priceKey] = lineFinal;
+
+    // 11β — snapshot for BOGO. Use the post-product-coupon final unit so the
+    // M3 "skip zero-priced lines" check is honest.
+    bogoLines.push({
+      productId: product?._id,
+      unitFinal: lineFinal,
+      quantity,
+    });
   }
 
-  // 5. Coupon (cart-level, applied to the rolled-up subtotal).
-  const shopGrandTotals = applyCartCoupon(subtotalAfterLineCoupons, couponData);
+  // 5. Coupon (cart-level — fixed/percent only). BOGO returns subTotal as-is.
+  let shopGrandTotals = applyCartCoupon(subtotalAfterLineCoupons, couponData);
+
+  // 6. BOGO discount layer — subtracted from grand total when active.
+  if (couponData?.coupon_type === "bogo") {
+    const bogoDiscount = applyBogoCoupon(bogoLines, couponData);
+    shopGrandTotals = Math.max(shopGrandTotals - bogoDiscount, 0);
+  }
 
   return {
     shopSubtotals: originalSubtotal,

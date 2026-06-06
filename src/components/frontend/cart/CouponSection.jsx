@@ -18,9 +18,11 @@ const CouponSection = ({
 }) => {
   return (
     <div className="p-2">
-      {/* Apply Coupon */}
+      {/* Apply Coupon — 11β D6: anonymous flow now allowed. BE accepts BOGO
+          codes without customer_id; for non-BOGO codes BE returns 400 which
+          surfaces as a toast. Input always shown; FE no longer login-gates. */}
       <div>
-        {userInfo?.data?._id ? (
+        {(
           <div className="max-w-sm ml-auto sm:mr-8 mr-4">
             {Array.isArray(couponData) &&
             couponData?.some(
@@ -96,21 +98,6 @@ const CouponSection = ({
                 </div>
               </>
             )}
-          </div>
-        ) : (
-          <div>
-            <div className="flex items-center justify-end text-text-Lightest mr-16">
-              <Link href={"/sign-in"}>
-                <Button
-                  size="sm"
-                  variant="link"
-                  className="text-text-Lighter text-base hover:text-blue-500"
-                >
-                  <FaLock /> Login
-                </Button>
-              </Link>
-              <p> for Apply Coupon</p>
-            </div>
           </div>
         )}
       </div>

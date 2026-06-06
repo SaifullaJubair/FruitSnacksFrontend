@@ -62,9 +62,10 @@ const CartSummary = ({
 
         <hr className="mt-1" />
 
-        {/* Coupon Section */}
+        {/* Coupon Section — 11β D6: anonymous allowed. BE accepts BOGO codes
+            without customer_id; non-BOGO codes for anon users get a 400 toast. */}
         <div>
-          {userInfo?.data?._id ? (
+          {(
             <div className="">
               {couponData ? (
                 <div className="flex justify-between items-center mt-4 p-4    shadow-md">
@@ -129,22 +130,6 @@ const CartSummary = ({
                   </div>
                 </>
               )}
-            </div>
-          ) : (
-            <div>
-              <div className="flex items-center justify-end text-text-Lightest mr-16">
-                <Link href={"/sign-in"}>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="link"
-                    className="text-text-Lighter text-base hover:text-blue-500"
-                  >
-                    <FaLock /> Login
-                  </Button>
-                </Link>
-                <p> for Apply Coupon</p>
-              </div>
             </div>
           )}
         </div>
