@@ -28,6 +28,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useForm } from "react-hook-form";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import {
+  addToWishlistRemote,
+  removeFromWishlistRemote,
+} from "@/utils/wishlistSync";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useRouter } from "next/navigation";
 import {
@@ -365,10 +369,17 @@ const SingleProduct = ({ product }) => {
         i.productId === product?._id &&
         i.variation_product_id === (variationProduct?._id || null),
     );
+    const isLoggedIn = !!userInfo?.data?._id;
     if (idx !== -1) {
       list.splice(idx, 1);
       setIsWishlisted(false);
       toast.error("Removed from wishlist", { autoClose: 1500 });
+      // D15 — logged-in হলে BE-তেও remove fire করি (cross-device sync)
+      removeFromWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     } else {
       list.push(item);
       setIsWishlisted(true);
@@ -376,6 +387,12 @@ const SingleProduct = ({ product }) => {
 
       // ✅ AddToWishlist — Meta + TikTok + GTM একটাই call
       trackAddToWishlist(product, variationProduct);
+      // D15 — logged-in হলে BE-তেও upsert fire করি
+      addToWishlistRemote(
+        product?._id,
+        variationProduct?._id || null,
+        isLoggedIn,
+      );
     }
     localStorage.setItem("wishlist", JSON.stringify(list));
     window.dispatchEvent(new Event("localStorageUpdated"));

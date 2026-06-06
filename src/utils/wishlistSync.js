@@ -54,6 +54,59 @@ export const syncWishlistAfterLogin = async () => {
 };
 
 /**
+ * Best-effort per-item upsert. Called by PDP heart-icon click for logged-in
+ * users so the add propagates to other devices. Guests skip (no isLoggedIn).
+ * Never throws — localStorage already holds the truth.
+ */
+export const addToWishlistRemote = async (
+  productId,
+  variation_product_id,
+  isLoggedIn,
+) => {
+  if (!isLoggedIn || !productId) return;
+  try {
+    await fetch(`${BASE_URL}/wishlist/add`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        product_id: productId,
+        variation_id: variation_product_id || undefined,
+      }),
+      keepalive: true,
+    });
+  } catch (_) {
+    // silent — localStorage already updated
+  }
+};
+
+/**
+ * Best-effort per-item delete. Mirror of addToWishlistRemote for the remove
+ * flow (PDP heart toggle off, WishList page delete, UserDashboard delete).
+ */
+export const removeFromWishlistRemote = async (
+  productId,
+  variation_product_id,
+  isLoggedIn,
+) => {
+  if (!isLoggedIn || !productId) return;
+  try {
+    await fetch(`${BASE_URL}/wishlist/remove`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        product_id: productId,
+        variation_id: variation_product_id || undefined,
+      }),
+      keepalive: true,
+    });
+  } catch (_) {
+    // silent
+  }
+};
+
+/**
  * On a logged-in page load: pull DB wishlist down and union-merge into local.
  * Server-wins is wrong here (localStorage holds add-clicks done while offline);
  * we keep every local item and add any DB items the local doesn't have. The

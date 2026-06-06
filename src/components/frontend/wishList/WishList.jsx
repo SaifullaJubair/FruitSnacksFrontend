@@ -20,6 +20,7 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import WishlistTableSkeleton from "@/components/shared/loader/WishlistTableSkeleton";
 import { CART_QUERY_KEY } from "../cart/AddToCart";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
+import { removeFromWishlistRemote } from "@/utils/wishlistSync";
 
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
@@ -77,6 +78,12 @@ const WishList = () => {
     setWishList(updatedWishlist);
     localStorage.setItem("wishlist", JSON.stringify(updatedWishlist));
     window.dispatchEvent(new Event("localStorageUpdated"));
+    // D15 — logged-in হলে BE-তেও remove fire করি (cross-device sync)
+    removeFromWishlistRemote(
+      wishListItem.productId,
+      wishListItem.variation_product_id,
+      !!userInfo?.data?._id,
+    );
     toast.error("Product removed from your wishlist", { autoClose: 1500 });
   };
 
