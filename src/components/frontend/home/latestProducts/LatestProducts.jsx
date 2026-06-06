@@ -10,10 +10,10 @@ import LatestProductGrid from "./LatestProductGrid";
 
 const LatestProducts = () => {
   const { data, isLoading } = useQuery({
-    queryKey: ["latest_products"],
+    queryKey: ["new_arrival_products"],
     queryFn: async () => {
       const res = await fetch(
-        `${BASE_URL}/product/popular_product?page=1&limit=8`
+        `${BASE_URL}/product/new_arrival?page=1&limit=8`
       );
       const data = await res.json();
       return data;

@@ -1,7 +1,7 @@
 import { BASE_URL } from "../utils/baseURL";
 
 export async function getECommerceChoiceProducts() {
-  const res = await fetch(`${BASE_URL}/product/ecommerce_choice_product`, {
+  const res = await fetch(`${BASE_URL}/product/top_selling`, {
     next: {
       revalidate: 300,
     },

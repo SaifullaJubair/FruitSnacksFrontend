@@ -32,11 +32,11 @@ const PopularProducts = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: [`/api/v1/product/popular_product?page=${page}&limit=${limit}`],
+    queryKey: [`/api/v1/product/top_selling?page=${page}&limit=${limit}`],
     queryFn: async () => {
       try {
         const res = await fetch(
-          `${BASE_URL}/product/popular_product?page=${page}&limit=${limit}`
+          `${BASE_URL}/product/top_selling?page=${page}&limit=${limit}`
         );
 
         if (!res.ok) {

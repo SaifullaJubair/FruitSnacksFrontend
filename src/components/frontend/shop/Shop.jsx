@@ -54,7 +54,7 @@ const Shop = () => {
           // Check products for each category
           // for (const category of data) {
           //   const productRes = await fetch(
-          //     `${BASE_URL}/product/popular_product?category_id=${category._id}&page=${page}&limit=${limit}`
+          //     `${BASE_URL}/product/top_selling?category_id=${category._id}&page=${page}&limit=${limit}`
           //   );
           //   const productData = await productRes.json();
           //   category.hasProducts = productData?.data?.length > 0;
@@ -75,12 +75,12 @@ const Shop = () => {
     refetch,
   } = useQuery({
     queryKey: [
-      `/api/v1/product/popular_product?category_id=${categoryId}&page=${page}&limit=${limit}`,
+      `/api/v1/product/top_selling?category_id=${categoryId}&page=${page}&limit=${limit}`,
     ],
     queryFn: async () => {
       try {
         const res = await fetch(
-          `${BASE_URL}/product/popular_product?category_id=${categoryId}&page=${page}&limit=${limit}`
+          `${BASE_URL}/product/top_selling?category_id=${categoryId}&page=${page}&limit=${limit}`
         );
 
         if (!res.ok) {
