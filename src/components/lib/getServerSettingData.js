@@ -4,7 +4,7 @@ import { BASE_URL } from "../utils/baseURL";
 export async function getServerSettingData() {
   const res = await fetch(`${BASE_URL}/setting`, {
     next: {
-      revalidate: 600, 
+      revalidate: 60, // Track D: reduced from 600 — admin home layout changes reflect within 60s
     },
   });
 

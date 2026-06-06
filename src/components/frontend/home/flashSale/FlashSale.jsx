@@ -6,6 +6,7 @@ import { getFlashSaleProducts } from "@/components/lib/getFlashSaleProducts";
 
 const FlashSale = async () => {
   const data = await getFlashSaleProducts();
+  if (!data) return null;
   const products = data?.data;
   const today = new Date();
   // console.log(today);
