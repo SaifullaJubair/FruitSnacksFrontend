@@ -31,7 +31,7 @@ const TrendingProduct = () => {
           </Link>
         </div>
 
-        <TrendingSlider products={products?.data} isLoading={isLoading} />
+        <TrendingSlider products={products?.data?.data} isLoading={isLoading} />
       </div>
     </div>
   );
