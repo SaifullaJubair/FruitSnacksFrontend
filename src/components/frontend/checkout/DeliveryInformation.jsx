@@ -2,6 +2,7 @@ import { cities } from "@/data/cites";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import Select from "react-select";
 import { FaMapMarkedAlt, FaStar } from "react-icons/fa";
+import { FiMapPin } from "react-icons/fi";
 import "react-phone-number-input/style.css";
 const DeliveryInformation = ({
   register,
@@ -30,20 +31,23 @@ const DeliveryInformation = ({
   showEmailField = true,
 }) => {
   return (
-    <div className="bg-white shadow-md    p-4">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-xl">Delivery Information</p>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <FiMapPin size={14} className="text-primary" />
+          Delivery Information
+        </h2>
         {savedAddresses?.length > 0 && (
           <span className="text-[10px] text-gray-400 hidden sm:block">
             Pick a saved address to auto-fill
           </span>
         )}
       </div>
+      <div className="p-3">
 
-      {/* S6 — Saved address picker. Renders ONLY for logged-in users with
-          at least one saved address; never shown for guest / FB-ads flow. */}
+      {/* S6 — Saved address picker */}
       {savedAddresses?.length > 0 && (
-        <div className="border border-gray-100 rounded-lg p-3 mb-4 bg-gray-50">
+        <div className="border border-gray-100 rounded-lg p-2.5 mb-3 bg-gray-50">
           <p className="text-xs font-semibold text-gray-600 mb-2 flex items-center gap-1.5">
             <FaMapMarkedAlt size={12} className="text-primary" />
             Saved addresses
@@ -76,18 +80,18 @@ const DeliveryInformation = ({
           </div>
         </div>
       )}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-2.5">
+
         <div>
-          <label htmlFor="" className="block text-xs font-medium text-gray-700">
+          <label htmlFor="" className="block text-xs font-medium text-gray-700 mb-1">
             Name
           </label>
 
           <input
             {...register("customer_name")}
             type="text"
-            value={userInfo?.data?.user_name}
             placeholder="Your Name"
-            className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
           />
           {errors.customer_name && (
             <p className="text-red-600 text-sm ml-2">
@@ -96,7 +100,7 @@ const DeliveryInformation = ({
           )}
         </div>
         <div className="">
-          <label htmlFor="" className="block text-xs font-medium text-gray-700">
+          <label htmlFor="" className="block text-xs font-medium text-gray-700 mb-1">
             Phone Number
           </label>
 
@@ -114,7 +118,7 @@ const DeliveryInformation = ({
                 type="number"
                 defaultValue={userInfo?.data?.user_phone}
                 placeholder="Your Phone"
-                className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+                className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
               />
               {errors.customer_phone && (
                 <p className="text-red-600 text-sm ml-2">
@@ -143,49 +147,45 @@ const DeliveryInformation = ({
           )}
         </div>
 
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            City
-          </label>
-          <Select
-            id="city"
-            name="city"
-            placeholder="Select a city"
-            options={cities}
-            value={division ? { city_name: division } : null}
-            getOptionLabel={(x) => x?.city_name}
-            getOptionValue={(x) => x?.city_id}
-            onChange={(selectedOption) => {
-              refetchZone();
-              setIsOpenDistrict(false);
-              setDistrict();
-              setDistrictId();
-              setDivisionID(selectedOption?.city_id);
-              setDivision(selectedOption?.city_name);
-              setTimeout(() => {
-                setIsOpenDistrict(true);
-              }, 100);
-            }}
-            menuPortalTarget={document.body}
-            styles={{
-              menuPortal: (base) => ({
-                ...base,
-                zIndex: 999,
-              }), // Set a high z-index
-            }}
-          ></Select>
-        </div>
-        {(isOpenDistrict || zoneLoading) && (
+        {/* City + Zone side by side */}
+        <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1">
+            <label className="block text-xs font-medium text-gray-600 mb-0.5">
+              City
+            </label>
+            <Select
+              id="city"
+              name="city"
+              placeholder="Select city"
+              options={cities}
+              value={division ? { city_name: division } : null}
+              getOptionLabel={(x) => x?.city_name}
+              getOptionValue={(x) => x?.city_id}
+              onChange={(selectedOption) => {
+                refetchZone();
+                setIsOpenDistrict(false);
+                setDistrict();
+                setDistrictId();
+                setDivisionID(selectedOption?.city_id);
+                setDivision(selectedOption?.city_name);
+                setTimeout(() => setIsOpenDistrict(true), 100);
+              }}
+              menuPortalTarget={document.body}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-0.5">
               Zone
             </label>
             <Select
               id="Zone"
               name="Zone"
-              placeholder="Select Zone"
+              placeholder="Select zone"
               options={zoneData?.data}
               value={district ? { zone_name: district } : null}
+              isDisabled={!isOpenDistrict && !zoneLoading}
+              isLoading={zoneLoading}
               getOptionLabel={(x) => x?.zone_name}
               getOptionValue={(x) => x?.zone_id}
               onChange={(selectedOption) => {
@@ -193,19 +193,14 @@ const DeliveryInformation = ({
                 setDistrictId(selectedOption?.zone_id);
               }}
               menuPortalTarget={document.body}
-              styles={{
-                menuPortal: (base) => ({
-                  ...base,
-                  zIndex: 999,
-                }), // Set a high z-index
-              }}
-            ></Select>
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
+            />
           </div>
-        )}
+        </div>
         <div className="">
           <label
             htmlFor="address"
-            className="block text-xs font-medium text-gray-700"
+            className="block text-xs font-medium text-gray-700 mb-1"
           >
             Address
           </label>
@@ -216,7 +211,7 @@ const DeliveryInformation = ({
             })}
             type="text"
             placeholder="Your Address"
-            className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+            className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
           />
           {errors.address && (
             <p className="text-red-600 text-sm ml-2">
@@ -229,19 +224,19 @@ const DeliveryInformation = ({
           <div className="">
             <label
               htmlFor="customer_email"
-              className="block text-xs font-medium text-gray-700"
+              className="block text-xs font-medium text-gray-700 mb-1"
             >
               Email (optional)
             </label>
             <input
               {...register("customer_email")}
               type="email"
-              defaultValue={userInfo?.data?.user_email}
               placeholder="your@email.com"
-              className="mt-2 w-full border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+              className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
             />
           </div>
         )}
+      </div>
       </div>
     </div>
   );

@@ -65,7 +65,7 @@ const nextConfig = {
       { source: "/latest-product", destination: "/shop", permanent: true },
       { source: "/new-arrival", destination: "/shop", permanent: true },
       { source: "/top-product", destination: "/shop?sort=popular", permanent: true },
-      { source: "/all-trending-products", destination: "/shop?sort=popular", permanent: true },
+      { source: "/all-trending-products", destination: "/shop?sort=trending", permanent: true },
       { source: "/all-brands", destination: "/shop", permanent: true },
     ];
   },

@@ -52,9 +52,12 @@ export async function generateMetadata() {
     },
 
     // ── 4. Icons ──────────────────────────────────────────
+    // NOTE: external S3 URLs in `icons` don't render in browser tabs —
+    // Next.js doesn't proxy them. The actual <link rel="icon"> is injected
+    // manually in RootLayout <head> below using the DB favicon URL.
     icons: {
-      icon: seo.favicon || "/favicon.ico",
-      shortcut: seo.favicon || "/favicon.ico",
+      icon: "/favicon.ico",
+      shortcut: "/favicon.ico",
       apple: "/apple-touch-icon.png",
     },
 
@@ -105,7 +108,12 @@ export default async function RootLayout({ children }) {
 
   return (
     <html lang="bn" className={sansFont.variable}>
-      <head>{seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}</head>
+      <head>
+        {seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}
+        {seo.favicon && seo.favicon !== "/favicon.ico" && (
+          <link rel="icon" href={seo.favicon} />
+        )}
+      </head>
       <body className={bodyFont.className}>
         <script
           type="application/ld+json"

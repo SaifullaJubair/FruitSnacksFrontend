@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { FaLock, FaTimes } from "react-icons/fa";
+import { FiLock, FiX, FiTag, FiChevronRight, FiShoppingBag, FiTruck, FiPercent } from "react-icons/fi";
 import MiniSpinner from "@/components/shared/loader/MiniSpinner";
 import useGetSettingData from "@/components/lib/getSettingData";
 
@@ -24,173 +23,150 @@ const CartSummary = ({
   enablePromoAtCheckout = true,
   minOrderAmount = 0,
 }) => {
-  const { data: settingsData, isLoading: siteSettingLoading } =
-    useGetSettingData();
+  const { data: settingsData } = useGetSettingData();
+  const currencySymbol = settingsData?.data?.[0]?.currency_symbol;
 
-  const currencySymbol = settingsData?.data[0];
+  const savings = totalDiscount || 0;
+  const belowMin = minOrderAmount > 0 && shopSubtotals < minOrderAmount;
+  const shortfall = minOrderAmount - shopSubtotals;
+
   return (
-    <div className="">
-      <div className="  mt-6  bg-white shadow-lg p-4 ">
-        <div className="flex justify-between items-center flex-wrap">
-          <p className="text-text-Lightest">Location</p>
-          {/* <select
-            name="location"
-            id="location"
-            className="text-text-Lighter outline-none   p-1"
-            onChange={(e) => setLocation(e.target.value)}
-            value={location}
-          >
-            <option value="Inside Dhaka">Inside Dhaka</option>
-            <option value="Outside Dhaka">Outside Dhaka</option>
-          </select> */}
-
-          <p className="text-text-Lightest">
-            {division == "Dhaka" ? "Inside Dhaka" : "Outside Dhaka"}
-          </p>
+    <div className="space-y-3 mt-4 lg:mt-0">
+      {/* Order summary card */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+            <FiShoppingBag size={14} className="text-primary" />
+            Order Summary
+          </h2>
         </div>
 
-        <hr />
-
-        <div className="flex justify-between  mt-4">
-          <p className="text-text-Lightest">Subtotal</p>
-          <p className="text-text-Lightest">
-            {" "}
-            <span className=" font-bold ">
-              {" "}
-              {!siteSettingLoading && currencySymbol?.currency_symbol}
-            </span>{" "}
-            {shopSubtotals}
-          </p>
-        </div>
-
-        <hr className="mt-1" />
-
-        {/* C13 — min order amount client-side hint */}
-        {minOrderAmount > 0 && shopSubtotals < minOrderAmount && (
-          <div className="mt-3 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-700">
-            Minimum order: {currencySymbol?.currency_symbol}{minOrderAmount}. Add{" "}
-            {currencySymbol?.currency_symbol}{minOrderAmount - shopSubtotals} more to place your order.
+        <div className="p-4 space-y-3">
+          {/* Location row */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500 flex items-center gap-1.5">
+              <FiTruck size={13} className="text-gray-400" />
+              Delivery
+            </span>
+            <span className="font-medium text-gray-700">
+              {division === "Dhaka" ? "Inside Dhaka" : division ? "Outside Dhaka" : "—"}
+            </span>
           </div>
-        )}
 
-        {/* Coupon Section — 11β D6: anonymous allowed. BE accepts BOGO codes
-            without customer_id; non-BOGO codes for anon users get a 400 toast. */}
-        {enablePromoAtCheckout && <div>
-          {(
-            <div className="">
-              {couponData ? (
-                <div className="flex justify-between items-center mt-4 p-4    shadow-md">
-                  <div className="flex items-center">
-                    <p className="text-text-Lightest  mr-2 text-sm sm:text-base">
-                      Coupon Code:
-                    </p>
-                    <span className="bg-primary text-white px-2   ">
-                      {couponData?.coupon_code}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    className="text-red-500 hover:underline flex items-center text-sm sm:text-base"
-                    onClick={() => handleRemoveCoupon(shopProduct?._id)}
-                  >
-                    <FaTimes className="mr-1" />
-                    Remove
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {" "}
-                  <div className="flex justify-between items-center mt-4">
-                    <p className="text-text-Lighter">Apply Coupon</p>
-                    <button
-                      type="button"
-                      className="text-primary hover:underline"
-                      onClick={() => handleShowCouponInput(shopProduct?._id)}
-                    >
-                      {/* {panelOwnerIds === shopProduct?._id
-                        ? "Cancel"
-                        : "Enter Your Coupon"} */}
-                    </button>
-                  </div>
-                  <div
-                    className={`transition-all duration-500 overflow-hidden ${
-                      panelOwnerIds === shopProduct?._id
-                        ? "max-h-40 mt-2"
-                        : "max-h-0"
-                    }`}
-                  >
-                    {panelOwnerIds === shopProduct?._id && (
-                      <div className="flex items-center mt-2">
-                        <input
-                          type="text"
-                          className="border   p-2 w-full"
-                          placeholder="Enter coupon code"
-                          onChange={(e) => setCouponCode(e.target.value)}
-                        />
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="bg-primary   text-white p-2 ml-2"
-                          onClick={() => handleApplyCoupon(shopProduct?._id)}
-                          disabled={isApplyingCoupon}
-                        >
-                          {isApplyingCoupon ? "Applying..." : "Apply"}
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+          {/* Subtotal */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Subtotal</span>
+            <span className="font-medium text-gray-800">
+              {currencySymbol}{shopSubtotals || 0}
+            </span>
+          </div>
+
+          {/* Discount */}
+          {savings > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-green-600 flex items-center gap-1">
+                <FiPercent size={12} />
+                Discount
+              </span>
+              <span className="text-green-600 font-medium">-{currencySymbol}{savings}</span>
             </div>
           )}
-        </div>}
 
-        <div className="flex justify-between mt-4">
-          <p className="text-text-Lightest">Total Discount</p>
-          <p className="text-text-Lightest">
-            <span className="font-bold">
-              {!siteSettingLoading && currencySymbol?.currency_symbol}
+          {/* Shipping */}
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-gray-500">Shipping</span>
+            <span className="font-medium text-gray-800">
+              {shippingCharge > 0 ? `${currencySymbol}${shippingCharge}` : "Free"}
             </span>
-            {totalDiscount > 0 ? `-${totalDiscount}` : totalDiscount}
-          </p>
-        </div>
-        <hr className="mt-1" />
-        <div className="flex justify-between  mt-4">
-          <p className="text-text-Lightest">Shipping</p>
-          <p className="text-text-Lightest">
-            {" "}
-            <span className=" font-bold ">
-              {" "}
-              {!siteSettingLoading && currencySymbol?.currency_symbol}
-            </span>{" "}
-            {shippingCharge}
-          </p>
-        </div>
+          </div>
 
-        <div className="flex justify-between mt-4">
-          <p className="text-text-Lightest">Total</p>
-          <p className="text-text-Lightest">
-            {" "}
-            <span className=" font-bold ">
-              {" "}
-              {!siteSettingLoading && currencySymbol?.currency_symbol}
-            </span>{" "}
-            {shopGrandTotals}
-          </p>
-        </div>
-        <hr className="mt-1" />
+          <div className="border-t border-gray-100 pt-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-gray-800">Total</span>
+              <span className="text-lg font-bold text-primary">
+                {currencySymbol}{shopGrandTotals || 0}
+              </span>
+            </div>
+          </div>
 
-        <div className="flex my-2 gap-2 mt-4">
-          {loading == true ? (
-            <div className="px-10 py-2 flex items-center w-full justify-center  bg-primary text-white rounded">
-              <MiniSpinner />
+          {/* Min order warning */}
+          {belowMin && (
+            <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-700 leading-snug">
+              Minimum order: {currencySymbol}{minOrderAmount}. Add{" "}
+              <span className="font-semibold">{currencySymbol}{shortfall}</span> more.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Coupon card */}
+      {enablePromoAtCheckout && (
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2 mb-3">
+            <FiTag size={13} className="text-primary" />
+            Promo Code
+          </h3>
+          {couponData ? (
+            <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">
+                  {couponData?.coupon_code}
+                </span>
+                <span className="text-xs text-green-600 font-medium">Applied!</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveCoupon(shopProduct?._id)}
+                className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-all"
+              >
+                <FiX size={11} />
+              </button>
             </div>
           ) : (
-            <Button className="w-full" type="submit" variant="default">
-              Placed Order
-            </Button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 outline-none focus:border-primary transition-colors placeholder:text-gray-400"
+                placeholder="Enter promo code"
+                value={couponCode || ""}
+                onChange={(e) => setCouponCode(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon(shopProduct?._id)}
+              />
+              <button
+                type="button"
+                onClick={() => handleApplyCoupon(shopProduct?._id)}
+                disabled={isApplyingCoupon}
+                className="px-3 py-2 bg-primary text-white text-xs font-semibold rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60 whitespace-nowrap"
+              >
+                {isApplyingCoupon ? "..." : "Apply"}
+              </button>
+            </div>
           )}
         </div>
+      )}
+
+      {/* Place order button */}
+      <div>
+        {loading ? (
+          <div className="w-full py-3 flex items-center justify-center bg-primary text-white rounded-2xl">
+            <MiniSpinner />
+          </div>
+        ) : (
+          <Button
+            className="w-full rounded-2xl h-12 text-sm font-semibold flex items-center justify-center gap-2"
+            type="submit"
+            variant="default"
+            disabled={belowMin}
+          >
+            <FiLock size={14} />
+            Place Order
+            <FiChevronRight size={14} />
+          </Button>
+        )}
+        <p className="text-center text-[10px] text-gray-400 mt-2 flex items-center justify-center gap-1">
+          <FiLock size={9} />
+          Secure checkout. Your data is protected.
+        </p>
       </div>
     </div>
   );

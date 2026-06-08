@@ -95,6 +95,17 @@ const AddToCart = () => {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
   }, [userInfo?.data?.user_phone]);
 
+  // Auto-fill name + email from logged-in user profile when data arrives
+  const userFillRef = useRef(false);
+  useEffect(() => {
+    if (userFillRef.current) return;
+    if (!userInfo?.data?._id) return;
+    userFillRef.current = true;
+    if (userInfo.data.user_name) setValue("customer_name", userInfo.data.user_name);
+    if (userInfo.data.user_email) setValue("customer_email", userInfo.data.user_email);
+    if (userInfo.data.user_address) setValue("address", userInfo.data.user_address);
+  }, [userInfo?.data?._id, setValue]);
+
   // S6 (2026-06-04) — fetch saved addresses once a logged-in user is
   // confirmed. Anonymous (FB-ads) checkout never hits this — userInfo is
   // null/undefined for them, so the picker stays hidden and the inline
@@ -454,10 +465,19 @@ const AddToCart = () => {
 
   if (!mounted)
     return (
-      <div className="min-h-screen bg-[#F4F4F4]/50">
+      <div className="min-h-screen bg-gray-50/60">
         <Contain>
-          <div className="pt-6">
-            <CartTableSkeleton />
+          <div className="pt-6 pb-4">
+            <div className="h-7 w-32 bg-gray-100 rounded-lg animate-pulse mb-1" />
+            <div className="h-4 w-24 bg-gray-100 rounded-lg animate-pulse" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-10">
+            <div className="md:col-span-2">
+              <CartTableSkeleton />
+            </div>
+            <div className="md:col-span-1 space-y-4">
+              <CartSummarySkeleton />
+            </div>
           </div>
         </Contain>
       </div>
@@ -465,33 +485,33 @@ const AddToCart = () => {
 
   if (!products?.length)
     return (
-      <div className="text-center max-w-md mx-auto mt-2 bg-white p-6 shadow-lg">
-        <img
-          src="/assets/images/empty/Empty-cuate.png"
-          alt="Empty cart"
-          className="mx-auto mb-2 w-80"
-        />
-        <h3 className="text-xl font-semibold text-gray-800 mb-2">
-          Your cart is empty!
-        </h3>
-        <p className="text-gray-600 mb-6">
-          Looks like you haven't added anything to your cart yet.
-        </p>
-        <div className="flex items-center justify-center gap-2 mt-2">
-          <Link href="/">
-            <Button className="w-full">Go Home</Button>
-          </Link>
-          <Link href="/shop">
-            <Button variant="secondary" className="w-full">
-              View All Products
-            </Button>
-          </Link>
+      <div className="min-h-[60vh] flex items-center justify-center px-4">
+        <div className="text-center max-w-sm bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+          <img
+            src="/assets/images/empty/Empty-cuate.png"
+            alt="Empty cart"
+            className="mx-auto mb-4 w-52"
+          />
+          <h3 className="text-lg font-bold text-gray-800 mb-1">
+            Your cart is empty
+          </h3>
+          <p className="text-sm text-gray-500 mb-6">
+            Add items to your cart to checkout.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <Link href="/">
+              <Button variant="outline" className="rounded-xl">Go Home</Button>
+            </Link>
+            <Link href="/shop">
+              <Button className="rounded-xl">Shop Now</Button>
+            </Link>
+          </div>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-[#F4F4F4]/50 relative">
+    <div className="min-h-screen bg-gray-50/60 relative">
       {loading && (
         <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -500,26 +520,33 @@ const AddToCart = () => {
       )}
       <form onSubmit={handleSubmit(handleOrderProduct)}>
         <Contain>
-          <div className="pt-6">
-            <h1 className="font-thin text-text-default">Checkout</h1>
-            <p className="font-thin text-text-default">
-              There are {products?.length} products in this list
+          {/* Page header */}
+          <div className="pt-6 pb-4">
+            <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {products?.length} {products?.length === 1 ? "item" : "items"} in your cart
             </p>
           </div>
-          <div className="grid md:gap-4 lg:gap-4 grid-cols-1 md:grid-cols-5 lg:grid-cols-4">
-            <div className="flex gap-6 md:col-span-3 mt-4 overflow-x-auto pb-6">
-              <div className="w-full space-y-6">
-                {isLoading ? (
-                  <CartTableSkeleton />
-                ) : (
-                  <CartTable
-                    products={products}
-                    couponData={couponData}
-                    shopProduct={cartData}
-                    adjustedPrices={adjustedPrices}
-                    onRemoveFromCache={handleRemoveFromCache}
-                  />
-                )}
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-10">
+            {/* Left column: cart items only (2/3 width) */}
+            <div className="md:col-span-2">
+              {isLoading ? (
+                <CartTableSkeleton />
+              ) : (
+                <CartTable
+                  products={products}
+                  couponData={couponData}
+                  shopProduct={cartData}
+                  adjustedPrices={adjustedPrices}
+                  onRemoveFromCache={handleRemoveFromCache}
+                />
+              )}
+            </div>
+
+            {/* Right column: Delivery form + Summary stacked (1/3 width, sticky + scrollable) */}
+            <div className="md:col-span-1">
+              <div className="md:sticky md:top-[90px] md:max-h-[calc(100vh-100px)] md:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-0.5">
                 {userGetLoading ? (
                   <DeliveryInformationSkeleton />
                 ) : (
@@ -546,12 +573,6 @@ const AddToCart = () => {
                     showEmailField={showEmailField}
                   />
                 )}
-              </div>
-            </div>
-            <div className="md:col-span-2 space-y-6 lg:col-span-1">
-              {isLoading || userGetLoading ? (
-                <CartSummarySkeleton />
-              ) : (
                 <CartSummary
                   userInfo={userInfo}
                   totalDiscount={totalDiscount}
@@ -569,7 +590,7 @@ const AddToCart = () => {
                   enablePromoAtCheckout={enablePromoAtCheckout}
                   minOrderAmount={minOrderAmount}
                 />
-              )}
+              </div>
             </div>
           </div>
         </Contain>

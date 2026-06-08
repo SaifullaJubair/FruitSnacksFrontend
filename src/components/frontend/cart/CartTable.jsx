@@ -7,10 +7,10 @@ import {
   updateQuantity,
 } from "@/redux/feature/cart/cartSlice";
 import { useDispatch } from "react-redux";
-import { MdDeleteForever } from "react-icons/md";
 import { productPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { PhotoProvider, PhotoView } from "react-photo-view";
+import { FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
 
 const CartTable = ({
   products,
@@ -20,9 +20,8 @@ const CartTable = ({
   onRemoveFromCache,
 }) => {
   const dispatch = useDispatch();
-  const { data: settingsData, isLoading: siteSettingLoading } =
-    useGetSettingData();
-  const currencySymbol = settingsData?.data[0];
+  const { data: settingsData } = useGetSettingData();
+  const currencySymbol = settingsData?.data?.[0]?.currency_symbol;
 
   const getMaxStock = (product) =>
     product?.variations?._id
@@ -89,112 +88,128 @@ const CartTable = ({
   };
 
   const handleRemove = (product) => {
-    // Redux থেকে সরাও
     dispatch(
       removeFromCart({
         productId: product?._id,
         variation_product_id: product?.variations?._id || null,
       }),
     );
-    // Query cache থেকেও সরাও — reload নেই
     onRemoveFromCache?.(product?._id, product?.variations?._id);
   };
 
   return (
     <PhotoProvider>
-      <table className="min-w-full text-sm">
-        <thead className="border-b pb-1">
-          <tr className="text-gray-900">
-            <td className="whitespace-nowrap p-4">#</td>
-            <td className="whitespace-nowrap p-4">Image</td>
-            <td className="whitespace-nowrap p-4">Product Info</td>
-            <td className="whitespace-nowrap p-4">Quantity</td>
-            <td className="whitespace-nowrap p-4">Unit Price</td>
-            <td className="whitespace-nowrap p-4">SubTotal</td>
-            <td className="whitespace-nowrap p-4">Remove</td>
-          </tr>
-        </thead>
-        <tbody className="divide-gray-200">
-          {(Array.isArray(shopProduct) ? shopProduct : []).map(
-            (product, index) => {
-              const currentQty = getQuantity(product);
-              const maxStock = getMaxStock(product);
-              const isAtMin = currentQty <= 1;
-              const isAtMax = currentQty >= maxStock;
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        {/* Header */}
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50/60">
+          <h2 className="text-sm font-semibold text-gray-700">
+            Order Items{" "}
+            <span className="text-gray-400 font-normal">
+              ({(Array.isArray(shopProduct) ? shopProduct : []).length})
+            </span>
+          </h2>
+        </div>
 
-              return (
-                <tr
-                  className={`divide-y divide-gray-100 space-y-2 py-2 ${index % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
-                  key={`${product._id}-${product?.variations?._id || "no-var"}`}
-                >
-                  <td className="whitespace-nowrap p-4">{index + 1}</td>
+        <div className="divide-y divide-gray-50">
+          {(Array.isArray(shopProduct) ? shopProduct : []).map((product, index) => {
+            const currentQty = getQuantity(product);
+            const maxStock = getMaxStock(product);
+            const isAtMin = currentQty <= 1;
+            const isAtMax = currentQty >= maxStock;
 
-                  <td>
-                    {(() => {
-                      // Variation image priority: multi-image gallery first
-                      // element (Batch 2 primary) → legacy single variation_image
-                      // → product main_image fallback. So a variation product
-                      // shows its own image in the cart, not the parent's.
-                      const variationImg =
-                        product?.variations?.variation_images?.[0] ||
-                        product?.variations?.variation_image ||
-                        null;
-                      const cartImg = variationImg || product?.main_image;
-                      return (
-                        <PhotoView src={cartImg}>
-                          <Image
-                            src={cartImg}
-                            className="w-20 h-[72px] cursor-zoom-in border"
-                            height={100}
-                            width={100}
-                            alt={product?.product_name}
-                          />
-                        </PhotoView>
-                      );
-                    })()}
-                  </td>
+            const variationImg =
+              product?.variations?.variation_images?.[0] ||
+              product?.variations?.variation_image ||
+              null;
+            const cartImg = variationImg || product?.main_image;
 
-                  <td className="min-w-[260px] py-2.5 text-gray-700 px-4">
-                    <div className="mt-1">
-                      <p className="mb-1">
-                        <Link
-                          href={`/products/${product?.product_slug}`}
-                          className="text-text-semiLight font-medium hover:text-primary line-clamp-2"
-                        >
-                          {product?.product_name}
-                        </Link>
-                      </p>
-                      <div className="text-text-Lighter">
-                        {product?.brand_id?.brand_name && (
-                          <p>Brand: {product?.brand_id?.brand_name}</p>
-                        )}
-                        {product?.is_variation && (
-                          <p>
-                            Variation: {product?.variations?.variation_name}
-                          </p>
-                        )}
-                      </div>
+            const unitPrice = productPrice(product);
+            const priceKey = product?.variations?._id
+              ? `${product._id}-${product.variations._id}`
+              : product._id;
+            const hasCoupon =
+              couponData?.coupon_product_type === "specific" &&
+              couponData?.coupon_specific_product?.some(
+                (item) => item?.product_id === product?._id,
+              );
+            const displayPrice = hasCoupon ? adjustedPrices[priceKey] : unitPrice;
+            const subtotal = displayPrice * currentQty;
+
+            return (
+              <div
+                key={`${product._id}-${product?.variations?._id || "no-var"}`}
+                className="flex gap-3 p-4 hover:bg-gray-50/40 transition-colors"
+              >
+                {/* Image */}
+                <PhotoView src={cartImg}>
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 border border-gray-100 cursor-zoom-in bg-gray-50">
+                    <Image
+                      src={cartImg || "/assets/images/placeholder.jpg"}
+                      width={64}
+                      height={64}
+                      alt={product?.product_name}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </PhotoView>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <Link
+                    href={`/products/${product?.product_slug}`}
+                    className="text-sm font-medium text-gray-800 hover:text-primary transition-colors line-clamp-2 leading-snug"
+                  >
+                    {product?.product_name}
+                  </Link>
+                  <div className="flex flex-wrap gap-x-3 mt-0.5">
+                    {product?.brand_id?.brand_name && (
+                      <span className="text-xs text-gray-400">
+                        {product.brand_id.brand_name}
+                      </span>
+                    )}
+                    {product?.is_variation && product?.variations?.variation_name && (
+                      <span className="text-xs text-primary/80 font-medium">
+                        {product.variations.variation_name}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Price + qty row */}
+                  <div className="flex items-center justify-between gap-2 mt-2">
+                    <div className="flex items-center gap-1.5">
+                      {hasCoupon ? (
+                        <>
+                          <span className="text-xs text-gray-400 line-through">
+                            {currencySymbol}{unitPrice}
+                          </span>
+                          <span className="text-sm font-bold text-primary">
+                            {currencySymbol}{displayPrice}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="text-sm font-bold text-gray-900">
+                          {currencySymbol}{unitPrice}
+                        </span>
+                      )}
                     </div>
-                  </td>
 
-                  <td className="whitespace-nowrap py-1.5 font-medium text-gray-700 px-4">
-                    <div className="flex items-center">
+                    {/* Qty stepper */}
+                    <div className="flex items-center gap-1">
                       <button
                         type="button"
                         onClick={() => handleDecrement(product)}
                         disabled={isAtMin}
-                        className={`border px-2.5 py-1 transition-all duration-200
-                        ${
+                        className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all ${
                           isAtMin
-                            ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                            : "border-primary-200 text-primary-300 hover:bg-primary-300 hover:text-white cursor-pointer"
+                            ? "border-gray-100 text-gray-300 cursor-not-allowed"
+                            : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary hover:bg-primary/5"
                         }`}
                       >
-                        -
+                        <FiMinus size={11} />
                       </button>
                       <input
                         type="number"
-                        className="border mx-2 border-primary-200 max-w-[70px] text-center p-2 outline-primary-300"
+                        className="w-10 h-7 text-center text-sm font-semibold border border-gray-200 rounded-lg outline-none focus:border-primary"
                         value={currentQty}
                         min={1}
                         max={maxStock}
@@ -204,84 +219,40 @@ const CartTable = ({
                         type="button"
                         onClick={() => handleIncrement(product)}
                         disabled={isAtMax}
-                        className={`border px-2.5 py-1 transition-all duration-200
-                        ${
+                        className={`w-7 h-7 rounded-lg border flex items-center justify-center transition-all ${
                           isAtMax
-                            ? "border-gray-200 text-gray-300 cursor-not-allowed"
-                            : "border-primary-200 text-primary-300 hover:bg-primary-300 hover:text-white cursor-pointer"
+                            ? "border-gray-100 text-gray-300 cursor-not-allowed"
+                            : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary hover:bg-primary/5"
                         }`}
                       >
-                        +
+                        <FiPlus size={11} />
                       </button>
                     </div>
-                    {isAtMax && (
-                      <p className="text-xs text-orange-500 mt-1">
-                        Max stock reached
-                      </p>
-                    )}
-                  </td>
 
-                  <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
-                    {couponData?.coupon_product_type === "specific" &&
-                    couponData?.coupon_specific_product?.some(
-                      (item) => item?.product_id === product?._id,
-                    ) ? (
-                      <div className="flex items-center gap-2">
-                        <p className="font-thin line-through text-text-Lighter mb-2 text-md">
-                          <span className="text-base font-bold">
-                            {!siteSettingLoading &&
-                              currencySymbol?.currency_symbol}
-                          </span>
-                          {productPrice(product)}
-                        </p>
-                        <p className="font-thin text-text-Lighter mb-2 text-xl">
-                          <span className="text-base font-bold">
-                            {!siteSettingLoading &&
-                              currencySymbol?.currency_symbol}
-                          </span>{" "}
-                          {
-                            adjustedPrices[
-                              product?.variations?._id
-                                ? `${product._id}-${product.variations._id}`
-                                : product._id
-                            ]
-                          }
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="font-thin text-text-Lighter mb-2 text-xl">
-                        <span className="text-base font-bold">
-                          {!siteSettingLoading &&
-                            currencySymbol?.currency_symbol}
-                        </span>{" "}
-                        {productPrice(product)}
-                      </p>
-                    )}
-                  </td>
+                    {/* Subtotal + remove */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-gray-900 min-w-[56px] text-right">
+                        {currencySymbol}{subtotal}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemove(product)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all"
+                      >
+                        <FiTrash2 size={13} />
+                      </button>
+                    </div>
+                  </div>
 
-                  <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
-                    <p className="font-thin text-text-Lighter mb-2 text-xl">
-                      <span className="text-base font-bold">
-                        {!siteSettingLoading && currencySymbol?.currency_symbol}
-                      </span>{" "}
-                      {calculateProductSubtotal(product)}
-                    </p>
-                  </td>
-
-                  <td className="whitespace-nowrap py-2.5 font-medium text-gray-700 px-4">
-                    <button type="button" onClick={() => handleRemove(product)}>
-                      <MdDeleteForever
-                        size={25}
-                        className="cursor-pointer text-red-500 hover:text-red-300"
-                      />
-                    </button>
-                  </td>
-                </tr>
-              );
-            },
-          )}
-        </tbody>
-      </table>
+                  {isAtMax && (
+                    <p className="text-[10px] text-orange-500 mt-1">Max stock reached</p>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </PhotoProvider>
   );
 };

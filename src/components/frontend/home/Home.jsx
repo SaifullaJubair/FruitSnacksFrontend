@@ -20,7 +20,7 @@ const Home = async () => {
   };
 
   return (
-    <div className="container mx-auto">
+    <div className="w-full max-w-screen-2xl mx-auto">
       {getSectionEnabled("hero") && <Banner />}
       {getSectionEnabled("flash_sale") && <FlashSale />}
       <SectionRenderer sections={sections} settings={settings} />
