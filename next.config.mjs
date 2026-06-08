@@ -52,14 +52,21 @@ const nextConfig = {
     ],
   },
   async redirects() {
-    // S1 (2026-06-04) — /cart route renamed to /checkout. Keep old bookmarks
-    // + indexed links working with a permanent 301.
     return [
+      // S1 (2026-06-04) — /cart route renamed to /checkout.
       {
         source: "/cart",
         destination: "/checkout",
         permanent: true,
       },
+      // Track E (2026-06-08) — dead listing routes consolidated into /shop engine.
+      { source: "/all-products", destination: "/shop", permanent: true },
+      { source: "/all-ecommerce-product", destination: "/shop", permanent: true },
+      { source: "/latest-product", destination: "/shop", permanent: true },
+      { source: "/new-arrival", destination: "/shop", permanent: true },
+      { source: "/top-product", destination: "/shop?sort=popular", permanent: true },
+      { source: "/all-trending-products", destination: "/shop?sort=popular", permanent: true },
+      { source: "/all-brands", destination: "/shop", permanent: true },
     ];
   },
 };

@@ -90,8 +90,8 @@ const SearchOverlay = ({ isOpen, onClose }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     onClose();
-    if (searchValue.trim()) router.push(`/all-products?search=${searchValue}`);
-    else router.push("/all-products");
+    if (searchValue.trim()) router.push(`/shop?search=${searchValue}`);
+    else router.push("/shop");
   };
 
   if (!isOpen) return null;
@@ -197,7 +197,7 @@ const SearchOverlay = ({ isOpen, onClose }) => {
                 <div className="px-4 md:px-8 py-3 border-t border-gray-100">
                   <button
                     onClick={() => {
-                      router.push(`/all-products?search=${searchValue}`);
+                      router.push(`/shop?search=${searchValue}`);
                       onClose();
                     }}
                     className="w-full text-center text-sm text-primary font-medium hover:underline py-1"
@@ -552,11 +552,11 @@ const MobileDrawer = ({
             {[
               { href: "/", label: "Home", icon: FiHome },
               {
-                href: "/all-products",
+                href: "/shop",
                 label: "All Products",
                 icon: AiOutlineProduct,
               },
-              { href: "/new-arrival", label: "New Arrival", icon: FiPackage },
+              { href: "/shop", label: "New Arrival", icon: FiPackage },
               // { href: "/offer", label: "Offers", icon: IoMdFlame },
               // { href: "/campaign", label: "Campaign", icon: FaFire },
               {
@@ -810,8 +810,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
 
   const navLinks = [
     { href: "/", label: "Home" },
-    { href: "/all-products", label: "All Products" },
-    { href: "/new-arrival", label: "New Arrival" },
+    { href: "/shop", label: "All Products" },
     ...exploreCategories.map((c) => ({
       href: `/category/${c?.category?.category_slug}`,
       label: c?.category?.category_name,

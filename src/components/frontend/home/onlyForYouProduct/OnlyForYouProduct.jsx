@@ -29,7 +29,7 @@ const OnlyForYouProduct = async () => {
           >
             New <span className="text-primary-500">Arrival</span>
           </h2>
-          <Link href={"/latest-product"}>
+          <Link href={"/shop"}>
             {" "}
             <Button variant="link">
               See All Product

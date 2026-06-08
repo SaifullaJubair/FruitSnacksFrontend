@@ -29,7 +29,7 @@ const ECommerceChoice = async () => {
             E-Commerce Choice
           </h2>
           <div className="list-none flex items-center gap-3 text-text-semiLight text-sm">
-            <Link href={"/all-ecommerce-product"}>
+            <Link href={"/shop"}>
               {" "}
               <Button variant="link">
                 All E-Commerce Product

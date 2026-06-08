@@ -279,8 +279,8 @@ const BottomNavbar = ({ menuData }) => {
           <div className="hidden lg:flex items-center xl:space-x-8 lg:space-x-4 whitespace-nowrap">
             <Item isActive={isActive("/")} href="/" label="Home" />
             <Item
-              isActive={isActive("/all-products")}
-              href="/all-products"
+              isActive={isActive("/shop")}
+              href="/shop"
               label="All Products"
             />
             {exploreData?.length > 0 &&

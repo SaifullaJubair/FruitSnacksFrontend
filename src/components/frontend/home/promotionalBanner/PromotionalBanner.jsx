@@ -32,13 +32,13 @@ const PromotionalBanner = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Link
-                  href="/all-products"
+                  href="/shop"
                   className="bg-accent-700 hover:bg-accent-800 text-white text-sm font-semibold px-8 py-3 transition-colors duration-300 tracking-wider uppercase"
                 >
                   Shop Now
                 </Link>
                 <Link
-                  href="/all-products"
+                  href="/shop"
                   className="border border-accent-700/40 hover:border-accent-600 text-accent-300 text-sm px-8 py-3 transition-colors duration-300 tracking-wider uppercase"
                 >
                   View Collection

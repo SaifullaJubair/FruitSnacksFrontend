@@ -39,10 +39,10 @@ const MobileMenu = ({ isOpen, onClose, pathname }) => {
           {/* Navigation Links */}
           <div className="space-y-2">
             <Link
-              href="/all-products"
+              href="/shop"
               className={cn(
                 "block px-3 py-2 rounded-md text-sm font-medium",
-                pathname === "/all-products"
+                pathname === "/shop"
                   ? "bg-primary text-primary-foreground"
                   : "hover:bg-accent"
               )}

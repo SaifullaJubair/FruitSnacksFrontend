@@ -121,9 +121,9 @@ export default function MobileNavBarUserDashBoard() {
       </Link>
       <Link
         className={`flex flex-col items-center font-medium  hover:text-primary-500  ${
-          isActive("/all-products") ? "text-primary" : "text-text-semiLight"
+          isActive("/shop") ? "text-primary" : "text-text-semiLight"
         }`}
-        href={"/all-products"}
+        href={"/shop"}
       >
         <AiOutlineProduct size={24} />
 

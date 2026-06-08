@@ -129,7 +129,7 @@ const writeFiltersToUrl = (filters, sort, page, maps) => {
   return qs ? `?${qs}` : "";
 };
 
-const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
+const CategoryViewSection = ({ slug, filterData, filterHeadData, initialSort, initialTitle }) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -148,8 +148,8 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
     readFiltersFromUrl(searchParams, maps),
   );
   const [selectedSort, setSelectedSort] = useState(() => {
-    const slug = searchParams?.get("sort");
-    return SORT_BY_SLUG[slug] || "latest";
+    const urlSlug = searchParams?.get("sort");
+    return SORT_BY_SLUG[urlSlug] || initialSort || "latest";
   });
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isModalOpen, setModalOpen] = useState("");
@@ -269,7 +269,7 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData }) => {
           fontFamily: titleFont.style.fontFamily,
         }}
       >
-        <span className="capitalize ">{safeSlug[0] || "Category"}</span>{" "}
+        <span className="capitalize ">{initialTitle || safeSlug[0] || "All Products"}</span>{" "}
       </h2>
 
       <div className="bg-white py-2.5  mb-2 flex flex-wrap gap-1">

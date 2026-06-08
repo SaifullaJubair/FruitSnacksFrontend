@@ -32,7 +32,7 @@ const LatestProducts = () => {
           >
             New <span className="text-primary-500">Arrival</span>
           </h2>
-          <Link href={"/all-products"}>
+          <Link href={"/shop"}>
             <Button variant="link">
               All Products
               <IoIosArrowRoundForward />

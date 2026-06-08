@@ -1,13 +1,26 @@
-import Shop from "@/components/frontend/shop/Shop";
+import CategoryViewSection from "@/components/categoryview/CategoryViewSection";
+import { getFilterData } from "@/components/lib/getFilterData";
+import { getFilterHeadData } from "@/components/lib/getFilterHeadData";
 import { buildPageMeta } from "@/components/lib/buildPageMeta";
 
 export async function generateMetadata() {
   return buildPageMeta("shop");
 }
-const ShopPage = () => {
+
+const ShopPage = async () => {
+  const [filterData, filterHeadData] = await Promise.all([
+    getFilterData(undefined).catch(() => null),
+    getFilterHeadData({ categoryType: undefined }).catch(() => null),
+  ]);
+
   return (
-    <div>
-      <Shop />
+    <div className="container mx-auto px-2 pb-5">
+      <CategoryViewSection
+        slug={[]}
+        filterData={filterData?.data}
+        filterHeadData={filterHeadData?.data}
+        initialTitle="All Products"
+      />
     </div>
   );
 };

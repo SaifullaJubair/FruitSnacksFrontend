@@ -22,7 +22,7 @@ const TrendingProduct = () => {
           >
             Trending <span className="text-primary-500">Product</span>
           </h2>
-          <Link href={"/all-trending-products"}>
+          <Link href={"/shop?sort=popular"}>
             {" "}
             <Button variant="link">
               All Trending Product

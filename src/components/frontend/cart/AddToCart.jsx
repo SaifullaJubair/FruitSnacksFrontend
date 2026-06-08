@@ -481,7 +481,7 @@ const AddToCart = () => {
           <Link href="/">
             <Button className="w-full">Go Home</Button>
           </Link>
-          <Link href="/all-products">
+          <Link href="/shop">
             <Button variant="secondary" className="w-full">
               View All Products
             </Button>
