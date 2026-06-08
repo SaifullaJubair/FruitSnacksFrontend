@@ -9,12 +9,8 @@ import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiMinus, HiOutlinePlus } from "react-icons/hi";
 import { BsCart, BsHeart, BsHeartFill, BsShare } from "react-icons/bs";
-import { TbShoppingCartOff } from "react-icons/tb";
 import { IoClose } from "react-icons/io5";
 import { FiArrowUpRight, FiCheck } from "react-icons/fi";
-import { MdOutlineLocalShipping } from "react-icons/md";
-import { RiSecurePaymentLine } from "react-icons/ri";
-import { TbTruckReturn } from "react-icons/tb";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation, Thumbs } from "swiper/modules";
 
@@ -32,7 +28,6 @@ import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
-import { PiHammerLight } from "react-icons/pi";
 
 const Overlay = ({ onClick }) => (
   <motion.div
@@ -412,7 +407,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       >
         <motion.div
           ref={modalRef}
-          className="bg-white w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[80vh] lg:max-h-[95vh] overflow-y-auto shadow-2xl relative rounded-xl"
+          className="bg-white w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[90dvh] overflow-y-auto shadow-2xl relative rounded-xl"
           layout
           style={{
             marginTop: "env(safe-area-inset-top)",
@@ -430,7 +425,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           </motion.button>
 
           {fetchLoading ? (
-            <div className="flex items-center justify-center h-screen sm:h-96">
+            <div className="flex items-center justify-center h-64 sm:h-96">
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -438,7 +433,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               />
             </div>
           ) : fetchError || !product ? (
-            <div className="flex flex-col items-center justify-center h-screen sm:h-96 text-gray-500 p-8">
+            <div className="flex flex-col items-center justify-center h-64 sm:h-96 text-gray-500 p-8">
               <p className="text-center mb-4">
                 Product not found or failed to load
               </p>
@@ -450,7 +445,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row min-h-screen sm:min-h-0">
+            <div className="flex flex-col md:flex-row">
               {/* Left — Image Gallery */}
               <div className="md:w-[45%] bg-gray-50 p-4 sm:p-6">
                 <div className="relative aspect-square mb-3 sm:mt-0">
@@ -526,11 +521,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               </div>
 
               {/* Right — Details */}
-              <div
-                className="md:w-[55%] p-4 sm:p-6 overflow-y-auto"
-                style={{ maxHeight: "calc(100vh - 80px)" }}
-              >
-                <div className="space-y-4 pb-8 sm:pb-4">
+              <div className="md:w-[55%] p-4 sm:p-6 overflow-y-auto md:max-h-[90dvh]">
+                <div className="space-y-4 pb-6">
                   <div className="mt-12 sm:mt-0">
                     {product.product_brand && (
                       <span className="text-xs text-gray-400 uppercase tracking-wider">
@@ -793,72 +785,6 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                    {/* <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <MdOutlineLocalShipping
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Free Delivery
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        On orders above ৳999
-                      </p>
-                    </div> */}
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <PiHammerLight
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Built to Last
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Reinforced stitching at every joint
-                      </p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <svg
-                        className="w-5 h-5 mx-auto text-primary mb-1"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                      </svg>
-                      <p className="text-xs font-medium text-gray-800">
-                        Genuine Leather
-                      </p>
-                      <p className="text-[9px] text-gray-500">100% authentic</p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <TbTruckReturn
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Easy Return
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Instant if you don't like
-                      </p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <RiSecurePaymentLine
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Cash on Delivery
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Pay when you receive
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

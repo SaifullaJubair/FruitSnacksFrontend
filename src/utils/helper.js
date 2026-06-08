@@ -18,59 +18,55 @@ import { applyCartLayers } from "./applyCartLayers";
 // };
 
 export const productPrice = (product) => {
-  // Check Flash Sale Details
+  // variations is always an array — use first entry for card-level display
+  const v0 = Array.isArray(product?.variations)
+    ? product.variations[0]
+    : product?.variations;
+
+  // Base price: variation discount → variation → product discount → product
   let price =
-    product?.is_variation && product?.variations
-      ? product?.variations?.variation_discount_price
-        ? product?.variations?.variation_discount_price
-        : product?.variations?.variation_price
-      : product?.product_discount_price
-        ? product?.product_discount_price
-        : product?.product_price;
+    product?.is_variation && v0
+      ? v0.variation_discount_price || v0.variation_price
+      : product?.product_discount_price || product?.product_price;
+
+  // Flash sale overrides everything
   if (product?.flash_sale_details?.flash_sale_product) {
-    const flashProduct = product?.flash_sale_details.flash_sale_product;
-    const priceType = flashProduct?.flash_price_type;
-    const discountPrice = flashProduct?.flash_sale_product_price;
-    const originalPrice = price;
-
-    if (priceType) {
-      return calculatePrice(originalPrice, discountPrice, priceType);
-    }
-    return discountPrice; // Fallback if no price type is specified
+    const fp = product.flash_sale_details.flash_sale_product;
+    if (fp?.flash_price_type)
+      return calculatePrice(price, fp.flash_sale_product_price, fp.flash_price_type);
+    return fp.flash_sale_product_price;
   }
 
-  // Check Campaign Details
+  // Campaign discount
   if (product?.campaign_details?.campaign_product) {
-    const campaignProduct = product?.campaign_details?.campaign_product;
-    const priceType = campaignProduct?.campaign_price_type;
-    const discountPrice = campaignProduct?.campaign_product_price;
-    const originalPrice = price;
-    if (priceType) {
-      return calculatePrice(originalPrice, discountPrice, priceType);
-    }
-    return discountPrice; // Fallback if no price type is specified
+    const cp = product.campaign_details.campaign_product;
+    if (cp?.campaign_price_type)
+      return calculatePrice(price, cp.campaign_product_price, cp.campaign_price_type);
+    return cp.campaign_product_price;
   }
 
-  // Check for Product Variations
-  if (product?.is_variation && product?.variations) {
-    return product?.variations?.variation_discount_price
-      ? product?.variations?.variation_discount_price
-      : product?.variations?.variation_price;
-  }
+  // Variation or base
+  if (product?.is_variation && v0)
+    return v0.variation_discount_price || v0.variation_price;
 
-  // Default Product Price
-  return product?.product_discount_price
-    ? product?.product_discount_price
-    : product?.product_price;
+  return product?.product_discount_price || product?.product_price;
 };
 
 export const lineThroughPrice = (product) => {
-  if (
-    product?.variations?.variation_discount_price ||
-    product?.product_discount_price
-  ) {
-    return product?.variations?.variation_price || product?.product_price;
-  }
+  const v0 = Array.isArray(product?.variations)
+    ? product.variations[0]
+    : product?.variations;
+
+  // Flash sale or campaign — always show original as line-through
+  if (product?.flash_sale_details?.flash_sale_product)
+    return v0?.variation_price || product?.product_price || null;
+  if (product?.campaign_details?.campaign_product)
+    return v0?.variation_price || product?.product_price || null;
+
+  // Normal discount
+  if (v0?.variation_discount_price) return v0.variation_price || null;
+  if (product?.product_discount_price) return product?.product_price || null;
+
   return null;
 };
 
