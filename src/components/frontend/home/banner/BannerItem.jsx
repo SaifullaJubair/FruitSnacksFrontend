@@ -11,6 +11,8 @@ import ProductSectionSkeleton from "@/components/shared/loader/ProductSectionSke
 import { Button } from "@/components/ui/button";
 
 const BannerItem = ({ bannerData }) => {
+  if (!bannerData?.length) return null;
+
   return (
     <div className="w-full">
       <Swiper
