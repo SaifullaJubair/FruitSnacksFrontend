@@ -1,3 +1,5 @@
+"use client";
+
 import PaginationWithPageBtn from "@/components/common/paginationWithPageBtn/PaginationWithPageBtn";
 import useGetAllOrders from "@/components/lib/getAllOrders";
 import CustomLoader from "@/components/shared/loader/CustomLoader";
@@ -5,34 +7,31 @@ import { EnglishDateWithTimeShort } from "@/components/utils/EnglishDateWithTime
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import Link from "next/link";
 import { useState } from "react";
-import { FiExternalLink, FiPackage } from "react-icons/fi";
+import { FiExternalLink, FiPackage, FiSearch } from "react-icons/fi";
 import { FaTruck } from "react-icons/fa";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { currencyOf } from "@/utils/currency";
 
-const ORDER_STATUS_COLOR = {
-  pending: "bg-orange-100 text-orange-600",
+const STATUS_STYLE = {
+  pending:    "bg-orange-100 text-orange-600",
   processing: "bg-blue-100 text-blue-600",
-  shipped: "bg-purple-100 text-purple-600",
-  delivered: "bg-green-100 text-green-600",
-  cancel: "bg-red-100 text-red-600",
-  return: "bg-yellow-100 text-yellow-600",
+  shipped:    "bg-purple-100 text-purple-600",
+  delivered:  "bg-green-100 text-green-600",
+  cancel:     "bg-red-100 text-red-600",
+  return:     "bg-yellow-100 text-yellow-600",
 };
 
 const PurchaseHistory = () => {
   const { data: userInfo, isLoading } = useUserInfoQuery();
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(10);
+  const [page, setPage]           = useState(1);
+  const [limit, setLimit]         = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
 
   const { data: allOrders = [], isLoading: orderLoading } = useGetAllOrders({
     customer_id: userInfo?.data?._id,
-    page,
-    limit,
-    searchTerm,
+    page, limit, searchTerm,
   });
 
-  // M28 (2026-06-04) — currency symbol from settings.
   const { data: settingsData } = useGetSettingData();
   const cur = currencyOf(settingsData);
 
@@ -41,114 +40,109 @@ const PurchaseHistory = () => {
   const orderRows = allOrders?.data || [];
 
   return (
-    <div>
-      <h4 className="bg-primary p-4 text-white mb-6">Purchase History</h4>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <FiPackage size={18} className="text-primary" />
+          <h2 className="text-base font-semibold text-gray-900">Purchase History</h2>
+        </div>
+        {/* Search */}
+        <div className="relative hidden sm:block">
+          <FiSearch size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            placeholder="Search invoice…"
+            className="pl-8 pr-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary/40 w-44"
+          />
+        </div>
+      </div>
 
       {orderRows.length === 0 ? (
-        // S8 (2026-06-04) — empty state for first-time buyers / users who
-        // have never placed an order. Replaces a blank table that previously
-        // looked like a broken page.
-        <div className="flex flex-col items-center justify-center py-16 bg-white border rounded">
-          <FiPackage className="text-gray-300 mb-3" size={56} />
-          <p className="text-gray-700 font-medium">No orders yet.</p>
-          <p className="text-sm text-gray-400 mt-1 mb-4">
+        <div className="flex flex-col items-center justify-center py-16 px-4">
+          <FiPackage size={48} className="text-gray-200 mb-3" />
+          <p className="text-sm font-medium text-gray-700">No orders yet</p>
+          <p className="text-xs text-gray-400 mt-1 mb-4 text-center">
             Your purchase history will appear here once you place your first order.
           </p>
-          <Link
-            href="/"
-            className="bg-primary text-white text-sm px-5 py-2 rounded hover:opacity-90 transition"
-          >
+          <Link href="/" className="bg-primary text-white text-xs px-5 py-2 rounded-lg hover:opacity-90 transition">
             Start shopping
           </Link>
         </div>
       ) : (
-        <div className="overflow-x-auto scrollbar-thin">
-          <table className="divide-y bg-white text-sm min-w-full border">
-            <thead>
-              <tr className="font-semibold text-center text-gray-900">
-                <td className="whitespace-nowrap p-4">SL No</td>
-                <td className="whitespace-nowrap p-4">Invoice ID</td>
-                <td className="whitespace-nowrap p-4">Order Date</td>
-                <td className="whitespace-nowrap p-4">Order Status</td>
-                <td className="whitespace-nowrap p-4">Grand Total</td>
-                <td className="whitespace-nowrap p-4">Track</td>
-                <td className="whitespace-nowrap p-4">Details</td>
-              </tr>
-            </thead>
-            <tbody className="divide-y text-center">
-              {orderRows.map((item, index) => (
-                <tr
-                  key={item?._id}
-                  className={index % 2 === 0 ? "" : "bg-gray-50"}
-                >
-                  <td className="whitespace-nowrap p-4">
-                    {(page - 1) * limit + index + 1}
-                  </td>
-                  <td className="whitespace-nowrap p-4 font-bold">
-                    {/* S8 (2026-06-04) — was /orders/<user_id>/<order_id>
-                        which 404s (real route is /orders/[orderId]). Matches
-                        the View link below now. */}
-                    <Link
-                      href={`/orders/${item?._id}`}
-                      className="text-primary hover:underline"
-                    >
-                      {item?.invoice_id}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap p-4 text-gray-500 text-xs">
-                    {item?.createdAt &&
-                      EnglishDateWithTimeShort(item?.createdAt)}
-                  </td>
-                  <td className="whitespace-nowrap p-4">
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                        ORDER_STATUS_COLOR[item?.order_status] ||
-                        "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {item?.order_status}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap p-4 font-semibold">
-                    {cur.symbol}
-                    {item?.grand_total_amount}
-                  </td>
-
-                  {/* ── Track button ────────────────────────────── */}
-                  <td className="whitespace-nowrap p-4">
-                    <Link
-                      href={`/orders/order-tracking/${item?.invoice_id}`}
-                      className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-full bg-primary text-white hover:opacity-90 transition"
-                    >
-                      <FaTruck size={11} /> Track
-                    </Link>
-                  </td>
-
-                  <td className="whitespace-nowrap p-4">
-                    <Link
-                      href={`/orders/${item?._id}`}
-                      className="inline-flex items-center gap-1 text-primary hover:underline text-xs"
-                    >
-                      View <FiExternalLink size={13} />
-                    </Link>
-                  </td>
+        <>
+          <div className="overflow-x-auto scrollbar-thin">
+            <table className="w-full text-sm min-w-[600px]">
+              <thead>
+                <tr className="bg-gray-50/80 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  <th className="px-5 py-3 text-left">#</th>
+                  <th className="px-5 py-3 text-left">Invoice</th>
+                  <th className="px-5 py-3 text-left">Date</th>
+                  <th className="px-5 py-3 text-left">Status</th>
+                  <th className="px-5 py-3 text-right">Total</th>
+                  <th className="px-5 py-3 text-center">Track</th>
+                  <th className="px-5 py-3 text-center">View</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {orderRows.map((item, index) => (
+                  <tr key={item?._id} className="hover:bg-gray-50/60 transition-colors">
+                    <td className="px-5 py-3.5 text-xs text-gray-400">
+                      {(page - 1) * limit + index + 1}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <Link
+                        href={`/orders/${item?._id}`}
+                        className="text-xs font-semibold text-primary hover:underline"
+                      >
+                        {item?.invoice_id}
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5 text-xs text-gray-500 whitespace-nowrap">
+                      {item?.createdAt && EnglishDateWithTimeShort(item.createdAt)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${STATUS_STYLE[item?.order_status] || "bg-gray-100 text-gray-600"}`}>
+                        {item?.order_status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-xs font-semibold text-gray-900 text-right whitespace-nowrap">
+                      {cur.symbol}{item?.grand_total_amount}
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <Link
+                        href={`/orders/order-tracking/${item?.invoice_id}`}
+                        className="inline-flex items-center gap-1 text-[11px] font-medium px-2.5 py-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap"
+                      >
+                        <FaTruck size={10} /> Track
+                      </Link>
+                    </td>
+                    <td className="px-5 py-3.5 text-center">
+                      <Link
+                        href={`/orders/${item?._id}`}
+                        className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
+                      >
+                        View <FiExternalLink size={11} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-      {orderRows.length > 0 && (
-        <div className="flex justify-end mt-6">
-          <PaginationWithPageBtn
-            page={page}
-            setPage={setPage}
-            rows={limit}
-            setRows={setLimit}
-            totalData={allOrders?.totalData}
-          />
-        </div>
+          {orderRows.length > 0 && (
+            <div className="flex justify-end px-5 py-4 border-t border-gray-50">
+              <PaginationWithPageBtn
+                page={page} setPage={setPage}
+                rows={limit} setRows={setLimit}
+                totalData={allOrders?.totalData}
+              />
+            </div>
+          )}
+        </>
       )}
     </div>
   );

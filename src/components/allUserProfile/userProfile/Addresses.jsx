@@ -16,6 +16,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import Swal from "sweetalert2-optimized";
+import Select from "react-select";
 import {
   FaMapMarkedAlt,
   FaPlus,
@@ -27,6 +28,8 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import { BASE_URL } from "@/components/utils/baseURL";
+import { cities } from "@/data/cites";
+import useGetZoneData from "@/components/lib/getZoneData";
 
 const emptyForm = {
   label: "",
@@ -41,10 +44,13 @@ const emptyForm = {
 const Addresses = () => {
   const [list, setList] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [editingId, setEditingId] = useState(null); // address_id when editing
+  const [editingId, setEditingId] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
+  const [divisionID, setDivisionID] = useState(null);
+  const [isZoneOpen, setIsZoneOpen] = useState(true);
+  const { data: zoneData, isLoading: zoneLoading } = useGetZoneData(divisionID);
 
   const fetchList = async () => {
     setLoading(true);
@@ -69,6 +75,8 @@ const Addresses = () => {
   const openAdd = () => {
     setEditingId(null);
     setForm({ ...emptyForm, is_default: list.length === 0 });
+    setDivisionID(null);
+    setIsZoneOpen(true);
     setShowForm(true);
   };
 
@@ -83,6 +91,8 @@ const Addresses = () => {
       address_line: addr.address_line || "",
       is_default: !!addr.is_default,
     });
+    setDivisionID(null);
+    setIsZoneOpen(true);
     setShowForm(true);
   };
 
@@ -172,21 +182,24 @@ const Addresses = () => {
   };
 
   return (
-    <div>
-      <div className="bg-primary p-4 text-white mb-6 flex items-center justify-between">
-        <h4 className="font-medium flex items-center gap-2">
-          <FaMapMarkedAlt /> My Addresses
-        </h4>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <FaMapMarkedAlt size={16} className="text-primary" />
+          <h2 className="text-base font-semibold text-gray-900">My Addresses</h2>
+        </div>
         {!showForm && (
           <button
             type="button"
             onClick={openAdd}
-            className="bg-white text-primary text-xs font-semibold px-3 py-1.5 rounded inline-flex items-center gap-1 hover:opacity-90"
+            className="bg-primary text-white text-xs font-semibold px-3 py-1.5 rounded-lg inline-flex items-center gap-1 hover:opacity-90 transition-opacity"
           >
             <FaPlus size={11} /> Add address
           </button>
         )}
       </div>
+      <div className="p-5">
 
       {showForm && (
         <form
@@ -235,21 +248,34 @@ const Addresses = () => {
               maxLength={20}
               className="border px-3 py-2 text-sm rounded outline-primary"
             />
-            <input
-              type="text"
-              placeholder="Division"
-              value={form.division}
-              onChange={(e) => setForm({ ...form, division: e.target.value })}
-              maxLength={100}
-              className="border px-3 py-2 text-sm rounded outline-primary"
+            <Select
+              placeholder="City"
+              options={cities}
+              value={form.division ? { city_name: form.division } : null}
+              getOptionLabel={(x) => x?.city_name}
+              getOptionValue={(x) => x?.city_id}
+              onChange={(opt) => {
+                setIsZoneOpen(false);
+                setForm({ ...form, division: opt?.city_name || "", district: "" });
+                setDivisionID(opt?.city_id);
+                setTimeout(() => setIsZoneOpen(true), 100);
+              }}
+              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
             />
-            <input
-              type="text"
-              placeholder="District"
-              value={form.district}
-              onChange={(e) => setForm({ ...form, district: e.target.value })}
-              maxLength={100}
-              className="border px-3 py-2 text-sm rounded outline-primary"
+            <Select
+              placeholder="Zone / Thana"
+              options={zoneData?.data}
+              value={form.district ? { zone_name: form.district } : null}
+              isDisabled={!isZoneOpen || !divisionID}
+              isLoading={zoneLoading}
+              getOptionLabel={(x) => x?.zone_name}
+              getOptionValue={(x) => x?.zone_id}
+              onChange={(opt) => {
+                setForm({ ...form, district: opt?.zone_name || "" });
+              }}
+              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+              styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
             />
           </div>
           <textarea
@@ -395,6 +421,7 @@ const Addresses = () => {
           ))}
         </div>
       )}
+    </div>
     </div>
   );
 };

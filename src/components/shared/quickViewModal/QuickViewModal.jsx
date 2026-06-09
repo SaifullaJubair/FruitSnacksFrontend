@@ -2,6 +2,7 @@
 
 import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
@@ -393,7 +394,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     return stars;
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <Overlay onClick={onClose} />
 
@@ -638,152 +639,186 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </motion.div>
                     ))}
 
-                  {stock > 0 && (
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex gap-2 items-center mb-2">
-                          <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                            Quantity:
-                          </p>
-                          <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
-                            <div className="flex items-center gap-1.5">
-                              {stock > 0 ? (
-                                <>
-                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                  <span className="text-[10px] sm:text-xs text-gray-500">
-                                    {stock} in stock
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                                  <span className="text-[10px] sm:text-xs text-gray-500">
-                                    Out of stock
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                  <div className="space-y-3">
+                    {stock <= 0 ? (
+                      /* OOS state — mirrors PDP pattern */
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full" />
+                          <span className="text-xs sm:text-sm font-semibold text-red-600">Out of Stock</span>
+                        </div>
+                        <p className="text-xs text-gray-400">This item is currently unavailable. Check back soon or view the product page for restock updates.</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled
+                            className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                          >
+                            <BsCart size={16} />
+                            Out of Stock
+                          </button>
+                          <Link
+                            href={`/products/${product.product_slug}`}
+                            onClick={onClose}
+                            className="flex-1"
+                          >
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                if (navigator.share) {
-                                  navigator.share({
-                                    title: product.product_name,
-                                    url:
-                                      window.location.origin +
-                                      `/products/${product.product_slug}`,
-                                  });
-                                } else {
-                                  navigator.clipboard.writeText(
-                                    window.location.origin +
-                                      `/products/${product.product_slug}`,
-                                  );
-                                  toast.success("Link copied to clipboard!");
-                                }
-                              }}
-                              className="text-gray-400 hover:text-primary transition-colors"
-                              title="Share product"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
                             >
-                              <BsShare size={14} />
+                              View Details <FiArrowUpRight size={14} />
+                            </motion.button>
+                          </Link>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={handleWishlist}
+                            className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
+                          >
+                            {isWishlisted ? (
+                              <BsHeartFill size={16} className="text-primary" />
+                            ) : (
+                              <BsHeart size={16} className="text-gray-600" />
+                            )}
+                          </motion.button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* In-stock state */
+                      <>
+                        <div>
+                          <div className="flex gap-2 items-center mb-2">
+                            <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                              Quantity:
+                            </p>
+                            <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] sm:text-xs text-gray-500">
+                                  {stock} in stock
+                                </span>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  if (navigator.share) {
+                                    navigator.share({
+                                      title: product.product_name,
+                                      url:
+                                        window.location.origin +
+                                        `/products/${product.product_slug}`,
+                                    });
+                                  } else {
+                                    navigator.clipboard.writeText(
+                                      window.location.origin +
+                                        `/products/${product.product_slug}`,
+                                    );
+                                    toast.success("Link copied to clipboard!");
+                                  }
+                                }}
+                                className="text-gray-400 hover:text-primary transition-colors"
+                                title="Share product"
+                              >
+                                <BsShare size={14} />
+                              </motion.button>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={handleDecrement}
+                              disabled={quantity <= 1}
+                              className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
+                            >
+                              <HiMinus className="text-gray-600" size={14} />
+                            </motion.button>
+                            <input
+                              type="number"
+                              readOnly
+                              value={quantity}
+                              className="w-12 sm:w-16 text-center border-y border-gray-200 py-2 outline-none text-xs sm:text-sm font-medium"
+                            />
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={handleIncrement}
+                              disabled={quantity >= stock}
+                              className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
+                            >
+                              <HiOutlinePlus
+                                className="text-gray-600"
+                                size={14}
+                              />
                             </motion.button>
                           </div>
                         </div>
-                        <div className="flex items-center">
+
+                        <div className="flex items-center gap-2">
                           <motion.button
-                            whileTap={{ scale: 0.9 }}
+                            whileHover={!isInCart ? { scale: 1.02 } : {}}
+                            whileTap={!isInCart ? { scale: 0.98 } : {}}
                             type="button"
-                            onClick={handleDecrement}
-                            disabled={quantity <= 1}
-                            className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
+                            onClick={handleAddToCart}
+                            disabled={isInCart}
+                            className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
+                              ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
+                              disabled:opacity-50 disabled:cursor-not-allowed`}
                           >
-                            <HiMinus className="text-gray-600" size={14} />
+                            {isInCart ? (
+                              <>
+                                <FiCheck size={16} />
+                                In Cart
+                              </>
+                            ) : addedToCart ? (
+                              <>
+                                <FiCheck size={16} />
+                                Added
+                              </>
+                            ) : (
+                              <>
+                                <BsCart size={16} />
+                                Add to Cart
+                              </>
+                            )}
                           </motion.button>
-                          <input
-                            type="number"
-                            readOnly
-                            value={quantity}
-                            className="w-12 sm:w-16 text-center border-y border-gray-200 py-2 outline-none text-xs sm:text-sm font-medium"
-                          />
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            type="button"
-                            onClick={handleIncrement}
-                            disabled={quantity >= stock}
-                            className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
+
+                          <Link
+                            href={`/products/${product.product_slug}`}
+                            onClick={onClose}
+                            className="flex-1"
                           >
-                            <HiOutlinePlus
-                              className="text-gray-600"
-                              size={14}
-                            />
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                            >
+                              View Details <FiArrowUpRight size={14} />
+                            </motion.button>
+                          </Link>
+
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={handleWishlist}
+                            className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
+                          >
+                            {isWishlisted ? (
+                              <BsHeartFill size={16} className="text-primary" />
+                            ) : (
+                              <BsHeart size={16} className="text-gray-600" />
+                            )}
                           </motion.button>
                         </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={
-                            !isInCart && stock > 0 ? { scale: 1.02 } : {}
-                          }
-                          whileTap={
-                            !isInCart && stock > 0 ? { scale: 0.98 } : {}
-                          }
-                          type="button"
-                          onClick={handleAddToCart}
-                          disabled={stock <= 0 || isInCart}
-                          className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
-                            ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
-                            disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {isInCart ? (
-                            <>
-                              <FiCheck size={16} />
-                              In Cart
-                            </>
-                          ) : addedToCart ? (
-                            <>
-                              <FiCheck size={16} />
-                              Added
-                            </>
-                          ) : (
-                            <>
-                              <BsCart size={16} />
-                              Add to Cart
-                            </>
-                          )}
-                        </motion.button>
-
-                        <Link
-                          href={`/products/${product.product_slug}`}
-                          onClick={onClose}
-                          className="flex-1"
-                        >
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            type="button"
-                            className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
-                          >
-                            View Details <FiArrowUpRight size={14} />
-                          </motion.button>
-                        </Link>
-
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                          onClick={handleWishlist}
-                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
-                        >
-                          {isWishlisted ? (
-                            <BsHeartFill size={16} className="text-primary" />
-                          ) : (
-                            <BsHeart size={16} className="text-gray-600" />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-                  )}
+                      </>
+                    )}
+                  </div>
 
                 </div>
               </div>
@@ -791,7 +826,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

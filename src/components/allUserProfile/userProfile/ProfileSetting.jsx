@@ -19,6 +19,7 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
   const [districtId, setDistrictId] = useState("");
   const [user_division, setDivision] = useState(userInfo?.data?.user_division);
   const [user_district, setDistrict] = useState(userInfo?.data?.user_district);
+  const [user_gender, setGender] = useState(userInfo?.data?.user_gender || "");
   const [isOpenDistrict, setIsOpenDistrict] = useState(true);
   const [changePassword, setChangePassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -81,6 +82,8 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
       user_name: data?.user_name || userInfo?.data?.user_name,
       user_phone: data?.user_phone || userInfo?.data?.user_phone,
       user_password: data?.user_password || userInfo?.data?.user_password,
+      user_additional_phone: data?.user_additional_phone ?? userInfo?.data?.user_additional_phone,
+      user_gender: user_gender || userInfo?.data?.user_gender,
       user_country: data?.user_country || userInfo?.data?.user_country,
       user_division: user_division || userInfo?.data?.user_division,
       user_district: user_district || userInfo?.data?.user_district,
@@ -115,8 +118,8 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
     }
   };
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="relative overflow-hidden text-left bg-white   shadow-xl w-[750px] p-6 max-h-[100vh] overflow-y-auto scrollbar-thin">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4">
+      <div className="relative overflow-hidden text-left bg-white rounded-2xl shadow-xl w-full max-w-[750px] p-6 max-h-[90dvh] overflow-y-auto scrollbar-thin">
         {" "}
         <div className="">
           <div className="flex items-center justify-between mt-4">
@@ -157,19 +160,49 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
                 <p className="text-red-600">{errors.user_name?.message}</p>
               )}
             </div>
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Phone No</label>
+                <input
+                  {...register("user_phone")}
+                  type="text"
+                  defaultValue={userInfo?.data?.user_phone}
+                  placeholder="Your Phone"
+                  readOnly
+                  className="mt-2 w-full border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700">Additional Phone</label>
+                <input
+                  {...register("user_additional_phone")}
+                  type="text"
+                  defaultValue={userInfo?.data?.user_additional_phone}
+                  placeholder="Alternative phone number"
+                  className="mt-2 w-full border-gray-200 shadow-sm sm:text-sm p-2 border-2"
+                />
+              </div>
+            </div>
             <div className="mt-2">
-              <label className="block text-xs font-medium text-gray-700">
-                Phone No
-              </label>
-
-              <input
-                {...register("user_phone")}
-                type="text"
-                defaultValue={userInfo?.data?.user_phone}
-                placeholder="Your Phone"
-                readOnly
-                className="mt-2 w-full   border-gray-200 shadow-sm sm:text-sm p-2 border-2"
-              />
+              <label className="block text-xs font-medium text-gray-700">Gender</label>
+              <div className="flex gap-4 mt-2">
+                {["male", "female", "other"].map((g) => (
+                  <label key={g} className="flex items-center gap-1.5 text-sm text-gray-700 cursor-pointer capitalize">
+                    <input
+                      type="radio"
+                      name="user_gender"
+                      value={g}
+                      checked={user_gender === g}
+                      onChange={() => setGender(g)}
+                      className="accent-primary"
+                    />
+                    {g}
+                  </label>
+                ))}
+                {user_gender && (
+                  <button type="button" onClick={() => setGender("")} className="text-xs text-gray-400 hover:text-gray-600 underline ml-auto">Clear</button>
+                )}
+              </div>
             </div>
             <div className="flex justify-between mt-3  bg-gray-100 p-2   shadow border ">
               <p className="text-gray-700 font-semibold text-sm">
@@ -374,7 +407,7 @@ const ProfileSetting = ({ setUserupdateModalOpen, userInfo, refetch }) => {
 
               <input
                 {...register("user_image", {
-                  valiDate: {
+                  validate: {
                     isImage: (value) =>
                       (value[0] && value[0].type.startsWith("image/")) ||
                       "Only image files are allowed",

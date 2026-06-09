@@ -58,59 +58,63 @@ const ShowProfileDetails = ({ userInfo, refetch }) => {
     setUserupdateModaldata();
   };
   return (
-    <div>
-      <h4 className=" bg-primary  p-4 flex items-center gap-3 text-white mb-2">
-        <FiSettings className=" text-2xl text-white" />
-        <span>Profile Details</span>
-      </h4>
-      <div className="my-10 bg-slate-50 shadow relative">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <FiSettings size={16} className="text-primary" />
+          <h2 className="text-base font-semibold text-gray-900">Profile Details</h2>
+        </div>
         <button
-          className="absolute right-5 top-5 flex items-center text-xl gap-2 font-semibold"
+          type="button"
           onClick={() => handleUpdateUser()}
+          className="flex items-center gap-1.5 text-xs font-semibold text-primary bg-primary/10 hover:bg-primary/20 px-3 py-1.5 rounded-lg transition-colors"
         >
-          Edit <FaRegEdit size={30} className="hover:text-gray-500" />
+          <FaRegEdit size={12} /> Edit Profile
         </button>
-        <div className="p-10">
-          {" "}
-          <div className="mb-10 flex justify-center items-center md:justify-start">
+      </div>
+
+      <div className="p-5">
+        {/* Avatar + name */}
+        <div className="flex items-center gap-4 mb-6">
+          {userInfo?.data?.user_image ? (
             <img
-              src={userInfo?.data?.user_image}
+              src={userInfo.data.user_image}
               alt=""
-              className="w-[70px] h-[70px] object-cover "
+              className="w-16 h-16 object-cover rounded-full ring-2 ring-primary/20"
             />
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-xl font-bold text-primary ring-2 ring-primary/20">
+              {userInfo?.data?.user_name?.charAt(0)?.toUpperCase() || "U"}
+            </div>
+          )}
+          <div>
+            <p className="font-semibold text-gray-900 text-sm">
+              {userInfo?.data?.user_name || "—"}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">{userInfo?.data?.user_phone}</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 text-xl md:text-2xl gap-4 md:gap-10">
-            <p>
-              {" "}
-              <span className="font-medium"> Name : </span>{" "}
-              {userInfo?.data?.user_name}
-            </p>
+        </div>
 
-            <p>
-              {" "}
-              <span className="font-medium"> Phone : </span>{" "}
-              {userInfo?.data?.user_phone}
-            </p>
-            <p>
-              <span className="font-medium">Country : </span> Bangladesh
-            </p>
-            <p>
-              <span className="font-medium">Division : </span>{" "}
-              {userInfo?.data?.user_division}
-            </p>
-            <p>
-              <span className="font-medium">District : </span>{" "}
-              {userInfo?.data?.user_district}
-            </p>
-            <p>
-              <span className="font-medium">Address : </span>{" "}
-              {userInfo?.data?.user_address}
-            </p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            { label: "Name",             value: userInfo?.data?.user_name },
+            { label: "Phone",            value: userInfo?.data?.user_phone },
+            { label: "Additional Phone", value: userInfo?.data?.user_additional_phone },
+            { label: "Gender",           value: userInfo?.data?.user_gender },
+            { label: "Division",         value: userInfo?.data?.user_division },
+            { label: "District",         value: userInfo?.data?.user_district },
+            { label: "Address",          value: userInfo?.data?.user_address },
+          ].map(({ label, value }) => (
+            <div key={label} className="bg-gray-50 rounded-xl p-3">
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mb-0.5">{label}</p>
+              <p className="text-sm text-gray-800 font-medium">{value || <span className="text-gray-300 font-normal">—</span>}</p>
+            </div>
+          ))}
+        </div>
 
-          {/* Phase 1C — email row (collapsed inline editor). Used
-              for order receipts + Meta CAPI Advanced Matching `em`. */}
-          <div className="mt-6 pt-6 border-t border-gray-200">
+          {/* Phase 1C — email row */}
+          <div className="mt-4 pt-4 border-t border-gray-100">
             <div className="flex flex-wrap items-center gap-3 text-base md:text-lg">
               <FaEnvelope className="text-gray-500" />
               <span className="font-medium">Email :</span>
@@ -171,7 +175,6 @@ const ShowProfileDetails = ({ userInfo, refetch }) => {
             </p>
           </div>
         </div>
-      </div>
 
       {userupdateModalOpen && (
         <ProfileSetting

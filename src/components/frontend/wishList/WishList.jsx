@@ -191,6 +191,11 @@ const WishList = () => {
                   const discount = origPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
                   const inCart = isInCart(product);
                   const inStock = isInStock(product);
+                  const varImg =
+                    product?.variations?.variation_images?.[0] ||
+                    product?.variations?.variation_image ||
+                    null;
+                  const displayImg = varImg || product?.main_image;
 
                   return (
                     <div
@@ -200,7 +205,7 @@ const WishList = () => {
                       <div className="relative aspect-square overflow-hidden bg-gray-50">
                         <Link href={`/products/${product?.product_slug}`}>
                           <Image
-                            src={product?.main_image || "/assets/images/placeholder.jpg"}
+                            src={displayImg || "/assets/images/placeholder.jpg"}
                             fill alt={product?.product_name || "Product"}
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                           />
@@ -270,6 +275,11 @@ const WishList = () => {
                     const discount = origPrice ? Math.round(((origPrice - price) / origPrice) * 100) : 0;
                     const inCart = isInCart(product);
                     const inStock = isInStock(product);
+                    const varImg =
+                      product?.variations?.variation_images?.[0] ||
+                      product?.variations?.variation_image ||
+                      null;
+                    const displayImg = varImg || product?.main_image;
 
                     return (
                       <div
@@ -280,7 +290,7 @@ const WishList = () => {
                         <Link href={`/products/${product?.product_slug}`} className="shrink-0">
                           <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
                             <Image
-                              src={product?.main_image || "/assets/images/placeholder.jpg"}
+                              src={displayImg || "/assets/images/placeholder.jpg"}
                               width={56} height={56}
                               alt={product?.product_name || "Product"}
                               className="w-full h-full object-cover"
