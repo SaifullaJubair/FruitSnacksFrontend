@@ -130,7 +130,7 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
         if (p?.is_variation && p?.variations?.length > 0) {
           // If initialVariantId provided, pre-select that variation; else use first
           const targetVariation = initialVariantId
-            ? p.variations.find((v) => v._id === initialVariantId) || p.variations[0]
+            ? p.variations.find((v) => String(v._id) === String(initialVariantId)) || p.variations[0]
             : p.variations[0];
 
           setVariationProduct(targetVariation);
@@ -147,11 +147,26 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
           if (p.attributes_details?.length > 0) {
             const initial = {};
             if (initialVariantId && targetVariation.variation_name) {
-              const parts = targetVariation.variation_name.split("-");
-              p.attributes_details.forEach((attr, idx) => {
-                const matchingVal = attr.attribute_values?.find(
-                  (v) => v.attribute_value_name === parts[idx],
+              // variation_name = "l-Royal Cobalt"
+              // For each attribute, find the value whose name appears as a segment in variation_name
+              // Segments are separated by "-" but values can contain spaces (e.g. "Royal Cobalt")
+              // Strategy: for each attribute value, check if variation_name contains it as an exact segment
+              const vName = targetVariation.variation_name.toLowerCase();
+              p.attributes_details.forEach((attr) => {
+                // Sort by length descending so longer names match first (e.g. "Royal Cobalt" before "Cobalt")
+                const sorted = [...(attr.attribute_values || [])].sort(
+                  (a, b) => b.attribute_value_name.length - a.attribute_value_name.length,
                 );
+                const matchingVal = sorted.find((v) => {
+                  const vn = v.attribute_value_name.trim().toLowerCase();
+                  // Match as exact segment: at start, end, or surrounded by "-"
+                  return (
+                    vName === vn ||
+                    vName.startsWith(vn + "-") ||
+                    vName.endsWith("-" + vn) ||
+                    vName.includes("-" + vn + "-")
+                  );
+                });
                 if (matchingVal) initial[attr.attribute_name] = matchingVal;
                 else if (attr.attribute_values?.length > 0)
                   initial[attr.attribute_name] = attr.attribute_values[0];
