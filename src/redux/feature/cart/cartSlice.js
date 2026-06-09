@@ -21,7 +21,7 @@ const cartSlice = createSlice({
   reducers: {
     // Add to cart
     addToCart: (state, action) => {
-      const { productId, variation_product_id, quantity = 1 } = action.payload;
+      const { productId, variation_product_id, quantity = 1, product_slug } = action.payload;
       const existing = state.products.find((p) =>
         isSameItem(p, productId, variation_product_id),
       );
@@ -33,12 +33,13 @@ const cartSlice = createSlice({
           productId,
           variation_product_id: variation_product_id || null,
           quantity,
+          product_slug: product_slug || null,
         });
         state.totalQuantity += quantity;
       }
     },
 
-    // Remove from cart (পুরো item সরিয়ে দাও)
+    // Remove from cart
     removeFromCart: (state, action) => {
       const { productId, variation_product_id } = action.payload;
       const index = state.products.findIndex((p) =>
@@ -48,6 +49,59 @@ const cartSlice = createSlice({
         state.totalQuantity -= state.products[index].quantity;
         state.products.splice(index, 1);
       }
+    },
+
+    // Atomic replace — 3 cases handled:
+    // 1. Same variant → just update quantity
+    // 2. New variant already in cart → remove old, merge qty into existing
+    // 3. Clean replace → remove old, insert new
+    replaceCartItem: (state, action) => {
+      const {
+        oldProductId,
+        oldVariationId,
+        newProductId,
+        newVariationId,
+        qty,
+        newSlug,
+      } = action.payload;
+
+      const oldIndex = state.products.findIndex((p) =>
+        isSameItem(p, oldProductId, oldVariationId),
+      );
+      if (oldIndex === -1) return;
+      const oldQty = state.products[oldIndex].quantity;
+      const finalQty = qty ?? oldQty;
+
+      // Case 1: same variant → update qty only
+      if (oldProductId === newProductId && oldVariationId === newVariationId) {
+        const diff = finalQty - oldQty;
+        state.products[oldIndex].quantity = finalQty;
+        state.totalQuantity += diff;
+        return;
+      }
+
+      // Case 2: new variant already in cart → remove old, merge qty
+      const existingNewIndex = state.products.findIndex((p) =>
+        isSameItem(p, newProductId, newVariationId),
+      );
+      if (existingNewIndex !== -1) {
+        state.totalQuantity -= oldQty;
+        state.products.splice(oldIndex, 1);
+        const adjusted = existingNewIndex > oldIndex ? existingNewIndex - 1 : existingNewIndex;
+        state.products[adjusted].quantity += finalQty;
+        state.totalQuantity += finalQty;
+        return;
+      }
+
+      // Case 3: clean replace
+      state.totalQuantity -= oldQty;
+      state.products.splice(oldIndex, 1, {
+        productId: newProductId,
+        variation_product_id: newVariationId || null,
+        quantity: finalQty,
+        product_slug: newSlug || null,
+      });
+      state.totalQuantity += finalQty;
     },
 
     // Increment quantity
@@ -91,14 +145,14 @@ const cartSlice = createSlice({
 
     // Login এর পরে DB থেকে cart load করো (DB cart > localStorage cart)
     setCartFromDB: (state, action) => {
-      const dbProducts = action.payload; // [{product_id, variation_id, quantity}]
+      const dbProducts = action.payload; // [{product_id, variation_id, quantity, product_slug?}]
       if (!dbProducts?.length) return;
 
-      // DB format থেকে Redux format এ convert করো
       state.products = dbProducts.map((item) => ({
         productId: item.product_id,
         variation_product_id: item.variation_id || null,
         quantity: item.quantity,
+        product_slug: item.product_slug || null,
       }));
       state.totalQuantity = state.products.reduce(
         (sum, p) => sum + p.quantity,
@@ -122,6 +176,7 @@ export const {
   incrementQuantity,
   updateQuantity,
   setCartFromDB,
+  replaceCartItem,
 } = cartSlice.actions;
 
 export default cartSlice.reducer;

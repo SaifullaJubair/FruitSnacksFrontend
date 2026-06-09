@@ -44,6 +44,7 @@ const UserDashboardWishList = () => {
       productId: product?._id,
       quantity: 1,
       variation_product_id: product?.is_variation ? product?.variations?._id : null,
+      product_slug: product?.product_slug || null,
     };
     const alreadyInCart = cartProducts.some(
       (c) => c.productId === product?._id &&

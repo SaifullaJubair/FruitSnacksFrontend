@@ -19,7 +19,7 @@ const CartLoader = () => {
     // (syncCartAfterLogin POST /cart/sync → DB merge → setCartFromDB)
     // 없으면 그냥 DB cart overwrite
     if (localProducts.length > 0) {
-      syncCartAfterLogin(localProducts, dispatch);
+      syncCartAfterLogin(localProducts, dispatch, userInfo.data._id);
     } else {
       loadCartFromDB(dispatch);
     }

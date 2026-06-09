@@ -107,13 +107,10 @@ const ProductCard = ({ product, badge, activeFilters }) => {
     }
     dispatch(
       addToCart({
-        _id: product?._id,
-        product_name: product?.product_name,
-        main_image: product?.main_image,
-        product_slug: product?.product_slug,
-        product_price: price,
+        productId: product?._id,
+        variation_product_id: null,
         quantity: 1,
-        is_variation: false,
+        product_slug: product?.product_slug || null,
       }),
     );
     toast.success("Added to cart", { autoClose: 1200 });

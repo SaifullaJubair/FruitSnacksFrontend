@@ -1,16 +1,18 @@
 import Link from "next/link";
 import Image from "next/image";
+import { useState } from "react";
 import {
   decrementQuantity,
   incrementQuantity,
   removeFromCart,
   updateQuantity,
 } from "@/redux/feature/cart/cartSlice";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { productPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { PhotoProvider, PhotoView } from "react-photo-view";
-import { FiMinus, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiMinus, FiPlus, FiTrash2, FiEye } from "react-icons/fi";
+import QuickViewModal from "@/components/shared/quickViewModal/QuickViewModal";
 
 const CartTable = ({
   products,
@@ -20,8 +22,30 @@ const CartTable = ({
   onRemoveFromCache,
 }) => {
   const dispatch = useDispatch();
+  const cartReduxProducts = useSelector((state) => state.cart.products);
   const { data: settingsData } = useGetSettingData();
   const currencySymbol = settingsData?.data?.[0]?.currency_symbol;
+
+  // Cart quick-edit modal state
+  const [editItem, setEditItem] = useState(null); // { product_slug, productId, variationId }
+
+  const handleOpenEditModal = (product) => {
+    // Find the Redux cart item to get product_slug
+    const reduxItem = cartReduxProducts.find(
+      (item) =>
+        item.productId === product._id &&
+        (product.variations?._id
+          ? item.variation_product_id === product.variations._id
+          : !item.variation_product_id),
+    );
+    const slug = reduxItem?.product_slug || product?.product_slug || null;
+    if (!slug) return; // no slug = can't open modal
+    setEditItem({
+      product_slug: slug,
+      productId: product._id,
+      variationId: product.variations?._id || null,
+    });
+  };
 
   const getMaxStock = (product) =>
     product?.variations?._id
@@ -98,6 +122,7 @@ const CartTable = ({
   };
 
   return (
+    <>
     <PhotoProvider>
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
         {/* Header */}
@@ -229,11 +254,19 @@ const CartTable = ({
                       </button>
                     </div>
 
-                    {/* Subtotal + remove */}
+                    {/* Subtotal + actions */}
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-gray-900 min-w-[56px] text-right">
                         {currencySymbol}{subtotal}
                       </span>
+                      <button
+                        type="button"
+                        title="Edit variant"
+                        onClick={() => handleOpenEditModal(product)}
+                        className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:bg-primary/10 hover:text-primary transition-all"
+                      >
+                        <FiEye size={13} />
+                      </button>
                       <button
                         type="button"
                         onClick={() => handleRemove(product)}
@@ -254,6 +287,18 @@ const CartTable = ({
         </div>
       </div>
     </PhotoProvider>
+
+    {/* Cart quick-edit modal */}
+    {editItem && (
+      <QuickViewModal
+        product={{ product_slug: editItem.product_slug }}
+        onClose={() => setEditItem(null)}
+        mode="cart-edit"
+        initialVariantId={editItem.variationId}
+        cartItemOld={{ productId: editItem.productId, variationId: editItem.variationId }}
+      />
+    )}
+    </>
   );
 };
 

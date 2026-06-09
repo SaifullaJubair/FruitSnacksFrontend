@@ -232,15 +232,8 @@ const AddToCart = () => {
 
   const handleRemoveFromCache = useCallback(
     (productId, variationId) => {
-      queryClient.setQueryData([CART_QUERY_KEY], (old = []) =>
-        old.filter((item) => {
-          if (variationId)
-            return !(
-              item._id === productId && item.variations?._id === variationId
-            );
-          return !(item._id === productId && !item.variations?._id);
-        }),
-      );
+      // Invalidate by prefix — covers [CART_QUERY_KEY, cartKey] regardless of current cartKey
+      queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
     },
     [queryClient],
   );

@@ -21,7 +21,7 @@ import "swiper/css/navigation";
 import "swiper/css/thumbs";
 
 import { BASE_URL } from "@/components/utils/baseURL";
-import { addToCart } from "@/redux/feature/cart/cartSlice";
+import { addToCart, replaceCartItem } from "@/redux/feature/cart/cartSlice";
 import { calculatePrice, isHexColor, singleProductPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -41,7 +41,11 @@ const Overlay = ({ onClick }) => (
   />
 );
 
-const QuickViewModal = ({ product: listProduct, onClose }) => {
+// mode="cart-edit" → Replace Cart Item + Add New buttons
+// mode="view" (default) → standard Add to Cart button
+// initialVariantId → pre-select this variation after fetch
+// cartItemOld → {productId, variationId} of the item being edited (required for replace)
+const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialVariantId = null, cartItemOld = null }) => {
   const dispatch = useDispatch();
   const cartProducts = useSelector((state) => state.cart.products);
   const { data: settingsData } = useGetSettingData();
@@ -124,23 +128,40 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
 
         // Initial price & stock
         if (p?.is_variation && p?.variations?.length > 0) {
-          const firstVariation = p.variations[0];
-          setVariationProduct(firstVariation);
-          setStock(firstVariation.variation_quantity);
-          const price =
-            firstVariation.variation_discount_price ||
-            firstVariation.variation_price;
-          setProductPrice(price);
-          if (firstVariation.variation_discount_price)
-            setLineThoughPrice(firstVariation.variation_price);
-          setActiveImage(firstVariation.variation_image || p.main_image);
+          // If initialVariantId provided, pre-select that variation; else use first
+          const targetVariation = initialVariantId
+            ? p.variations.find((v) => v._id === initialVariantId) || p.variations[0]
+            : p.variations[0];
 
+          setVariationProduct(targetVariation);
+          setStock(targetVariation.variation_quantity);
+          const price =
+            targetVariation.variation_discount_price ||
+            targetVariation.variation_price;
+          setProductPrice(price);
+          if (targetVariation.variation_discount_price)
+            setLineThoughPrice(targetVariation.variation_price);
+          setActiveImage(targetVariation.variation_image || p.main_image);
+
+          // Build selectedVariations from the target variation's name (e.g. "Red-XL")
           if (p.attributes_details?.length > 0) {
             const initial = {};
-            p.attributes_details.forEach((attr) => {
-              if (attr.attribute_values?.length > 0)
-                initial[attr.attribute_name] = attr.attribute_values[0];
-            });
+            if (initialVariantId && targetVariation.variation_name) {
+              const parts = targetVariation.variation_name.split("-");
+              p.attributes_details.forEach((attr, idx) => {
+                const matchingVal = attr.attribute_values?.find(
+                  (v) => v.attribute_value_name === parts[idx],
+                );
+                if (matchingVal) initial[attr.attribute_name] = matchingVal;
+                else if (attr.attribute_values?.length > 0)
+                  initial[attr.attribute_name] = attr.attribute_values[0];
+              });
+            } else {
+              p.attributes_details.forEach((attr) => {
+                if (attr.attribute_values?.length > 0)
+                  initial[attr.attribute_name] = attr.attribute_values[0];
+              });
+            }
             setSelectedVariations(initial);
           }
         } else {
@@ -248,7 +269,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     [product, selectedVariations, galleryImages],
   );
 
-  // Add to cart
+  // Standard Add to Cart (view mode)
   const handleAddToCart = useCallback(() => {
     if (!product) return;
     if (product.is_variation && !variationProduct) {
@@ -265,29 +286,60 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         productId: product._id,
         variation_product_id: variationProduct?._id || null,
         quantity,
+        product_slug: product.product_slug || null,
       }),
     );
     setAddedToCart(true);
     toast.success("Added to cart!", { autoClose: 1500 });
     setTimeout(() => setAddedToCart(false), 1500);
 
-    // ✅ AddToCart — Phase 1B EMQ user_data.
     trackAddToCart(
       product,
       variationProduct,
       quantity,
       buildAnalyticsUserData(userInfo),
     );
-  }, [
-    product,
-    variationProduct,
-    quantity,
-    dispatch,
-    trackAddToCart,
-    userInfo,
-    productPrice,
-    isInCart,
-  ]);
+  }, [product, variationProduct, quantity, dispatch, trackAddToCart, userInfo, isInCart]);
+
+  // cart-edit mode: Replace the original cart item with the currently selected variant
+  const handleReplaceCartItem = useCallback(() => {
+    if (!product || !cartItemOld) return;
+    if (product.is_variation && !variationProduct) {
+      toast.error("Please select a variation");
+      return;
+    }
+    dispatch(
+      replaceCartItem({
+        oldProductId: cartItemOld.productId,
+        oldVariationId: cartItemOld.variationId || null,
+        newProductId: product._id,
+        newVariationId: variationProduct?._id || null,
+        qty: quantity,
+        newSlug: product.product_slug || null,
+      }),
+    );
+    toast.success("Cart updated!", { autoClose: 1500 });
+    onClose();
+  }, [product, variationProduct, quantity, dispatch, cartItemOld, onClose]);
+
+  // cart-edit mode: Add selected variant as a new line (merge if already exists)
+  const handleAddNew = useCallback(() => {
+    if (!product) return;
+    if (product.is_variation && !variationProduct) {
+      toast.error("Please select a variation");
+      return;
+    }
+    dispatch(
+      addToCart({
+        productId: product._id,
+        variation_product_id: variationProduct?._id || null,
+        quantity,
+        product_slug: product.product_slug || null,
+      }),
+    );
+    toast.success("Added to cart!", { autoClose: 1500 });
+    onClose();
+  }, [product, variationProduct, quantity, dispatch, onClose]);
 
   // Wishlist
   const handleWishlist = useCallback(() => {
@@ -758,64 +810,82 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <motion.button
-                            whileHover={!isInCart ? { scale: 1.02 } : {}}
-                            whileTap={!isInCart ? { scale: 0.98 } : {}}
-                            type="button"
-                            onClick={handleAddToCart}
-                            disabled={isInCart}
-                            className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
-                              ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
-                              disabled:opacity-50 disabled:cursor-not-allowed`}
-                          >
-                            {isInCart ? (
-                              <>
-                                <FiCheck size={16} />
-                                In Cart
-                              </>
-                            ) : addedToCart ? (
-                              <>
-                                <FiCheck size={16} />
-                                Added
-                              </>
-                            ) : (
-                              <>
-                                <BsCart size={16} />
-                                Add to Cart
-                              </>
-                            )}
-                          </motion.button>
-
-                          <Link
-                            href={`/products/${product.product_slug}`}
-                            onClick={onClose}
-                            className="flex-1"
-                          >
+                        {mode === "cart-edit" ? (
+                          /* Cart-edit mode: Replace + Add New */
+                          <div className="flex items-center gap-2">
                             <motion.button
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
                               type="button"
-                              className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                              onClick={handleReplaceCartItem}
+                              className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition"
                             >
-                              View Details <FiArrowUpRight size={14} />
+                              <FiCheck size={15} />
+                              Replace Cart Item
                             </motion.button>
-                          </Link>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              onClick={handleAddNew}
+                              className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                            >
+                              <BsCart size={15} />
+                              Add New
+                            </motion.button>
+                          </div>
+                        ) : (
+                          /* Standard view mode */
+                          <div className="flex items-center gap-2">
+                            <motion.button
+                              whileHover={!isInCart ? { scale: 1.02 } : {}}
+                              whileTap={!isInCart ? { scale: 0.98 } : {}}
+                              type="button"
+                              onClick={handleAddToCart}
+                              disabled={isInCart}
+                              className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
+                                ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
+                                disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {isInCart ? (
+                                <><FiCheck size={16} />In Cart</>
+                              ) : addedToCart ? (
+                                <><FiCheck size={16} />Added</>
+                              ) : (
+                                <><BsCart size={16} />Add to Cart</>
+                              )}
+                            </motion.button>
 
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            type="button"
-                            onClick={handleWishlist}
-                            className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
-                          >
-                            {isWishlisted ? (
-                              <BsHeartFill size={16} className="text-primary" />
-                            ) : (
-                              <BsHeart size={16} className="text-gray-600" />
-                            )}
-                          </motion.button>
-                        </div>
+                            <Link
+                              href={`/products/${product.product_slug}`}
+                              onClick={onClose}
+                              className="flex-1"
+                            >
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                              >
+                                View Details <FiArrowUpRight size={14} />
+                              </motion.button>
+                            </Link>
+
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={handleWishlist}
+                              className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
+                            >
+                              {isWishlisted ? (
+                                <BsHeartFill size={16} className="text-primary" />
+                              ) : (
+                                <BsHeart size={16} className="text-gray-600" />
+                              )}
+                            </motion.button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

@@ -91,6 +91,7 @@ const WishList = () => {
       productId: product?._id,
       quantity: 1,
       variation_product_id: product?.is_variation ? product?.variations?._id : null,
+      product_slug: product?.product_slug || null,
     }));
     toast.success("Added to cart", { autoClose: 1500 });
     queryClient.invalidateQueries({ queryKey: [CART_QUERY_KEY] });
