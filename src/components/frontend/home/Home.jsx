@@ -22,7 +22,8 @@ const Home = async () => {
   return (
     <div className="w-full max-w-screen-2xl mx-auto">
       {getSectionEnabled("hero") && <Banner />}
-      {getSectionEnabled("flash_sale") && <FlashSale />}
+      {/* Flash sale — temporarily disabled; re-enable when BE endpoint is ready */}
+      {/* {getSectionEnabled("flash_sale") && <FlashSale />} */}
       <SectionRenderer sections={sections} settings={settings} />
     </div>
   );
