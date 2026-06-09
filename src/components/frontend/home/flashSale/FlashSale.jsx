@@ -1,13 +1,17 @@
 import Contain from "@/components/common/Contain";
 import FlashClockCounter from "./FlashClockCounter";
-
 import FlashProductSlider from "./FlashProductSlider";
 import { getFlashSaleProducts } from "@/components/lib/getFlashSaleProducts";
+import { getServerSettingData } from "@/components/lib/getServerSettingData";
 
 const FlashSale = async () => {
-  const data = await getFlashSaleProducts();
+  const [data, settingData] = await Promise.all([
+    getFlashSaleProducts(),
+    getServerSettingData(),
+  ]);
   if (!data) return null;
   const products = data?.data;
+  const currencySymbol = settingData?.data?.[0]?.currency_symbol || "৳";
   const today = new Date();
   // console.log(today);
   if (products?.length === 0) {
@@ -39,7 +43,7 @@ const FlashSale = async () => {
               </h1>
             </div>
             <div className="absolute top-6 left-20 w-[95%]">
-              <FlashProductSlider products={products?.flash_sale_products} />
+              <FlashProductSlider products={products?.flash_sale_products} currencySymbol={currencySymbol} />
             </div>
           </div>
         </div>

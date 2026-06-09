@@ -23,19 +23,22 @@ export const productPrice = (product) => {
     ? product.variations[0]
     : product?.variations;
 
-  // Base price: variation discount → variation → product discount → product
+  // Flash sale overrides everything — base is always undiscounted original price
+  if (product?.flash_sale_details?.flash_sale_product) {
+    const fp = product.flash_sale_details.flash_sale_product;
+    const flashBase = product?.is_variation && v0
+      ? v0.variation_price
+      : product?.product_price;
+    if (fp?.flash_price_type && flashBase)
+      return calculatePrice(flashBase, fp.flash_sale_product_price, fp.flash_price_type);
+    return fp.flash_sale_product_price;
+  }
+
+  // Base price for campaign/normal: variation discount → variation → product discount → product
   let price =
     product?.is_variation && v0
       ? v0.variation_discount_price || v0.variation_price
       : product?.product_discount_price || product?.product_price;
-
-  // Flash sale overrides everything
-  if (product?.flash_sale_details?.flash_sale_product) {
-    const fp = product.flash_sale_details.flash_sale_product;
-    if (fp?.flash_price_type)
-      return calculatePrice(price, fp.flash_sale_product_price, fp.flash_price_type);
-    return fp.flash_sale_product_price;
-  }
 
   // Campaign discount
   if (product?.campaign_details?.campaign_product) {
@@ -105,18 +108,16 @@ export const singleProductPrice = (product) => {
   // Helper function to calculate price based on type
 
   // Check Flash Sale Details
+  // Flash applies to the undiscounted base price (variation_price / product_price),
+  // NOT on top of an existing variation_discount_price — matches Shopify/Daraz standard.
   if (product?.flash_sale_details?.flash_sale_product) {
     const flashProduct = product.flash_sale_details.flash_sale_product;
     const priceType = flashProduct?.flash_price_type;
     const discountPrice = flashProduct?.flash_sale_product_price;
     const originalPrice =
       product?.is_variation && product?.variations?.length > 0
-        ? product?.variations?.[0]?.variation_discount_price
-          ? product?.variations?.[0]?.variation_discount_price
-          : product?.variations?.[0]?.variation_price
-        : product?.product_discount_price
-          ? product?.product_discount_price
-          : product?.product_price;
+        ? product?.variations?.[0]?.variation_price
+        : product?.product_price;
 
     if (priceType) {
       return calculatePrice(originalPrice, discountPrice, priceType);
@@ -131,12 +132,8 @@ export const singleProductPrice = (product) => {
     const discountPrice = campaignProduct?.campaign_product_price;
     const originalPrice =
       product?.is_variation && product?.variations?.length > 0
-        ? product?.variations?.[0]?.variation_discount_price
-          ? product?.variations?.[0]?.variation_discount_price
-          : product?.variations?.[0]?.variation_price
-        : product?.product_discount_price
-          ? product?.product_discount_price
-          : product?.product_price;
+        ? product?.variations?.[0]?.variation_price
+        : product?.product_price;
 
     if (priceType) {
       return calculatePrice(originalPrice, discountPrice, priceType);

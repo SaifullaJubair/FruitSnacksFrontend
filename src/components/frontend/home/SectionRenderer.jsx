@@ -13,6 +13,7 @@ import BrandStory from "./brandStory/BrandStory";
 import ReviewsCarousel from "./reviewsCarousel/ReviewsCarousel";
 import SiteFaqSection from "./siteFaqSection/SiteFaqSection";
 import NewsletterForm from "./newsletterForm/NewsletterForm";
+import ECommerceChoice from "./eCommerceChoice/ECommerceChoice";
 
 // Sections handled server-side in Home.jsx — skip here to avoid double-render
 const SERVER_SIDE_IDS = new Set(["hero", "flash_sale"]);
@@ -29,8 +30,9 @@ const SECTION_COMPONENTS = {
   reviews_carousel:   ReviewsCarousel,
   site_faq:           SiteFaqSection,
   newsletter:         NewsletterForm,
+  ecommerce_choice:    ECommerceChoice,
   // lower-priority sections not yet wired to components — will silently skip
-  // trust_strip, feature_categories, offers_block, just_for_you, ecommerce_choice
+  // trust_strip, feature_categories, offers_block, just_for_you
 };
 
 export default function SectionRenderer({ sections, settings }) {
