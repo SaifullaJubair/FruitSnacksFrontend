@@ -24,7 +24,7 @@ const CartSummary = ({
   minOrderAmount = 0,
 }) => {
   const { data: settingsData } = useGetSettingData();
-  const currencySymbol = settingsData?.data?.[0]?.currency_symbol;
+  const currencySymbol = settingsData?.data?.[0]?.currency_symbol ?? "";
 
   const savings = totalDiscount || 0;
   const belowMin = minOrderAmount > 0 && shopSubtotals < minOrderAmount;
@@ -145,8 +145,8 @@ const CartSummary = ({
         </div>
       )}
 
-      {/* Place order button */}
-      <div>
+      {/* Place order button — desktop only; mobile uses fixed bottom bar */}
+      <div className="hidden md:block">
         {loading ? (
           <div className="w-full py-3 flex items-center justify-center bg-primary text-white rounded-2xl">
             <MiniSpinner />

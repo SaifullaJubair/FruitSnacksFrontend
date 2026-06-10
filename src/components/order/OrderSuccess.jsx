@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { FaCheckCircle, FaFileInvoice, FaEnvelope } from "react-icons/fa";
-import { FiPackage, FiTruck, FiShield, FiLogIn, FiX } from "react-icons/fi";
+import { FiPackage, FiTruck, FiShield, FiLogIn, FiX, FiShoppingBag } from "react-icons/fi";
 import Contain from "../common/Contain";
 import { BASE_URL } from "@/components/utils/baseURL";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -24,17 +24,21 @@ const OrderSuccessContent = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState("full");
   const [orderData, setOrderData] = useState(null);
+  const [orderProducts, setOrderProducts] = useState([]);
   const [successState, setSuccessState] = useState(false);
 
   useEffect(() => {
     if (!orderId) return;
     const fetchOrder = async () => {
       try {
-        const res = await fetch(`${BASE_URL}/order/${orderId}`);
+        const res = await fetch(`${BASE_URL}/order/${orderId}`, {
+          credentials: "include",
+        });
         const data = await res.json();
         if (data?.success && data?.data?.order) {
           const order = data.data.order;
           setOrderData(order);
+          setOrderProducts(data.data.order_products || []);
 
           // ✅ Unverified হলে localStorage এ save করো banner এর জন্য
           const verified = order?.customer_id?.user_verified;
@@ -125,7 +129,7 @@ const OrderSuccessContent = () => {
           <div className="w-24 h-24 bg-green-50 rounded-full flex items-center justify-center">
             <FaCheckCircle className="text-green-500 text-5xl" />
           </div>
-          <div className="absolute inset-0 rounded-full border-2 border-green-200 animate-ping opacity-20" />
+          <div className="absolute inset-0 rounded-full border-2 border-green-200 opacity-20" style={{ animation: "ping 1s cubic-bezier(0,0,0.2,1) 3" }} />
         </div>
 
         <h1 className="text-2xl md:text-3xl font-bold mb-2 text-gray-800 text-center">
@@ -136,12 +140,44 @@ const OrderSuccessContent = () => {
         </p>
 
         {invoiceId && (
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-7">
+          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 mb-4">
             <FiPackage size={15} className="text-gray-400" />
             <span className="text-sm text-gray-500">Invoice ID:</span>
             <span className="text-sm font-bold text-gray-800 font-mono">
               {invoiceId}
             </span>
+          </div>
+        )}
+
+        {/* Order recap — total + item count + COD badge */}
+        {orderData && (
+          <div className="flex items-center gap-3 flex-wrap justify-center mb-7">
+            {orderProducts.length > 0 && (
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                <FiShoppingBag size={13} className="text-gray-400" />
+                <span className="text-sm text-gray-600 font-medium">
+                  {orderProducts.length} {orderProducts.length === 1 ? "item" : "items"}
+                </span>
+              </div>
+            )}
+            {orderData.grand_total_amount != null && (
+              <div className="flex items-center gap-1.5 bg-primary/5 border border-primary/20 rounded-xl px-3 py-2">
+                <span className="text-sm font-bold text-primary">
+                  ৳{orderData.grand_total_amount}
+                </span>
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 rounded-xl px-3 py-2">
+              <span className="text-xs font-semibold text-emerald-700">
+                Cash on Delivery
+              </span>
+            </div>
+            {orderData.shipping_location && (
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                <FiTruck size={12} className="text-gray-400" />
+                <span className="text-xs text-gray-500">{orderData.shipping_location}</span>
+              </div>
+            )}
           </div>
         )}
 

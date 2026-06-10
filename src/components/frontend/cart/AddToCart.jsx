@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useCallback, useState, useRef } from "react";
+import { FiLock } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { splitName } from "@/utils/nameSplit";
 import { firePurchaseOnce } from "@/utils/purchaseDedup";
@@ -504,7 +505,7 @@ const AddToCart = () => {
     );
 
   return (
-    <div className="min-h-screen bg-gray-50/60 relative">
+    <div className="min-h-screen bg-gray-50/60 relative pb-20 md:pb-0">
       {loading && (
         <div className="fixed inset-0 z-50 bg-white/80 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -587,6 +588,26 @@ const AddToCart = () => {
             </div>
           </div>
         </Contain>
+
+        {/* Mobile fixed bottom bar — hidden on md+ (desktop uses sidebar Place Order) */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-[10px] text-gray-400 leading-none mb-0.5">Total</p>
+              <p className="text-base font-bold text-primary leading-none">
+                {settingData?.data?.[0]?.currency_symbol ?? ""}{shopGrandTotals || 0}
+              </p>
+            </div>
+            <button
+              type="submit"
+              disabled={loading || (minOrderAmount > 0 && shopSubtotals < minOrderAmount)}
+              className="flex items-center justify-center gap-2 bg-primary text-white text-sm font-semibold px-6 py-3 rounded-2xl disabled:opacity-60 active:scale-95 transition-all"
+            >
+              <FiLock size={13} />
+              {loading ? "Placing..." : "Place Order"}
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   );

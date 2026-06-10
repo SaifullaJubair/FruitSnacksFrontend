@@ -14,11 +14,14 @@ import { currencyOf } from "@/utils/currency";
 
 const STATUS_STYLE = {
   pending:    "bg-orange-100 text-orange-600",
+  on_hold:    "bg-yellow-100 text-yellow-800",
+  confirmed:  "bg-teal-100 text-teal-700",
   processing: "bg-blue-100 text-blue-600",
   shipped:    "bg-purple-100 text-purple-600",
   delivered:  "bg-green-100 text-green-600",
+  completed:  "bg-emerald-100 text-emerald-700",
   cancel:     "bg-red-100 text-red-600",
-  return:     "bg-yellow-100 text-yellow-600",
+  return:     "bg-rose-100 text-rose-600",
 };
 
 const PurchaseHistory = () => {

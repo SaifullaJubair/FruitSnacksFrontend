@@ -45,31 +45,44 @@ import { currencyOf } from "@/utils/currency";
 
 // Status configurations
 const STATUS_LABEL = {
+  // order statuses
+  pending:   "Order Placed",
+  on_hold:   "On Hold",
+  confirmed: "Confirmed",
+  processing: "Processing",
+  shipped:   "Shipped",
+  delivered: "Delivered",
+  completed: "Completed",
+  cancel:    "Cancelled",
+  return:    "Returned",
+  // courier statuses
   in_review: "In Review",
-  pending: "Pickup Pending",
   hold: "On Hold",
   delivered_approval_pending: "Delivery Pending Approval",
   partial_delivered_approval_pending: "Partial Delivery Pending",
   cancelled_approval_pending: "Cancellation Pending",
   unknown_approval_pending: "Unknown — Pending",
-  delivered: "Delivered",
   partial_delivered: "Partially Delivered",
   cancelled: "Cancelled",
   unknown: "Unknown",
-  processing: "Processing",
-  shipped: "Shipped",
 };
 
 const STATUS_GRADIENT = {
+  pending:   "from-orange-500 to-amber-500",
+  on_hold:   "from-yellow-500 to-amber-600",
+  confirmed: "from-teal-500 to-cyan-500",
+  processing: "from-blue-400 to-indigo-500",
+  shipped:   "from-cyan-500 to-blue-500",
   delivered: "from-emerald-500 to-teal-500",
+  completed: "from-emerald-600 to-green-500",
+  cancel:    "from-rose-500 to-pink-500",
+  return:    "from-rose-400 to-red-500",
+  // courier statuses (kept for courier badge reuse)
   partial_delivered: "from-amber-500 to-orange-500",
   cancelled: "from-rose-500 to-pink-500",
   in_review: "from-blue-500 to-indigo-500",
-  pending: "from-orange-500 to-amber-500",
   hold: "from-purple-500 to-pink-500",
   unknown: "from-gray-400 to-gray-500",
-  processing: "from-blue-400 to-indigo-500",
-  shipped: "from-cyan-500 to-blue-500",
 };
 
 // Courier status configurations

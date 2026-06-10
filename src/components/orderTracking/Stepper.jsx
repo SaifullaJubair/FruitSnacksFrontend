@@ -29,11 +29,44 @@ const Stepper = ({ order }) => {
       time: order?.pending_time,
       status: "completed",
     },
+  ];
+
+  // on_hold — show only if this status was reached
+  if (order?.on_hold_time || order?.order_status === "on_hold") {
+    orderSteps.push({
+      id: "on_hold",
+      label: "On Hold",
+      icon: <FaClock size={18} />,
+      description: "Your order is temporarily on hold",
+      time: order?.on_hold_time,
+      status:
+        order?.order_status === "on_hold"
+          ? "current"
+          : order?.on_hold_time
+            ? "completed"
+            : "pending",
+    });
+  }
+
+  orderSteps.push(
+    {
+      id: "confirmed",
+      label: "Confirmed",
+      icon: <MdOutlineVerified size={18} />,
+      description: "Order confirmed by seller",
+      time: order?.confirmed_time,
+      status:
+        order?.order_status === "confirmed"
+          ? "current"
+          : order?.confirmed_time
+            ? "completed"
+            : "pending",
+    },
     {
       id: "processing",
       label: "Processing",
-      icon: <FaClock size={18} />,
-      description: "Seller is processing your order",
+      icon: <FaBoxOpen size={18} />,
+      description: "Seller is packing your order",
       time: order?.processing_time,
       status:
         order?.order_status === "processing"
@@ -68,12 +101,25 @@ const Stepper = ({ order }) => {
             ? "completed"
             : "pending",
     },
-  ];
+    {
+      id: "completed",
+      label: "Completed",
+      icon: <FaHome size={18} />,
+      description: "Order completed",
+      time: order?.completed_time,
+      status:
+        order?.order_status === "completed"
+          ? "current"
+          : order?.completed_time
+            ? "completed"
+            : "pending",
+    },
+  );
 
-  // Add cancelled/returned steps if applicable
-  if (order?.cancel_time || order?.order_status === "cancelled") {
+  // cancel/return — show only if reached
+  if (order?.cancel_time || order?.order_status === "cancel") {
     orderSteps.push({
-      id: "cancelled",
+      id: "cancel",
       label: "Cancelled",
       icon: <FaTimesCircle size={18} />,
       description: "Order has been cancelled",
@@ -82,9 +128,9 @@ const Stepper = ({ order }) => {
     });
   }
 
-  if (order?.return_time || order?.order_status === "returned") {
+  if (order?.return_time || order?.order_status === "return") {
     orderSteps.push({
-      id: "returned",
+      id: "return",
       label: "Returned",
       icon: <FaTimesCircle size={18} />,
       description: "Order has been returned",

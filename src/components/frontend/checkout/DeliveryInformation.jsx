@@ -88,7 +88,7 @@ const DeliveryInformation = ({
           </label>
 
           <input
-            {...register("customer_name")}
+            {...register("customer_name", { required: "Name is required" })}
             type="text"
             placeholder="Your Name"
             className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
@@ -115,7 +115,7 @@ const DeliveryInformation = ({
                   },
                 })}
                 onChange={() => setUserPhoneLogin(true)}
-                type="number"
+                type="tel"
                 defaultValue={userInfo?.data?.user_phone}
                 placeholder="Your Phone"
                 className="w-full border border-gray-200 rounded-xl px-3 py-1.5 text-sm outline-none focus:border-primary transition-colors"
