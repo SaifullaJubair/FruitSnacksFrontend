@@ -21,25 +21,4 @@ export const tagTypes = {
   site_setting: "site_setting",
 };
 
-export const tagTypesList = [
-  tagTypes.user,
-  tagTypes.auth,
-  tagTypes.category,
-  tagTypes.sub_category,
-  tagTypes.child_category,
-  tagTypes.filter,
-  tagTypes.brand,
-  tagTypes.specification,
-  tagTypes.product,
-  tagTypes.review,
-  tagTypes.question,
-  tagTypes.campaign,
-  tagTypes.offer,
-  tagTypes.coupon,
-  tagTypes.pc_builder,
-  tagTypes.wishlist,
-  tagTypes.getme,
-  tagTypes.order,
-  tagTypes.searchTerm,
-  tagTypes.site_setting,
-];
+export const tagTypesList = Object.values(tagTypes);

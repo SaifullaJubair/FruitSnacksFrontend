@@ -6,6 +6,7 @@ import {
   removeFromCart,
   updateQuantity,
   setCartFromDB,
+  replaceCartItem,
 } from "./feature/cart/cartSlice";
 import { BASE_URL } from "@/components/utils/baseURL";
 
@@ -17,6 +18,7 @@ const CART_ACTIONS = [
   updateQuantity.type,
   allRemoveFromCart.type,
   setCartFromDB.type,
+  replaceCartItem.type,
 ];
 
 // DB sync debounce — rapid clicks এ একবারই call হবে

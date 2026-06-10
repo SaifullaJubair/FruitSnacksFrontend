@@ -1,15 +1,13 @@
 import { BASE_URL } from "../utils/baseURL";
 
 export async function getFlashSaleProducts() {
-  const res = await fetch(`${BASE_URL}/flash_sale`, {
-    next: {
-      revalidate: 60,
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error("Flash sale fetching error!");
+  try {
+    const res = await fetch(`${BASE_URL}/flash-sale/active`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
   }
-
-  return res.json();
 }

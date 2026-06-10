@@ -6,12 +6,12 @@ import { BASE_URL } from "../utils/baseURL";
 export const getAllNewArrivalProduct = ({ page, limit, searchTerm }) => {
   return useQuery({
     queryKey: [
-      `/api/v1/product/popular_product?page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
+      `/api/v1/product/new_arrival?page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
     ],
     queryFn: async () => {
       try {
         const res = await fetch(
-          `${BASE_URL}/product/popular_product?page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
+          `${BASE_URL}/product/new_arrival?page=${page}&limit=${limit}&searchTerm=${searchTerm}`,
           {
             credentials: "include",
           }

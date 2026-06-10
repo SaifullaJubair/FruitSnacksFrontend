@@ -36,7 +36,7 @@ const ReviewHistory = ({
             </Button>
           </div>
 
-          <Link href="/all-products">
+          <Link href="/shop">
             <Button variant="outline" className="w-full">
               View All Products
             </Button>

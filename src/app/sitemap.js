@@ -17,7 +17,7 @@ export default async function sitemap() {
       priority: 1.0,
     },
     {
-      url: `${SITE_URL}/all-products`,
+      url: `${SITE_URL}/shop`,
       lastModified: new Date(),
       changeFrequency: "daily",
       priority: 0.9,
@@ -65,24 +65,6 @@ export default async function sitemap() {
       lastModified: LAUNCH_DATE,
       changeFrequency: "yearly",
       priority: 0.3,
-    },
-    {
-      url: `${SITE_URL}/new-arrival`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/top-product`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
-    },
-    {
-      url: `${SITE_URL}/all-trending-products`,
-      lastModified: new Date(),
-      changeFrequency: "daily",
-      priority: 0.9,
     },
   ];
 

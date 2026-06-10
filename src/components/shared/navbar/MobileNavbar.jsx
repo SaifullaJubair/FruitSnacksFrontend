@@ -116,21 +116,9 @@ const MobileNavbar = ({
           />
 
           <MenuItem
-            href="/all-products"
+            href="/shop"
             label="All Products"
-            isActive={isActive("/all-products")}
-            closeSideBar={closeSideBar}
-          />
-          <MenuItem
-            href="/all-brands"
-            label="All Brands"
-            isActive={isActive("/all-brands")}
-            closeSideBar={closeSideBar}
-          />
-          <MenuItem
-            href="/new-arrival"
-            label="New Arrival"
-            isActive={isActive("/new-arrival")}
+            isActive={isActive("/shop")}
             closeSideBar={closeSideBar}
           />
 

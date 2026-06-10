@@ -1,32 +1,30 @@
-// src/components/frontend/home/Home.jsx
+import { getServerSettingData } from "@/components/lib/getServerSettingData";
 import Banner from "./banner/Banner";
-import TrendingProduct from "./trendingProduct/TrendingProduct";
+import FlashSale from "./flashSale/FlashSale";
+import SectionRenderer from "./SectionRenderer";
 
-import CategoryWiseProduct from "./categoryWiseProduct/CategoryWiseProduct";
-import ECommerceChoice from "./eCommerceChoice/ECommerceChoice";
-import LatestProducts from "./latestProducts/LatestProducts";
-import PromotionalBanner from "./promotionalBanner/PromotionalBanner";
-import FeatureService from "./featureService/FeatureService";
+const Home = async () => {
+  let settings = null;
+  try {
+    const res = await getServerSettingData();
+    settings = res?.data?.[0] ?? null;
+  } catch {
+    // non-fatal — render with static defaults
+  }
 
-const Home = () => {
+  const sections = settings?.home_section_array ?? [];
+
+  const getSectionEnabled = (id, defaultEnabled = true) => {
+    const s = sections.find((x) => x.id === id);
+    return s ? s.enabled !== false : defaultEnabled;
+  };
+
   return (
-    <div className="container mx-auto ">
-      <div className="">
-        <Banner />
-        {/* <NewFeatureCategories />
-        <FeatureCategories /> */}
-        {/* <ECommerceChoice /> */}
-        <TrendingProduct />
-        <LatestProducts />
-        <CategoryWiseProduct />
-        {/* <PopularProducts /> */}
-        <FeatureService />
-        <PromotionalBanner />
-        {/* Latest Product */}
-        {/* <OnlyForYouProduct /> */}
-        {/* <AdsSection /> */}
-        {/* <SliderAd /> */}
-      </div>
+    <div className="w-full max-w-screen-2xl mx-auto">
+      {getSectionEnabled("hero") && <Banner />}
+      {/* Flash sale — temporarily disabled; re-enable when BE endpoint is ready */}
+      {/* {getSectionEnabled("flash_sale") && <FlashSale />} */}
+      <SectionRenderer sections={sections} settings={settings} />
     </div>
   );
 };

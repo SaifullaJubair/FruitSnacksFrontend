@@ -369,6 +369,7 @@ const SingleProduct = ({ product, theme }) => {
       productId: product?._id,
       quantity,
       variation_product_id: variationProduct?._id || null,
+      product_slug: product?.product_slug || null,
     };
     const inCart = cartProducts.some((item) =>
       variationProduct

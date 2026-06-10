@@ -3,202 +3,142 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Autoplay } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
-import Image from "next/image";
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
-import { productPrice, lineThroughPrice } from "@/utils/helper";
+import { FiArrowRight } from "react-icons/fi";
 import { BASE_URL } from "@/components/utils/baseURL";
-import useGetSettingData from "@/components/lib/getSettingData";
+import { SectionHeader } from "../trendingProduct/TrendingProduct";
+import ProductCardSkeleton from "@/components/common/ProductCardSkeleton";
+import ProductCard from "@/components/common/ProductCard";
 
 const CategoryWiseProduct = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(
-          // `http://localhost:5000/api/v1/product/just_for_you_product`
-          `${BASE_URL}/product/just_for_you_product`,
-        );
-        const result = await response.json();
-        setData(result?.data);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    fetch(`${BASE_URL}/product/just_for_you_product`)
+      .then((r) => r.json())
+      .then((r) => setData(r?.data || []))
+      .catch(console.error)
+      .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="h-96 bg-gray-100 animate-pulse"></div>;
-
-  return (
-    <div className="max-w-[98%] mx-auto px-4 py-4 sm:py-8">
-      {data?.map((categoryGroup, index) => (
-        <div
-          key={index}
-          className="grid grid-cols-2 sm:grid-cols-4 grid-rows-2 gap-4 mb-4 md:mb-12"
-        >
-          {/* Left 2 Columns - Category (Spanning 2 rows) */}
-          {categoryGroup?.categoryDetails && (
-            <div className="col-span-2 row-span-2 relative group overflow-hidden  w-full aspect-[2/3]">
-              <Link
-                href={`/category/${categoryGroup?.categoryDetails?.category_slug}`}
-              >
-                <Image
-                  src={categoryGroup?.categoryDetails?.category_logo}
-                  alt={categoryGroup?.categoryDetails?.category_name}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-                <div className="absolute inset-0 bg-black/30 flex flex-col items-center justify-center p-8 text-center">
-                  <h3 className="text-3xl font-bold text-white mb-4">
-                    {categoryGroup?.categoryDetails?.category_name}
-                  </h3>
-                  <p className="text-white text-lg mb-6">
-                    Explore our premium collection
-                  </p>
-                  <button className="bg-white text-gray-900 px-6 py-2 rounded-full font-medium hover:bg-gray-100 transition">
-                    Shop Now
-                  </button>
+  if (loading) {
+    return (
+      <section className="py-10 md:py-14 bg-gray-50">
+        <div className="max-w-[98%] mx-auto px-2">
+          <div className="h-9 w-56 bg-gray-200 rounded-lg animate-pulse mb-8" />
+          <div className="flex flex-col gap-8">
+            {[0, 1].map((i) => (
+              <div key={i} className="grid grid-cols-1 sm:grid-cols-5 lg:grid-cols-6 gap-4">
+                {/* category card skeleton */}
+                <div className="sm:col-span-2 aspect-[4/3] sm:aspect-auto sm:min-h-[320px] bg-gray-200 rounded-2xl animate-pulse" />
+                {/* product cards skeleton */}
+                <div className="sm:col-span-3 lg:col-span-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <ProductCardSkeleton count={3} />
                 </div>
-              </Link>
-            </div>
-          )}
-
-          {/* Right 2 Columns - Products */}
-
-          {/* First Row - Left to Right Swiper */}
-          <div className="col-span-2 row-span-1 relative">
-            <Swiper
-              modules={[Navigation, Autoplay]}
-              slidesPerView={2}
-              spaceBetween={20}
-              navigation={{
-                nextEl: `.next-slide-${index}`,
-                prevEl: `.prev-slide-${index}`,
-              }}
-              autoplay={{
-                delay: 4500,
-                disableOnInteraction: false,
-              }}
-              loop={true}
-              className="h-full"
-            >
-              {categoryGroup.products.map((product) => (
-                <SwiperSlide key={product._id} className="h-full">
-                  <ProductCard product={product} />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-            <button
-              className={`prev-slide-${index} absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all duration-300 transform -translate-x-1/2`}
-            >
-              <FaAngleLeft className="text-lg" />
-            </button>
-            <button
-              className={`next-slide-${index} absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all duration-300 transform translate-x-1/2`}
-            >
-              <FaAngleRight className="text-lg" />
-            </button>
-          </div>
-
-          {/* Second Row - Right to Left Swiper */}
-          <div className="col-span-2 row-span-1 relative">
-            <Swiper
-              modules={[Navigation, Autoplay]}
-              slidesPerView={2}
-              spaceBetween={20}
-              navigation={{
-                nextEl: `.next-slide-reverse-${index}`,
-                prevEl: `.prev-slide-reverse-${index}`,
-              }}
-              autoplay={{
-                delay: 4500,
-                disableOnInteraction: false,
-                reverseDirection: true,
-              }}
-              loop={true}
-              className="h-full"
-            >
-              {[...categoryGroup.products].reverse().map((product) => (
-                <SwiperSlide key={product._id} className="h-full">
-                  <ProductCard product={product} />
-                </SwiperSlide>
-              ))}
-            </Swiper>
-            <button
-              className={`prev-slide-reverse-${index} absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all duration-300 transform -translate-x-1/2`}
-            >
-              <FaAngleLeft className="text-lg" />
-            </button>
-            <button
-              className={`next-slide-reverse-${index} absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/80 hover:bg-white text-gray-800 rounded-full p-2 shadow-md transition-all duration-300 transform translate-x-1/2`}
-            >
-              <FaAngleRight className="text-lg" />
-            </button>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
+      </section>
+    );
+  }
+
+  if (!data?.length) return null;
+
+  return (
+    <section className="py-10 md:py-14 bg-gray-50">
+      <div className="max-w-[98%] mx-auto px-2">
+        <SectionHeader label="Shop by" accent="Category" />
+        <div className="flex flex-col gap-10">
+          {data.map((group, index) => (
+            <CategoryGroup key={index} group={group} index={index} />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 };
 
-const ProductCard = ({ product }) => {
-  const { data: settingsData } = useGetSettingData();
-  const currencySymbol = settingsData?.data[0];
+const CategoryGroup = ({ group, index }) => {
+  const prevId = `cat-prev-${index}`;
+  const nextId = `cat-next-${index}`;
+
   return (
-    <div className="bg-white shadow-md hover:shadow-xl transition-shadow duration-300  overflow-hidden h-full aspect-[2/3]">
+    // sm: 5 cols (cat=2, products=3) | lg: 6 cols (cat=2, products=4)
+    <div className="grid grid-cols-1 sm:grid-cols-5 lg:grid-cols-6 gap-4 items-stretch">
+
+      {/* ── Category card — 2 cols wide ── */}
       <Link
-        href={`/products/${product.product_slug}`}
-        className="block h-full relative"
+        href={`/category/${group?.categoryDetails?.category_slug}`}
+        className="sm:col-span-2 group relative overflow-hidden rounded-2xl bg-gray-900 aspect-[4/3] sm:aspect-auto sm:min-h-[320px] flex flex-col justify-end"
       >
-        {/* Product Image/Video */}
-        <div className="absolute inset-0">
-          {product.main_video ? (
-            <video
-              autoPlay
-              loop
-              muted
-              className="w-full h-full object-cover"
-              src={product.main_video}
-            />
-          ) : (
-            <Image
-              src={product.main_image || "/placeholder.jpg"}
-              alt={product.product_name}
-              fill
-              className="object-cover"
-            />
-          )}
+        {group?.categoryDetails?.category_logo && (
+          <Image
+            src={group.categoryDetails.category_logo}
+            alt={group?.categoryDetails?.category_name || "Category"}
+            fill
+            className="object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition-all duration-500"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 40vw, 33vw"
+          />
+        )}
+
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+
+        {/* Text */}
+        <div className="relative z-10 p-5">
+          <p className="text-white/60 text-[10px] uppercase tracking-widest font-medium mb-1.5">
+            Collection
+          </p>
+          <h3 className="text-white font-bold text-lg sm:text-xl leading-tight mb-4">
+            {group?.categoryDetails?.category_name}
+          </h3>
+          <span className="inline-flex items-center gap-1.5 text-xs text-white font-semibold bg-white/20 hover:bg-white/30 backdrop-blur-sm px-4 py-2 rounded-full transition-all duration-200 border border-white/30">
+            Shop Now <FiArrowRight size={12} />
+          </span>
         </div>
 
-        {/* Product Info Overlay */}
-        <div className="absolute inset-0 bg-black/20 flex flex-col items-center justify-center p-4 text-center opacity-0 hover:opacity-100 transition-opacity duration-300">
-          <div className="bg-white/90 p-2 md:p-4  max-w-[90%]">
-            <h3 className="text-sm lg:text-lg font-bold text-gray-800">
-              {product.product_name}
-            </h3>
-            <div className="mt-2">
-              <span className="lg:text-lg font-bold text-primary">
-                {currencySymbol?.currency_symbol}
-
-                {productPrice(product)}
-              </span>
-              {lineThroughPrice(product) && (
-                <span className="text-xs lg:text-sm ml-1 line-through text-gray-500">
-                  {currencySymbol?.currency_symbol}
-
-                  {lineThroughPrice(product)}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
+        {/* Product count badge */}
+        {group?.products?.length > 0 && (
+          <span className="absolute top-3 right-3 z-10 bg-black/50 backdrop-blur-sm text-white text-[10px] font-semibold px-2.5 py-1 rounded-full">
+            {group.products.length}+ items
+          </span>
+        )}
       </Link>
+
+      {/* ── Products slider — 3 cols on sm, 4 cols on lg ── */}
+      <div className="sm:col-span-3 lg:col-span-4 relative px-6">
+        <Swiper
+          modules={[Navigation, Autoplay]}
+          slidesPerView={2}
+          spaceBetween={12}
+          breakpoints={{
+            480:  { slidesPerView: 2, spaceBetween: 12 },
+            640:  { slidesPerView: 3, spaceBetween: 14 },
+            1280: { slidesPerView: 3, spaceBetween: 14 },
+          }}
+          navigation={{ nextEl: `.${nextId}`, prevEl: `.${prevId}` }}
+          autoplay={{ delay: 4000 + index * 400, disableOnInteraction: false, pauseOnMouseEnter: true }}
+          loop={group?.products?.length > 3}
+        >
+          {group?.products?.map((product) => (
+            <SwiperSlide key={product._id}>
+              <ProductCard product={product} />
+            </SwiperSlide>
+          ))}
+        </Swiper>
+
+        <button className={`${prevId} absolute left-0 top-[40%] -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full border border-gray-200 shadow-md flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 -translate-x-1`}>
+          <FaAngleLeft className="text-xs" />
+        </button>
+        <button className={`${nextId} absolute right-0 top-[40%] -translate-y-1/2 z-10 w-8 h-8 bg-white rounded-full border border-gray-200 shadow-md flex items-center justify-center hover:bg-primary hover:text-white hover:border-primary transition-all duration-200 translate-x-1`}>
+          <FaAngleRight className="text-xs" />
+        </button>
+      </div>
     </div>
   );
 };

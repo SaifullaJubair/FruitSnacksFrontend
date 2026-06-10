@@ -8,9 +8,16 @@ import { setCartFromDB } from "@/redux/feature/cart/cartSlice";
  * @param {Array} localProducts - Redux state এর products array
  * @param {Function} dispatch - Redux dispatch
  */
-export const syncCartAfterLogin = async (localProducts, dispatch) => {
+export const syncCartAfterLogin = async (localProducts, dispatch, userId) => {
+  // Once per browser session per user — prevent re-sync on every page reload
+  const flagKey = `cart_synced_${String(userId)}`;
+  if (typeof sessionStorage !== "undefined" && sessionStorage.getItem(flagKey)) {
+    // Already synced this session — just load from DB instead
+    await loadCartFromDB(dispatch);
+    return;
+  }
+
   try {
-    // localStorage cart DB তে পাঠাও
     const products = localProducts.map((item) => ({
       product_id: item.productId,
       variation_id: item.variation_product_id || null,
@@ -24,13 +31,17 @@ export const syncCartAfterLogin = async (localProducts, dispatch) => {
       body: JSON.stringify({ products }),
     });
 
-    if (!res.ok) return; // silent fail
+    if (!res.ok) return;
 
     const data = await res.json();
 
-    // DB থেকে merged cart Redux এ set করো
     if (data?.data?.length) {
       dispatch(setCartFromDB(data.data));
+    }
+
+    // Mark synced for this session
+    if (typeof sessionStorage !== "undefined") {
+      sessionStorage.setItem(flagKey, "1");
     }
   } catch (error) {
     console.error("Cart sync error:", error);

@@ -2,6 +2,7 @@
 
 import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { useDispatch, useSelector } from "react-redux";
@@ -9,12 +10,8 @@ import { toast } from "react-toastify";
 import { motion, AnimatePresence } from "framer-motion";
 import { HiMinus, HiOutlinePlus } from "react-icons/hi";
 import { BsCart, BsHeart, BsHeartFill, BsShare } from "react-icons/bs";
-import { TbShoppingCartOff } from "react-icons/tb";
 import { IoClose } from "react-icons/io5";
 import { FiArrowUpRight, FiCheck } from "react-icons/fi";
-import { MdOutlineLocalShipping } from "react-icons/md";
-import { RiSecurePaymentLine } from "react-icons/ri";
-import { TbTruckReturn } from "react-icons/tb";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Pagination, Navigation, Thumbs } from "swiper/modules";
 
@@ -24,7 +21,7 @@ import "swiper/css/navigation";
 import "swiper/css/thumbs";
 
 import { BASE_URL } from "@/components/utils/baseURL";
-import { addToCart } from "@/redux/feature/cart/cartSlice";
+import { addToCart, replaceCartItem } from "@/redux/feature/cart/cartSlice";
 import { calculatePrice, isHexColor, singleProductPrice } from "@/utils/helper";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
@@ -32,7 +29,6 @@ import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 // ✅ আগে ছিল: useMetaPixel + generateEventId + sendServerEvent + useGTM + useTikTokPixel + sendTikTokServerEvent
 // ✅ এখন: একটাই hook
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
-import { PiHammerLight } from "react-icons/pi";
 
 const Overlay = ({ onClick }) => (
   <motion.div
@@ -45,7 +41,11 @@ const Overlay = ({ onClick }) => (
   />
 );
 
-const QuickViewModal = ({ product: listProduct, onClose }) => {
+// mode="cart-edit" → Replace Cart Item + Add New buttons
+// mode="view" (default) → standard Add to Cart button
+// initialVariantId → pre-select this variation after fetch
+// cartItemOld → {productId, variationId} of the item being edited (required for replace)
+const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialVariantId = null, cartItemOld = null }) => {
   const dispatch = useDispatch();
   const cartProducts = useSelector((state) => state.cart.products);
   const { data: settingsData } = useGetSettingData();
@@ -72,7 +72,15 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const mainSwiperRef = useRef(null);
   const [galleryImages, setGalleryImages] = useState([]);
+
+  // Slide main swiper to activeImageIndex whenever it changes (e.g. after fetch pre-selection)
+  useEffect(() => {
+    if (mainSwiperRef.current && activeImageIndex >= 0) {
+      mainSwiperRef.current.slideTo(activeImageIndex);
+    }
+  }, [activeImageIndex]);
 
   // Cart check
   useEffect(() => {
@@ -121,30 +129,60 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               images.push(v.variation_image);
           });
         }
-        setGalleryImages(images.filter(Boolean));
+        const finalImages = images.filter(Boolean);
+        setGalleryImages(finalImages);
 
         // ✅ ViewContent — Phase 1B EMQ user_data via shared helper.
         trackViewContent(p, buildAnalyticsUserData(userInfo));
 
         // Initial price & stock
         if (p?.is_variation && p?.variations?.length > 0) {
-          const firstVariation = p.variations[0];
-          setVariationProduct(firstVariation);
-          setStock(firstVariation.variation_quantity);
-          const price =
-            firstVariation.variation_discount_price ||
-            firstVariation.variation_price;
-          setProductPrice(price);
-          if (firstVariation.variation_discount_price)
-            setLineThoughPrice(firstVariation.variation_price);
-          setActiveImage(firstVariation.variation_image || p.main_image);
+          // If initialVariantId provided, pre-select that variation; else use first
+          const targetVariation = initialVariantId
+            ? p.variations.find((v) => String(v._id) === String(initialVariantId)) || p.variations[0]
+            : p.variations[0];
 
+          setVariationProduct(targetVariation);
+          setStock(targetVariation.variation_quantity);
+          const price =
+            targetVariation.variation_discount_price ||
+            targetVariation.variation_price;
+          setProductPrice(price);
+          if (targetVariation.variation_discount_price)
+            setLineThoughPrice(targetVariation.variation_price);
+          const targetImg = targetVariation.variation_image || p.main_image;
+          setActiveImage(targetImg);
+          // Use finalImages (not galleryImages state — that's async) to find index
+          const targetIdx = finalImages.findIndex((img) => img === targetImg);
+          if (targetIdx > 0) setActiveImageIndex(targetIdx);
+
+          // Build selectedVariations from the target variation's name (e.g. "Red-XL")
           if (p.attributes_details?.length > 0) {
             const initial = {};
-            p.attributes_details.forEach((attr) => {
-              if (attr.attribute_values?.length > 0)
-                initial[attr.attribute_name] = attr.attribute_values[0];
-            });
+            if (initialVariantId && targetVariation.variation_name) {
+              // variation_name = "l-Royal Cobalt"
+              // For each attribute, find the value whose name appears as a segment in variation_name
+              // Segments are separated by "-" but values can contain spaces (e.g. "Royal Cobalt")
+              // Strategy: for each attribute value, check if variation_name contains it as an exact segment
+              // variation_name format: "xl / Jet Black" — split on " / " to get axis values
+              // Match case-insensitively against attribute_value_name
+              const axisValues = targetVariation.variation_name
+                .split(" / ")
+                .map((s) => s.trim().toLowerCase());
+              p.attributes_details.forEach((attr) => {
+                const matchingVal = attr.attribute_values?.find((v) =>
+                  axisValues.includes(v.attribute_value_name.trim().toLowerCase()),
+                );
+                if (matchingVal) initial[attr.attribute_name] = matchingVal;
+                else if (attr.attribute_values?.length > 0)
+                  initial[attr.attribute_name] = attr.attribute_values[0];
+              });
+            } else {
+              p.attributes_details.forEach((attr) => {
+                if (attr.attribute_values?.length > 0)
+                  initial[attr.attribute_name] = attr.attribute_values[0];
+              });
+            }
             setSelectedVariations(initial);
           }
         } else {
@@ -193,10 +231,14 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       const newVariations = { ...selectedVariations, [attributeName]: value };
       setSelectedVariations(newVariations);
 
+      // Build slug matching variation_name format: "xl / Jet Black"
+      // Case-insensitive compare so "Jet Black" === "jet black" won't mismatch
       const slug = Object.values(newVariations)
         .map((v) => v.attribute_value_name)
-        .join("-");
-      const found = product.variations?.find((v) => v.variation_name === slug);
+        .join(" / ");
+      const found = product.variations?.find(
+        (v) => v.variation_name.toLowerCase() === slug.toLowerCase(),
+      );
 
       if (found) {
         setVariationProduct(found);
@@ -207,7 +249,10 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         const imageIndex = galleryImages.findIndex(
           (img) => img === (found.variation_image || product.main_image),
         );
-        if (imageIndex !== -1) setActiveImageIndex(imageIndex);
+        if (imageIndex !== -1) {
+          setActiveImageIndex(imageIndex);
+          mainSwiperRef.current?.slideTo(imageIndex);
+        }
 
         let price = found.variation_discount_price || found.variation_price;
         if (product?.flash_sale_details?.flash_sale_product) {
@@ -252,7 +297,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     [product, selectedVariations, galleryImages],
   );
 
-  // Add to cart
+  // Standard Add to Cart (view mode)
   const handleAddToCart = useCallback(() => {
     if (!product) return;
     if (product.is_variation && !variationProduct) {
@@ -269,29 +314,60 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
         productId: product._id,
         variation_product_id: variationProduct?._id || null,
         quantity,
+        product_slug: product.product_slug || null,
       }),
     );
     setAddedToCart(true);
     toast.success("Added to cart!", { autoClose: 1500 });
     setTimeout(() => setAddedToCart(false), 1500);
 
-    // ✅ AddToCart — Phase 1B EMQ user_data.
     trackAddToCart(
       product,
       variationProduct,
       quantity,
       buildAnalyticsUserData(userInfo),
     );
-  }, [
-    product,
-    variationProduct,
-    quantity,
-    dispatch,
-    trackAddToCart,
-    userInfo,
-    productPrice,
-    isInCart,
-  ]);
+  }, [product, variationProduct, quantity, dispatch, trackAddToCart, userInfo, isInCart]);
+
+  // cart-edit mode: Replace the original cart item with the currently selected variant
+  const handleReplaceCartItem = useCallback(() => {
+    if (!product || !cartItemOld) return;
+    if (product.is_variation && !variationProduct) {
+      toast.error("Please select a variation");
+      return;
+    }
+    dispatch(
+      replaceCartItem({
+        oldProductId: cartItemOld.productId,
+        oldVariationId: cartItemOld.variationId || null,
+        newProductId: product._id,
+        newVariationId: variationProduct?._id || null,
+        qty: quantity,
+        newSlug: product.product_slug || null,
+      }),
+    );
+    toast.success("Cart updated!", { autoClose: 1500 });
+    onClose();
+  }, [product, variationProduct, quantity, dispatch, cartItemOld, onClose]);
+
+  // cart-edit mode: Add selected variant as a new line (merge if already exists)
+  const handleAddNew = useCallback(() => {
+    if (!product) return;
+    if (product.is_variation && !variationProduct) {
+      toast.error("Please select a variation");
+      return;
+    }
+    dispatch(
+      addToCart({
+        productId: product._id,
+        variation_product_id: variationProduct?._id || null,
+        quantity,
+        product_slug: product.product_slug || null,
+      }),
+    );
+    toast.success("Added to cart!", { autoClose: 1500 });
+    onClose();
+  }, [product, variationProduct, quantity, dispatch, onClose]);
 
   // Wishlist
   const handleWishlist = useCallback(() => {
@@ -398,7 +474,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
     return stars;
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <Overlay onClick={onClose} />
 
@@ -412,7 +488,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
       >
         <motion.div
           ref={modalRef}
-          className="bg-white w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[80vh] lg:max-h-[95vh] overflow-y-auto shadow-2xl relative rounded-xl"
+          className="bg-white w-full max-w-lg md:max-w-3xl lg:max-w-4xl max-h-[90dvh] overflow-y-auto shadow-2xl relative rounded-xl"
           layout
           style={{
             marginTop: "env(safe-area-inset-top)",
@@ -430,7 +506,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
           </motion.button>
 
           {fetchLoading ? (
-            <div className="flex items-center justify-center h-screen sm:h-96">
+            <div className="flex items-center justify-center h-64 sm:h-96">
               <motion.div
                 animate={{ rotate: 360 }}
                 transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
@@ -438,7 +514,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               />
             </div>
           ) : fetchError || !product ? (
-            <div className="flex flex-col items-center justify-center h-screen sm:h-96 text-gray-500 p-8">
+            <div className="flex flex-col items-center justify-center h-64 sm:h-96 text-gray-500 p-8">
               <p className="text-center mb-4">
                 Product not found or failed to load
               </p>
@@ -450,7 +526,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               </button>
             </div>
           ) : (
-            <div className="flex flex-col md:flex-row min-h-screen sm:min-h-0">
+            <div className="flex flex-col md:flex-row">
               {/* Left — Image Gallery */}
               <div className="md:w-[45%] bg-gray-50 p-4 sm:p-6">
                 <div className="relative aspect-square mb-3 sm:mt-0">
@@ -460,6 +536,7 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                     pagination={{ clickable: true }}
                     thumbs={{ swiper: thumbsSwiper }}
                     modules={[Pagination, Navigation, Thumbs]}
+                    onSwiper={(swiper) => { mainSwiperRef.current = swiper; }}
                     onSlideChange={(swiper) => {
                       setActiveImageIndex(swiper.activeIndex);
                       setActiveImage(galleryImages[swiper.activeIndex]);
@@ -526,11 +603,8 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
               </div>
 
               {/* Right — Details */}
-              <div
-                className="md:w-[55%] p-4 sm:p-6 overflow-y-auto"
-                style={{ maxHeight: "calc(100vh - 80px)" }}
-              >
-                <div className="space-y-4 pb-8 sm:pb-4">
+              <div className="md:w-[55%] p-4 sm:p-6 overflow-y-auto md:max-h-[90dvh]">
+                <div className="space-y-4 pb-6">
                   <div className="mt-12 sm:mt-0">
                     {product.product_brand && (
                       <span className="text-xs text-gray-400 uppercase tracking-wider">
@@ -646,226 +720,222 @@ const QuickViewModal = ({ product: listProduct, onClose }) => {
                       </motion.div>
                     ))}
 
-                  {stock > 0 && (
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex gap-2 items-center mb-2">
-                          <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                            Quantity:
-                          </p>
-                          <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
-                            <div className="flex items-center gap-1.5">
-                              {stock > 0 ? (
-                                <>
-                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
-                                  <span className="text-[10px] sm:text-xs text-gray-500">
-                                    {stock} in stock
-                                  </span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="w-1.5 h-1.5 bg-red-500 rounded-full" />
-                                  <span className="text-[10px] sm:text-xs text-gray-500">
-                                    Out of stock
-                                  </span>
-                                </>
-                              )}
-                            </div>
+                  <div className="space-y-3">
+                    {stock <= 0 ? (
+                      /* OOS state — mirrors PDP pattern */
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 bg-red-500 rounded-full" />
+                          <span className="text-xs sm:text-sm font-semibold text-red-600">Out of Stock</span>
+                        </div>
+                        <p className="text-xs text-gray-400">This item is currently unavailable. Check back soon or view the product page for restock updates.</p>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            disabled
+                            className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200"
+                          >
+                            <BsCart size={16} />
+                            Out of Stock
+                          </button>
+                          <Link
+                            href={`/products/${product.product_slug}`}
+                            onClick={onClose}
+                            className="flex-1"
+                          >
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              onClick={() => {
-                                if (navigator.share) {
-                                  navigator.share({
-                                    title: product.product_name,
-                                    url:
-                                      window.location.origin +
-                                      `/products/${product.product_slug}`,
-                                  });
-                                } else {
-                                  navigator.clipboard.writeText(
-                                    window.location.origin +
-                                      `/products/${product.product_slug}`,
-                                  );
-                                  toast.success("Link copied to clipboard!");
-                                }
-                              }}
-                              className="text-gray-400 hover:text-primary transition-colors"
-                              title="Share product"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              type="button"
+                              className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
                             >
-                              <BsShare size={14} />
+                              View Details <FiArrowUpRight size={14} />
+                            </motion.button>
+                          </Link>
+                          <motion.button
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            type="button"
+                            onClick={handleWishlist}
+                            className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
+                          >
+                            {isWishlisted ? (
+                              <BsHeartFill size={16} className="text-primary" />
+                            ) : (
+                              <BsHeart size={16} className="text-gray-600" />
+                            )}
+                          </motion.button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* In-stock state */
+                      <>
+                        <div>
+                          <div className="flex gap-2 items-center mb-2">
+                            <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                              Quantity:
+                            </p>
+                            <div className="flex items-center gap-3 w-full xs:w-auto justify-start xs:justify-end">
+                              <div className="flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                                <span className="text-[10px] sm:text-xs text-gray-500">
+                                  {stock} in stock
+                                </span>
+                              </div>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={() => {
+                                  if (navigator.share) {
+                                    navigator.share({
+                                      title: product.product_name,
+                                      url:
+                                        window.location.origin +
+                                        `/products/${product.product_slug}`,
+                                    });
+                                  } else {
+                                    navigator.clipboard.writeText(
+                                      window.location.origin +
+                                        `/products/${product.product_slug}`,
+                                    );
+                                    toast.success("Link copied to clipboard!");
+                                  }
+                                }}
+                                className="text-gray-400 hover:text-primary transition-colors"
+                                title="Share product"
+                              >
+                                <BsShare size={14} />
+                              </motion.button>
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={handleDecrement}
+                              disabled={quantity <= 1}
+                              className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
+                            >
+                              <HiMinus className="text-gray-600" size={14} />
+                            </motion.button>
+                            <input
+                              type="number"
+                              readOnly
+                              value={quantity}
+                              className="w-12 sm:w-16 text-center border-y border-gray-200 py-2 outline-none text-xs sm:text-sm font-medium"
+                            />
+                            <motion.button
+                              whileTap={{ scale: 0.9 }}
+                              type="button"
+                              onClick={handleIncrement}
+                              disabled={quantity >= stock}
+                              className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
+                            >
+                              <HiOutlinePlus
+                                className="text-gray-600"
+                                size={14}
+                              />
                             </motion.button>
                           </div>
                         </div>
-                        <div className="flex items-center">
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            type="button"
-                            onClick={handleDecrement}
-                            disabled={quantity <= 1}
-                            className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-l-lg"
-                          >
-                            <HiMinus className="text-gray-600" size={14} />
-                          </motion.button>
-                          <input
-                            type="number"
-                            readOnly
-                            value={quantity}
-                            className="w-12 sm:w-16 text-center border-y border-gray-200 py-2 outline-none text-xs sm:text-sm font-medium"
-                          />
-                          <motion.button
-                            whileTap={{ scale: 0.9 }}
-                            type="button"
-                            onClick={handleIncrement}
-                            disabled={quantity >= stock}
-                            className="px-3 sm:px-4 py-2 border border-gray-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-r-lg"
-                          >
-                            <HiOutlinePlus
-                              className="text-gray-600"
-                              size={14}
-                            />
-                          </motion.button>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center gap-2">
-                        <motion.button
-                          whileHover={
-                            !isInCart && stock > 0 ? { scale: 1.02 } : {}
-                          }
-                          whileTap={
-                            !isInCart && stock > 0 ? { scale: 0.98 } : {}
-                          }
-                          type="button"
-                          onClick={handleAddToCart}
-                          disabled={stock <= 0 || isInCart}
-                          className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
-                            ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
-                            disabled:opacity-50 disabled:cursor-not-allowed`}
-                        >
-                          {isInCart ? (
-                            <>
-                              <FiCheck size={16} />
-                              In Cart
-                            </>
-                          ) : addedToCart ? (
-                            <>
-                              <FiCheck size={16} />
-                              Added
-                            </>
-                          ) : (
-                            <>
-                              <BsCart size={16} />
-                              Add to Cart
-                            </>
-                          )}
-                        </motion.button>
+                        {mode === "cart-edit" ? (
+                          /* Cart-edit mode: Replace + Add New + View PDP */
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={handleReplaceCartItem}
+                                className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition"
+                              >
+                                <FiCheck size={15} />
+                                Replace Cart Item
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={handleAddNew}
+                                className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                              >
+                                <BsCart size={15} />
+                                Add New
+                              </motion.button>
+                            </div>
+                            <Link
+                              href={`/products/${product.product_slug}`}
+                              onClick={onClose}
+                              className="w-full py-2 sm:py-2.5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition"
+                            >
+                              View Full Product Page <FiArrowUpRight size={13} />
+                            </Link>
+                          </div>
+                        ) : (
+                          /* Standard view mode */
+                          <div className="flex items-center gap-2">
+                            <motion.button
+                              whileHover={!isInCart ? { scale: 1.02 } : {}}
+                              whileTap={!isInCart ? { scale: 0.98 } : {}}
+                              type="button"
+                              onClick={handleAddToCart}
+                              disabled={isInCart}
+                              className={`flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 transition text-xs sm:text-sm font-medium rounded-lg
+                                ${isInCart ? "bg-green-500 text-white cursor-not-allowed" : "bg-primary text-white hover:bg-primary/90"}
+                                disabled:opacity-50 disabled:cursor-not-allowed`}
+                            >
+                              {isInCart ? (
+                                <><FiCheck size={16} />In Cart</>
+                              ) : addedToCart ? (
+                                <><FiCheck size={16} />Added</>
+                              ) : (
+                                <><BsCart size={16} />Add to Cart</>
+                              )}
+                            </motion.button>
 
-                        <Link
-                          href={`/products/${product.product_slug}`}
-                          onClick={onClose}
-                          className="flex-1"
-                        >
-                          <motion.button
-                            whileHover={{ scale: 1.02 }}
-                            whileTap={{ scale: 0.98 }}
-                            type="button"
-                            className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
-                          >
-                            View Details <FiArrowUpRight size={14} />
-                          </motion.button>
-                        </Link>
+                            <Link
+                              href={`/products/${product.product_slug}`}
+                              onClick={onClose}
+                              className="flex-1"
+                            >
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                className="w-full py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                              >
+                                View Details <FiArrowUpRight size={14} />
+                              </motion.button>
+                            </Link>
 
-                        <motion.button
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          type="button"
-                          onClick={handleWishlist}
-                          className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
-                        >
-                          {isWishlisted ? (
-                            <BsHeartFill size={16} className="text-primary" />
-                          ) : (
-                            <BsHeart size={16} className="text-gray-600" />
-                          )}
-                        </motion.button>
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
-                    {/* <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <MdOutlineLocalShipping
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Free Delivery
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        On orders above ৳999
-                      </p>
-                    </div> */}
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <PiHammerLight
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Built to Last
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Reinforced stitching at every joint
-                      </p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <svg
-                        className="w-5 h-5 mx-auto text-primary mb-1"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
-                        <path d="M20 7H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
-                      </svg>
-                      <p className="text-xs font-medium text-gray-800">
-                        Genuine Leather
-                      </p>
-                      <p className="text-[9px] text-gray-500">100% authentic</p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <TbTruckReturn
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Easy Return
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Instant if you don't like
-                      </p>
-                    </div>
-                    <div className="text-center p-2 bg-gray-50 rounded-lg">
-                      <RiSecurePaymentLine
-                        className="mx-auto text-primary mb-1"
-                        size={20}
-                      />
-                      <p className="text-xs font-medium text-gray-800">
-                        Cash on Delivery
-                      </p>
-                      <p className="text-[9px] text-gray-500">
-                        Pay when you receive
-                      </p>
-                    </div>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              type="button"
+                              onClick={handleWishlist}
+                              className="p-2 sm:p-3 border border-gray-200 hover:border-primary rounded-lg transition-all shrink-0"
+                            >
+                              {isWishlisted ? (
+                                <BsHeartFill size={16} className="text-primary" />
+                              ) : (
+                                <BsHeart size={16} className="text-gray-600" />
+                              )}
+                            </motion.button>
+                          </div>
+                        )}
+                      </>
+                    )}
                   </div>
+
                 </div>
               </div>
             </div>
           )}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 };
 

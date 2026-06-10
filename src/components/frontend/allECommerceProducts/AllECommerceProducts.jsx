@@ -13,12 +13,12 @@ const AllECommerceProducts = () => {
 
   const { data: allCategoryProducts = [], isLoading } = useQuery({
     queryKey: [
-      `/api/v1/product/ecommerce_choice_product?page=${page}&limit=${limit}`,
+      `/api/v1/product/top_selling?page=${page}&limit=${limit}`,
     ],
     queryFn: async () => {
       try {
         const res = await fetch(
-          `${BASE_URL}/product/ecommerce_choice_product?page=${page}&limit=${limit}`,
+          `${BASE_URL}/product/top_selling?page=${page}&limit=${limit}`,
           {
             credentials: "include",
           }

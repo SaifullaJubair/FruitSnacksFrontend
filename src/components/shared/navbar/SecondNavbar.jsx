@@ -424,19 +424,9 @@ const SecondNavbar = ({ menuData }) => {
             {/* <Item isActive={isActive("/")} href="/" label="Home" /> */}
 
             <Item
-              isActive={isActive("/all-products")}
-              href="/all-products"
+              isActive={isActive("/shop")}
+              href="/shop"
               label="All Products"
-            />
-            {/* <Item
-              isActive={isActive("/all-brands")}
-              href="/all-brands"
-              label="All Brand"
-            /> */}
-            <Item
-              isActive={isActive("/new-arrival")}
-              href="/new-arrival"
-              label="New Arrival"
             />
             {exploreData?.length > 0 &&
               exploreData?.map((category) => (

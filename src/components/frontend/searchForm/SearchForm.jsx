@@ -56,16 +56,16 @@ const SearchForm = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setShowResults(false);
-    if (searchValue === "") return router.push(`/all-products`);
+    if (searchValue === "") return router.push(`/shop`);
     if (searchValue.trim()) {
-      router.push(`/all-products?search=${searchValue}`);
+      router.push(`/shop?search=${searchValue}`);
     }
   };
 
   const handleSearchClick = () => {
     setShowResults(false);
     if (searchValue.trim()) {
-      router.push(`/all-products?search=${searchValue}`);
+      router.push(`/shop?search=${searchValue}`);
     }
   };
 

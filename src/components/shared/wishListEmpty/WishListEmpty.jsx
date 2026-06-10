@@ -18,7 +18,7 @@ const WishlistEmpty = () => {
         Start exploring and add your favorite products!
       </p>
       <Link
-        href="/all-products"
+        href="/shop"
         className="px-6 py-3 bg-teal-500 text-white   shadow-md
         hover:bg-teal-600 transition duration-200"
       >

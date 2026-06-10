@@ -26,27 +26,30 @@ const DashBoardReview = ({ userInfo }) => {
     return <CustomLoader />;
   }
   return (
-    <div>
-      <ul className="flex items-center  px-1 pt-1 gap-5 mb-4 bg-white border">
-        <li
-          className={`${
-            isActive === 1 && " !border-primary !text-primary font-semibold "
-          } px-6 py-2 border-b text-[#424242] transition duration-300 border-transparent cursor-pointer whitespace-nowrap`}
-          onClick={() => setIsActive(1)}
-        >
-          {" "}
-          To Be Reviewed
-        </li>
-        <li
-          className={`${
-            isActive === 2 && "!border-primary !text-primary font-semibold"
-          } px-6 py-2 border-b text-[#424242] transition duration-300 border-transparent cursor-pointer whitespace-nowrap`}
-          onClick={() => setIsActive(2)}
-        >
-          {" "}
-          Review History
-        </li>
-      </ul>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {/* Sub-tab pill switcher */}
+      <div className="px-4 pt-4 pb-0">
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+          {[
+            { id: 1, label: "To Be Reviewed" },
+            { id: 2, label: "Review History" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setIsActive(tab.id)}
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 whitespace-nowrap ${
+                isActive === tab.id
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-gray-500 hover:text-gray-700"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="p-4">
       {isActive === 1 && (
         <ToBeReviewedTab
           products={orderData?.data}
@@ -66,6 +69,7 @@ const DashBoardReview = ({ userInfo }) => {
           setIsActive={setIsActive}
         />
       )}
+      </div>
     </div>
   );
 };

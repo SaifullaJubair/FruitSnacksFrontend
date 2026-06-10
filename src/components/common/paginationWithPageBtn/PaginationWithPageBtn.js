@@ -1,168 +1,80 @@
 "use client";
-import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
-import { useState } from "react";
+import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
 const PaginationWithPageBtn = ({ rows, page, setPage, setRows, totalData }) => {
   const lastPage = Math.ceil(totalData / rows);
-  const maxPageButtons = 10; // Maximum number of pages to show in pagination
-  const [jumpPage, setJumpPage] = useState("");
+  if (lastPage <= 1) return null;
 
-  const handleRowsChange = (event) => {
-    setPage(1);
-    setRows(parseInt(event.target.value, 10));
-  };
+  const getPages = () => {
+    const pages = [];
+    const delta = 2;
+    const left = page - delta;
+    const right = page + delta;
 
-  const handlePageClick = (pageNumber) => {
-    setPage(pageNumber);
-  };
-
-  const handlePageJump = (event) => {
-    event.preventDefault();
-    const pageNumber = Math.max(1, Math.min(lastPage, parseInt(jumpPage, 10)));
-    if (!isNaN(pageNumber)) {
-      setPage(pageNumber);
-      setJumpPage("");
-    }
-  };
-
-  const getPageButtons = () => {
-    const pageButtons = [];
-    let startPage = Math.max(1, page - Math.floor(maxPageButtons / 2));
-    let endPage = Math.min(lastPage, startPage + maxPageButtons - 1);
-
-    if (endPage - startPage < maxPageButtons - 1) {
-      startPage = Math.max(1, endPage - maxPageButtons + 1);
+    for (let i = 1; i <= lastPage; i++) {
+      if (i === 1 || i === lastPage || (i >= left && i <= right)) {
+        pages.push(i);
+      }
     }
 
-    for (let i = startPage; i <= endPage; i++) {
-      pageButtons.push(
-        <button
-          key={i}
-          onClick={() => handlePageClick(i)}
-          type="button"
-          className={`border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   ${
-            page === i
-              ? "bg-primary text-white"
-              : "bg-white text-gray-600 hover:bg-primary-100"
-          }`}
-        >
-          {i}
-        </button>
-      );
+    const withEllipsis = [];
+    let prev = null;
+    for (const p of pages) {
+      if (prev && p - prev > 1) withEllipsis.push("...");
+      withEllipsis.push(p);
+      prev = p;
     }
-
-    return pageButtons;
+    return withEllipsis;
   };
 
   return (
-    <div className="flex justify-center sm:text-sm gap-y-2 text-[10px] my-6 flex-wrap">
-      {/* Rows per page selector */}
-      <div className=" flex items-center gap-2">
-        <label className="text-gray-500 font-semibold" htmlFor="rows_number">
-          Rows:
-        </label>
-        <select
-          onChange={handleRowsChange}
-          value={rows}
-          id="rows_number"
-          className="block w-full px-1 sm:px-2 py-1 sm:py-2 text-gray-700 bg-white border border-gray-200  "
-        >
-          {/* <option value="5">05</option> */}
-          <option value="10">10</option>
-          <option value="20">20</option>
-          <option value="30">30</option>
-          <option value="50">50</option>
-        </select>
-      </div>
-
-      {/* Previous button */}
+    <div className="flex items-center gap-1.5 flex-wrap">
+      {/* Prev */}
       <button
-        onClick={page > 1 ? () => setPage(page - 1) : null}
+        onClick={() => setPage(page - 1)}
         disabled={page === 1}
-        type="button"
-        className={`border flex items-center justify-center  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3 capitalize bg-white   ${
+        className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${
           page === 1
-            ? "text-gray-400 cursor-not-allowed"
-            : "hover:bg-primary text-gray-600 hover:text-white"
+            ? "border-gray-100 text-gray-300 cursor-not-allowed bg-white"
+            : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary hover:bg-primary/5 bg-white"
         }`}
       >
-        <FaChevronLeft />
+        <FiChevronLeft size={15} />
       </button>
 
       {/* Page numbers */}
-      {lastPage > maxPageButtons && page > Math.floor(maxPageButtons / 2) && (
-        <button
-          onClick={() => setPage(1)}
-          type="button"
-          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primary-100"
-        >
-          1
-        </button>
-      )}
-      {lastPage > maxPageButtons &&
-        page > Math.floor(maxPageButtons / 2) + 1 && (
-          <span className="px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3 text-gray-600">
-            ...
+      {getPages().map((p, i) =>
+        p === "..." ? (
+          <span key={`ellipsis-${i}`} className="w-9 h-9 flex items-center justify-center text-sm text-gray-400">
+            …
           </span>
-        )}
-      {getPageButtons()}
-      {lastPage > maxPageButtons &&
-        page < lastPage - Math.floor(maxPageButtons / 2) && (
-          <span className="px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3 text-gray-600">
-            ...
-          </span>
-        )}
-      {lastPage > maxPageButtons && page < lastPage - maxPageButtons / 2 && (
-        <button
-          onClick={() => setPage(lastPage)}
-          type="button"
-          className="border  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3   bg-white text-gray-600 hover:bg-primary-100"
-        >
-          {lastPage}
-        </button>
+        ) : (
+          <button
+            key={p}
+            onClick={() => setPage(p)}
+            className={`w-9 h-9 flex items-center justify-center rounded-xl text-sm font-medium border transition-all ${
+              page === p
+                ? "bg-primary text-white border-primary shadow-sm"
+                : "bg-white text-gray-600 border-gray-200 hover:border-primary hover:text-primary hover:bg-primary/5"
+            }`}
+          >
+            {p}
+          </button>
+        )
       )}
 
-      {/* Next button */}
+      {/* Next */}
       <button
-        onClick={page < lastPage ? () => setPage(page + 1) : null}
+        onClick={() => setPage(page + 1)}
         disabled={page === lastPage}
-        type="button"
-        className={`border flex items-center justify-center  px-1.5 py-1 mx-[1px] sm:mx-1 sm:px-2 sm:py-1.5 md:py-2 md:px-3 capitalize bg-white   ${
+        className={`w-9 h-9 flex items-center justify-center rounded-xl border transition-all ${
           page === lastPage
-            ? "text-gray-400 cursor-not-allowed"
-            : "hover:bg-primary text-gray-600 hover:text-white"
+            ? "border-gray-100 text-gray-300 cursor-not-allowed bg-white"
+            : "border-gray-200 text-gray-600 hover:border-primary hover:text-primary hover:bg-primary/5 bg-white"
         }`}
       >
-        <FaChevronRight />
+        <FiChevronRight size={15} />
       </button>
-
-      {/* Page jump input - Only show if lastPage exceeds maxPageButtons */}
-      {lastPage > maxPageButtons && (
-        <form
-          onSubmit={handlePageJump}
-          className="ml-4 flex items-center gap-2"
-        >
-          <label htmlFor="page_jump" className="text-gray-500 font-semibold">
-            Go to page:
-          </label>
-          <input
-            type="number"
-            id="page_jump"
-            value={jumpPage}
-            placeholder="jump to page"
-            onChange={(e) => setJumpPage(e.target.value)}
-            className=" w-10 sm:w-16 px-2 py-1 border border-gray-200  "
-            min={1}
-            max={lastPage}
-          />
-          <button
-            type="submit"
-            className="px-3 py-1 bg-primary text-white   hover:bg-primary-600"
-          >
-            Go
-          </button>
-        </form>
-      )}
     </div>
   );
 };
