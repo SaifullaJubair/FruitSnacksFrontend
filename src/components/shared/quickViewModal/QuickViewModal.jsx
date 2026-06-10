@@ -72,7 +72,15 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isInCart, setIsInCart] = useState(false);
   const [thumbsSwiper, setThumbsSwiper] = useState(null);
+  const mainSwiperRef = useRef(null);
   const [galleryImages, setGalleryImages] = useState([]);
+
+  // Slide main swiper to activeImageIndex whenever it changes (e.g. after fetch pre-selection)
+  useEffect(() => {
+    if (mainSwiperRef.current && activeImageIndex >= 0) {
+      mainSwiperRef.current.slideTo(activeImageIndex);
+    }
+  }, [activeImageIndex]);
 
   // Cart check
   useEffect(() => {
@@ -121,7 +129,8 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
               images.push(v.variation_image);
           });
         }
-        setGalleryImages(images.filter(Boolean));
+        const finalImages = images.filter(Boolean);
+        setGalleryImages(finalImages);
 
         // ✅ ViewContent — Phase 1B EMQ user_data via shared helper.
         trackViewContent(p, buildAnalyticsUserData(userInfo));
@@ -141,7 +150,11 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
           setProductPrice(price);
           if (targetVariation.variation_discount_price)
             setLineThoughPrice(targetVariation.variation_price);
-          setActiveImage(targetVariation.variation_image || p.main_image);
+          const targetImg = targetVariation.variation_image || p.main_image;
+          setActiveImage(targetImg);
+          // Use finalImages (not galleryImages state — that's async) to find index
+          const targetIdx = finalImages.findIndex((img) => img === targetImg);
+          if (targetIdx > 0) setActiveImageIndex(targetIdx);
 
           // Build selectedVariations from the target variation's name (e.g. "Red-XL")
           if (p.attributes_details?.length > 0) {
@@ -151,22 +164,15 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
               // For each attribute, find the value whose name appears as a segment in variation_name
               // Segments are separated by "-" but values can contain spaces (e.g. "Royal Cobalt")
               // Strategy: for each attribute value, check if variation_name contains it as an exact segment
-              const vName = targetVariation.variation_name.toLowerCase();
+              // variation_name format: "xl / Jet Black" — split on " / " to get axis values
+              // Match case-insensitively against attribute_value_name
+              const axisValues = targetVariation.variation_name
+                .split(" / ")
+                .map((s) => s.trim().toLowerCase());
               p.attributes_details.forEach((attr) => {
-                // Sort by length descending so longer names match first (e.g. "Royal Cobalt" before "Cobalt")
-                const sorted = [...(attr.attribute_values || [])].sort(
-                  (a, b) => b.attribute_value_name.length - a.attribute_value_name.length,
+                const matchingVal = attr.attribute_values?.find((v) =>
+                  axisValues.includes(v.attribute_value_name.trim().toLowerCase()),
                 );
-                const matchingVal = sorted.find((v) => {
-                  const vn = v.attribute_value_name.trim().toLowerCase();
-                  // Match as exact segment: at start, end, or surrounded by "-"
-                  return (
-                    vName === vn ||
-                    vName.startsWith(vn + "-") ||
-                    vName.endsWith("-" + vn) ||
-                    vName.includes("-" + vn + "-")
-                  );
-                });
                 if (matchingVal) initial[attr.attribute_name] = matchingVal;
                 else if (attr.attribute_values?.length > 0)
                   initial[attr.attribute_name] = attr.attribute_values[0];
@@ -225,10 +231,14 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
       const newVariations = { ...selectedVariations, [attributeName]: value };
       setSelectedVariations(newVariations);
 
+      // Build slug matching variation_name format: "xl / Jet Black"
+      // Case-insensitive compare so "Jet Black" === "jet black" won't mismatch
       const slug = Object.values(newVariations)
         .map((v) => v.attribute_value_name)
-        .join("-");
-      const found = product.variations?.find((v) => v.variation_name === slug);
+        .join(" / ");
+      const found = product.variations?.find(
+        (v) => v.variation_name.toLowerCase() === slug.toLowerCase(),
+      );
 
       if (found) {
         setVariationProduct(found);
@@ -239,7 +249,10 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
         const imageIndex = galleryImages.findIndex(
           (img) => img === (found.variation_image || product.main_image),
         );
-        if (imageIndex !== -1) setActiveImageIndex(imageIndex);
+        if (imageIndex !== -1) {
+          setActiveImageIndex(imageIndex);
+          mainSwiperRef.current?.slideTo(imageIndex);
+        }
 
         let price = found.variation_discount_price || found.variation_price;
         if (product?.flash_sale_details?.flash_sale_product) {
@@ -523,6 +536,7 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
                     pagination={{ clickable: true }}
                     thumbs={{ swiper: thumbsSwiper }}
                     modules={[Pagination, Navigation, Thumbs]}
+                    onSwiper={(swiper) => { mainSwiperRef.current = swiper; }}
                     onSlideChange={(swiper) => {
                       setActiveImageIndex(swiper.activeIndex);
                       setActiveImage(galleryImages[swiper.activeIndex]);
@@ -826,28 +840,37 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
                         </div>
 
                         {mode === "cart-edit" ? (
-                          /* Cart-edit mode: Replace + Add New */
-                          <div className="flex items-center gap-2">
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              type="button"
-                              onClick={handleReplaceCartItem}
-                              className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition"
+                          /* Cart-edit mode: Replace + Add New + View PDP */
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={handleReplaceCartItem}
+                                className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg bg-primary text-white hover:bg-primary/90 transition"
+                              >
+                                <FiCheck size={15} />
+                                Replace Cart Item
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                type="button"
+                                onClick={handleAddNew}
+                                className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
+                              >
+                                <BsCart size={15} />
+                                Add New
+                              </motion.button>
+                            </div>
+                            <Link
+                              href={`/products/${product.product_slug}`}
+                              onClick={onClose}
+                              className="w-full py-2 sm:py-2.5 flex items-center justify-center gap-1.5 text-xs sm:text-sm font-medium rounded-lg border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-700 transition"
                             >
-                              <FiCheck size={15} />
-                              Replace Cart Item
-                            </motion.button>
-                            <motion.button
-                              whileHover={{ scale: 1.02 }}
-                              whileTap={{ scale: 0.98 }}
-                              type="button"
-                              onClick={handleAddNew}
-                              className="flex-1 py-2 sm:py-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-medium rounded-lg border border-primary text-primary hover:bg-primary/5 transition"
-                            >
-                              <BsCart size={15} />
-                              Add New
-                            </motion.button>
+                              View Full Product Page <FiArrowUpRight size={13} />
+                            </Link>
                           </div>
                         ) : (
                           /* Standard view mode */
