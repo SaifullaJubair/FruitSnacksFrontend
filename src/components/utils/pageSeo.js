@@ -18,30 +18,35 @@ export const PAGE_SEO = {
     description:
       "আমাদের সব এক্সক্লুসিভ লেদার কালেকশন। প্রিমিয়াম মানিব্যাগ, ফ্যাশনেবল লেডিস ব্যাগ ও টেকসই লেদার বেল্ট কিনুন সেরা দামে। সারা বাংলাদেশে হোম ডেলিভারি।",
     path: "all-products",
+    noIndex: true,
   },
   allTrending: {
     title: "Trending Products | Best Selling Wallets & Bags",
     description:
       "বর্তমানে সবচেয়ে জনপ্রিয় ও ট্রেন্ডিং লেদার প্রোডাক্টগুলো দেখে নিন। কাস্টমারদের পছন্দের শীর্ষে থাকা মানিব্যাগ, লেডিস ব্যাগ ও বেল্ট এখন এক জায়গায়।",
     path: "all-trending-products",
+    noIndex: true,
   },
   newArrival: {
     title: "New Arrival Leather Collection | Latest Wallets & Belts",
     description:
       "আমাদের স্টকে আসা একদম নতুন ডিজাইনের লেদার মানিব্যাগ, লেডিস ব্যাগ এবং বেল্ট। লেটেস্ট কালেকশন থেকে আপনার পছন্দের পণ্যটি বেছে নিন।",
     path: "new-arrival",
+    noIndex: true,
   },
   topProduct: {
     title: "Top Rated Leather Products | Premium Quality Selection",
     description:
       "সবচেয়ে বেশি বিক্রিত এবং টপ রেটেড লেদার আইটেম। আমাদের সেরা কোয়ালিটির মানিব্যাগ, ব্যাগ এবং বেল্টের কালেকশন দেখুন।",
     path: "top-product",
+    noIndex: true,
   },
   latestProduct: {
     title: "Latest Leather Goods | Just Launched Collection",
     description:
       "নতুন এবং এক্সক্লুসিভ সব লেদার এক্সেসরিজ। স্টাইল এবং আভিজাত্যের সেরা সংমিশ্রণে তৈরি আমাদের লেটেস্ট মানিব্যাগ ও লেডিস ব্যাগ।",
     path: "latest-product",
+    noIndex: true,
   },
   aboutUs: {
     title: "About Our Brand | Trusted Leather Goods Shop in BD",
@@ -142,9 +147,10 @@ export const PAGE_SEO = {
   },
   offer: {
     title: "Special Offers & Discounts",
-    description: "",
+    description:
+      "Grab the latest deals, bundles and discounts. Limited-time offers with cash on delivery.",
     path: "offer",
-    noIndex: true,
+    noIndex: false, // public offers page — should be indexed
   },
   orders: {
     title: "Order History | Track Your Orders",
@@ -159,10 +165,11 @@ export const PAGE_SEO = {
     noIndex: true,
   },
   shop: {
-    title: "Explore Our Online Store",
-    description: "",
+    title: "Shop All Products",
+    description:
+      "Browse our full product collection. Quality items at the best price with fast cash on delivery.",
     path: "shop",
-    noIndex: true,
+    noIndex: false, // main product-listing page — must be indexed
   },
 };
 

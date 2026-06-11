@@ -19,8 +19,9 @@ export default async function robots() {
           "/forget-password/",
           "/sign-in/",
           "/sign-up/",
-          "/offer/",
-          "/shop/",
+          // NOTE: /shop (main product listing) and /offer (public offers) are
+          // intentionally NOT disallowed — they are primary indexable pages and
+          // are listed in the sitemap. Blocking them here was an SEO bug.
           "/compare/",
           "/wishlist/",
 
