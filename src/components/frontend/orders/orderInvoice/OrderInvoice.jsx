@@ -552,9 +552,13 @@ const OrderInvoice = () => {
                       <img
                         src={
                           product?.variation_id?.variation_image ||
-                          product?.product_id?.main_image
+                          product?.product_id?.main_image ||
+                          product?.product_image_snapshot
                         }
-                        alt={product?.product_id?.product_name}
+                        alt={
+                          product?.product_id?.product_name ||
+                          product?.product_name_snapshot
+                        }
                         crossOrigin="anonymous"
                         className="w-9 h-9 rounded-lg object-cover border border-gray-200 shrink-0"
                         onError={(e) => {
@@ -563,7 +567,8 @@ const OrderInvoice = () => {
                       />
                       <div>
                         <p className="font-bold text-xs text-[#0D1B2A]">
-                          {product?.product_id?.product_name}
+                          {product?.product_id?.product_name ||
+                            product?.product_name_snapshot}
                         </p>
                         {/* SKU snapshot — write-once at order placement, so it
                             stays correct even if product/variation SKU is later

@@ -678,11 +678,15 @@ const MyOrderTracking = ({ order, productOrder }) => {
                       <div className="w-20 h-20 rounded-lg overflow-hidden border-2 border-white shadow-md flex-shrink-0">
                         <img
                           src={
-                            product?.variation_id
+                            (product?.variation_id
                               ? product?.variation_id?.variation_image
-                              : product?.product_id?.main_image
+                              : product?.product_id?.main_image) ||
+                            product?.product_image_snapshot
                           }
-                          alt={product?.product_id?.product_name}
+                          alt={
+                            product?.product_id?.product_name ||
+                            product?.product_name_snapshot
+                          }
                           className="w-full h-full object-cover"
                           onError={(e) => {
                             e.target.src =
@@ -692,7 +696,8 @@ const MyOrderTracking = ({ order, productOrder }) => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800 truncate">
-                          {product?.product_id?.product_name}
+                          {product?.product_id?.product_name ||
+                            product?.product_name_snapshot}
                         </p>
                         {product?.variation_id && (
                           <p className="text-xs text-gray-500 mt-1">
