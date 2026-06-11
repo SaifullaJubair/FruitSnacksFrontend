@@ -15,7 +15,6 @@ import {
 } from "react-icons/fi";
 import { FaGift, FaWallet, FaMapMarkedAlt, FaShippingFast } from "react-icons/fa";
 import { RiCoupon3Fill } from "react-icons/ri";
-import { GiFlame } from "react-icons/gi";
 
 import Dashboard from "./Dashboard";
 import PurchaseHistory from "./PurchaseHistory";
@@ -23,7 +22,6 @@ import UserDashboardWishList from "./UserDashboardWishList";
 import LoyaltyHistory from "./LoyaltyHistory";
 import WalletHistory from "./WalletHistory";
 import Addresses from "./Addresses";
-import OfferHistory from "./OfferHistory";
 import MyCoupons from "./MyCoupons";
 import DashBoardReview from "./ReviewDashBoard";
 import ShowProfileDetails from "./ShowProfileDetails";
@@ -42,7 +40,6 @@ const SIDEBAR_ITEMS = [
   { name: "coupons",         icon: RiCoupon3Fill,      label: "My Coupons" },
   { name: "loyalty",         icon: FaGift,             label: "Loyalty Points" },
   { name: "wallet",          icon: FaWallet,           label: "Wallet" },
-  { name: "offer-history",   icon: GiFlame,            label: "Offer History" },
   { name: "review",          icon: MdOutlineRateReview,label: "Reviews" },
   { name: "profile-setting", icon: FiSettings,         label: "Profile Setting" },
 ];
@@ -201,7 +198,6 @@ const UserProfile = () => {
             {activeNavButton === "wishlist"         && <UserDashboardWishList />}
             {activeNavButton === "addresses"        && <Addresses />}
             {activeNavButton === "coupons"          && <MyCoupons />}
-            {activeNavButton === "offer-history"    && <OfferHistory />}
             {activeNavButton === "loyalty"          && <LoyaltyHistory />}
             {activeNavButton === "wallet"           && <WalletHistory />}
             {activeNavButton === "review"           && <DashBoardReview userInfo={userInfo} />}

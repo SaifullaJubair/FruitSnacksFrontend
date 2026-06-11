@@ -21,7 +21,6 @@ export default async function robots() {
           "/sign-up/",
           "/offer/",
           "/shop/",
-          "/offer-orders/",
           "/compare/",
           "/wishlist/",
 

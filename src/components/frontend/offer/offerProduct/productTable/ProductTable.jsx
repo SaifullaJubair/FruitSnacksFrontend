@@ -174,9 +174,21 @@ const ProductTable = ({ offerProducts, offer_id }) => {
       new Date().toLocaleTimeString();
     if (!district || !division)
       return toast.error("Please select a district and division.");
+
+    // Order Unification Phase B — offer orders now go through the SAME
+    // /order endpoint as regular orders (order_type:"offer" + offer_id). The
+    // server recomputes the offer discount from the offers collection, so the
+    // prices we send here are advisory only. Guest checkout works via
+    // need_user_create + customer_name (same as the regular cart flow).
     const sendData = {
       order_status: "pending",
       pending_time: today,
+      order_type: "offer",
+      offer_id: offer_id,
+      customer_id: userInfo?.data?._id,
+      customer_name: data?.customer_name || userInfo?.data?.user_name,
+      customer_phone: data?.customer_phone,
+      need_user_create: !userInfo?.data?.user_phone,
       billing_country: "Bangladesh",
       billing_city: district || userInfo?.data?.user_district,
       billing_state: division || userInfo?.data?.user_division,
@@ -185,16 +197,12 @@ const ProductTable = ({ offerProducts, offer_id }) => {
         division === "Dhaka"
           ? ` Inside Dhaka, ${settingData?.data[0]?.inside_dhaka_shipping_days} Days`
           : `Outside Dhaka, ${settingData?.data[0]?.outside_dhaka_shipping_days} Days`,
-      product_total_amount: shopSubtotals || 0,
-      discount_amount: totalDiscount || 0,
       sub_total_amount: shopTotal ? shopTotal : 0,
+      discount_amount: 0,
       shipping_cost: shippingCharge || 0,
       grand_total_amount: shopGrandTotals ? shopGrandTotals : 0,
-
-      offer_id: offer_id,
-      customer_id: userInfo?.data?._id,
-      customer_phone: data?.customer_phone,
-      offer_products: offerProducts?.map((product) => {
+      // Standard order_products[] line shape — server recomputes prices.
+      order_products: offerProducts?.map((product) => {
         const selectedVariation = getSelectedVariation(
           product,
           selectedVariations
@@ -202,32 +210,31 @@ const ProductTable = ({ offerProducts, offer_id }) => {
         const originalPrice = selectedVariation?.variation_price
           ? selectedVariation?.variation_price
           : product?.offer_product?.product_price;
-
         const originalDiscountPrice =
           selectedVariation?.variation_discount_price
             ? selectedVariation?.variation_discount_price
             : product?.offer_product?.product_discount_price || 0;
         const unitPrice = calculateUnitPrice(product, selectedVariation);
-        const productQuantity = product?.offer_product_quantity || 0;
-        const variationId = selectedVariation?._id || null;
+        const productQuantity = product?.offer_product_quantity || 1;
         return {
-          offer_product_id: product?.offer_product?._id,
-          is_variation: product?.offer_product?.is_variation,
-          variation_id: variationId,
-          offer_discount_type: product?.offer_discount_type,
-          offer_product_main_price: originalPrice,
-          offer_product_main_discount_price: originalDiscountPrice || 0,
-          offer_product_price: unitPrice,
-          offer_product_quantity: productQuantity,
-          offer_discount_price: product?.offer_discount_price || 0,
+          product_id: product?.offer_product?._id,
+          variation_id: selectedVariation?._id || null,
+          product_main_price: originalPrice,
+          product_main_discount_price: originalDiscountPrice || 0,
+          product_unit_price: originalPrice,
+          product_unit_final_price: unitPrice,
+          product_quantity: productQuantity,
+          product_grand_total_price: unitPrice * productQuantity,
+          campaign_id: null,
         };
       }),
     };
 
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/offer_order`, {
+      const response = await fetch(`${BASE_URL}/order`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -236,7 +243,9 @@ const ProductTable = ({ offerProducts, offer_id }) => {
       const result = await response.json();
 
       if (result?.statusCode === 200 && result?.success === true) {
-        navigate.push("/orders/order-success");
+        navigate.push(
+          `/orders/order-success?order_id=${result?.data?.order_id}`
+        );
         toast.success(
           result?.message ? result?.message : "Order created successfully",
           {

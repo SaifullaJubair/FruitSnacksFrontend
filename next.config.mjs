@@ -67,6 +67,13 @@ const nextConfig = {
       { source: "/top-product", destination: "/shop?sort=popular", permanent: true },
       { source: "/all-trending-products", destination: "/shop?sort=trending", permanent: true },
       { source: "/all-brands", destination: "/shop", permanent: true },
+      // Order Unification Phase B — offer orders merged into regular orders;
+      // old offer-order invoice links now go to the user's order history.
+      {
+        source: "/offer-orders/:path*",
+        destination: "/user-profile?tab=purchase-history",
+        permanent: true,
+      },
     ];
   },
 };

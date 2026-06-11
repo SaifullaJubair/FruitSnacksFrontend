@@ -177,7 +177,6 @@ export const PAGE_SEO = {
  * checkout
  * compare
  * offer/[id]
- * offer-orders/[userId]/[offerId]
  * orders/order-tracking/page.js
  * orders/order-tracking/[id]/page.jsx
  * verify  Page
