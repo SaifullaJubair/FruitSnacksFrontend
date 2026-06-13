@@ -14,7 +14,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
-import { FaFire, FaFireAlt, FaShoppingBag } from "react-icons/fa";
+import { FaFire, FaFireAlt, FaShoppingBag, FaEye } from "react-icons/fa";
 import { MdLocalOffer } from "react-icons/md";
 
 const pad = (n) => String(n).padStart(2, "0");
@@ -96,6 +96,18 @@ const SoldBadge = ({ soldCount }) => {
   );
 };
 
+const ViewBadge = ({ viewCount }) => {
+  const n = Number(viewCount) || 0;
+  // Same social-proof threshold logic as sold: a tiny number reads weak.
+  if (n < 10) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-50 border border-sky-100 text-sky-700">
+      <FaEye size={11} />
+      {n.toLocaleString()} জন দেখেছেন
+    </span>
+  );
+};
+
 const TierHint = ({ tierPrices, currencySymbol = "৳" }) => {
   const tiers = Array.isArray(tierPrices) ? tierPrices : [];
   if (!tiers.length) return null;
@@ -141,7 +153,12 @@ const GroupHint = ({ groupPrices, customerGroup, currencySymbol = "৳" }) => {
   );
 };
 
-const PdpPriceMeta = ({ product, currencySymbol = "৳", showSoldCount = true }) => {
+const PdpPriceMeta = ({
+  product,
+  currencySymbol = "৳",
+  showSoldCount = true,
+  showViewCount = true,
+}) => {
   const { data: userInfo } = useUserInfoQuery();
   const customerGroup =
     userInfo?.data?.customer_group || userInfo?.customer_group || "retail";
@@ -151,6 +168,7 @@ const PdpPriceMeta = ({ product, currencySymbol = "৳", showSoldCount = true })
   const tiers = product?.tier_prices;
   const groupPrices = product?.group_prices;
   const soldCount = product?.sold_count;
+  const viewCount = product?.view_count;
 
   const groupMatch =
     customerGroup !== "retail" &&
@@ -161,6 +179,7 @@ const PdpPriceMeta = ({ product, currencySymbol = "৳", showSoldCount = true })
     flash?.product_entry ||
     (tiers && tiers.length > 0) ||
     (showSoldCount && (Number(soldCount) || 0) >= 5) ||
+    (showViewCount && (Number(viewCount) || 0) >= 10) ||
     groupMatch;
 
   if (!showAnything) return null;
@@ -168,7 +187,19 @@ const PdpPriceMeta = ({ product, currencySymbol = "৳", showSoldCount = true })
   return (
     <div className="space-y-2 pt-2">
       <FlashCountdown flash={flash} currencySymbol={currencySymbol} />
-      {showSoldCount && (Number(soldCount) || 0) >= 5 && <SoldBadge soldCount={soldCount} />}
+      {/* Social-proof badges sit on one wrapping row so sold + viewed read as a
+          pair rather than two stacked blocks. */}
+      {((showSoldCount && (Number(soldCount) || 0) >= 5) ||
+        (showViewCount && (Number(viewCount) || 0) >= 10)) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {showSoldCount && (Number(soldCount) || 0) >= 5 && (
+            <SoldBadge soldCount={soldCount} />
+          )}
+          {showViewCount && (Number(viewCount) || 0) >= 10 && (
+            <ViewBadge viewCount={viewCount} />
+          )}
+        </div>
+      )}
       <TierHint tierPrices={tiers} currencySymbol={currencySymbol} />
       <GroupHint
         groupPrices={groupPrices}

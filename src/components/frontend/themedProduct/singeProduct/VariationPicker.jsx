@@ -75,7 +75,24 @@ const VariationPicker = ({
   const visibleCap = useVisibleCap();
   const [modalOpen, setModalOpen] = useState(false);
 
-  const allValues = attribute?.attribute_values || [];
+  // A value is only offered if it appears in the combination[] of at least one
+  // ACTIVE variation. A variation the owner disabled (is_active:false) — like a
+  // size they stopped stocking — should disappear entirely, not show as a
+  // permanently "out of stock" chip (that conflates "disabled" with "sold out").
+  // Falls back to showing all values when the product has no variations array
+  // (defensive — shouldn't happen for is_variation products).
+  const allValues = useMemo(() => {
+    const values = attribute?.attribute_values || [];
+    const variations = product?.variations;
+    if (!Array.isArray(variations) || variations.length === 0) return values;
+    const activeValueIds = new Set();
+    for (const v of variations) {
+      if (v?.is_active === false) continue;
+      (v?.combination || []).forEach((id) => activeValueIds.add(String(id)));
+    }
+    return values.filter((val) => activeValueIds.has(String(val?._id)));
+  }, [attribute?.attribute_values, product?.variations]);
+
   const selectedValue = selectedVariations?.[attribute?.attribute_name];
 
   // Pin the currently-selected value first so it's never hidden behind +more.
@@ -100,6 +117,10 @@ const VariationPicker = ({
     }
     return { visibleValues: visible, overflowValues: overflow };
   }, [allValues, visibleCap, selectedValue?._id]);
+
+  // If every value on this axis belonged only to disabled variations, there's
+  // nothing buyable to show — render nothing rather than an empty header row.
+  if (allValues.length === 0) return null;
 
   // Dropdown branch — single <select>, no per-value loop. Overflow values are
   // still all reachable inside the select; the +more button below opens the
@@ -198,7 +219,7 @@ const VariationPicker = ({
         title={oosTitle}
         aria-label={ariaLabel}
         onClick={() => onPickValue(val)}
-        className={`px-4 py-2 text-sm font-semibold border-2 transition-all min-w-[64px] ${
+        className={`relative px-4 py-2 text-sm font-semibold border-2 transition-all min-w-[64px] ${
           !inStock ? "opacity-50 line-through" : ""
         }`}
         style={{
@@ -212,9 +233,16 @@ const VariationPicker = ({
         {(matchedVar?.variation_badge_text ||
           matchedVar?.variation_badge_icon_key) && (
           <span
-            className="flex items-center justify-center gap-1 text-[9px] font-bold mt-0.5"
+            className="absolute -top-4 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center gap-1 whitespace-nowrap rounded-full border-2 px-2 py-0.5 text-[9px] font-bold leading-none shadow-md"
             style={{
-              color: selected ? "var(--button-text)" : "var(--brand-primary)",
+              // Floating pill above the chip (apple-theme mockup "সেরা প্যাক").
+              // -top-4 lifts it off the chip so there's a visible gap; the
+              // accent-color border + shadow-md make it read as a separate
+              // floating tag even when the chip itself is the primary color
+              // (selected state). Theme-primary bg + white text + accent ring.
+              background: "var(--brand-primary)",
+              color: "var(--button-text, #fff)",
+              borderColor: "var(--accent-color, #fff)",
             }}
           >
             {/* A4 (2026-06-04) — variation badge icon from IconPicker. Renders
@@ -222,7 +250,7 @@ const VariationPicker = ({
             {matchedVar?.variation_badge_icon_key && (
               <DynamicIcon
                 name={matchedVar.variation_badge_icon_key}
-                size={10}
+                size={9}
               />
             )}
             {matchedVar?.variation_badge_text}
@@ -289,7 +317,10 @@ const VariationPicker = ({
       >
         Select {attribute?.attribute_name}
       </p>
-      <div className="flex flex-wrap gap-2.5 items-center">
+      {/* pt-4 reserves room for the floating "-top-4" badge pill so it
+          doesn't collide with the "Select …" label above. gap-y so wrapped
+          rows also leave room for each row's floating badge. */}
+      <div className="flex flex-wrap gap-x-2.5 gap-y-4 items-center pt-4">
         {visibleValues.map((val) => renderChip(val))}
         {overflowValues.length > 0 && (
           <button

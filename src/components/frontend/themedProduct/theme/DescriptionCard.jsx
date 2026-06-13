@@ -1,76 +1,145 @@
 "use client";
-// Compact "পণ্য সম্পর্কে" card shown right after the hero. Renders the rich-text
-// product.description. Short content looks tidy in a small card; long content is
-// clamped with a "আরও পড়ুন / কম দেখুন" toggle so it never dominates the page.
-// Themed via brand CSS vars. Renders nothing when there's no description.
+// "পণ্য সম্পর্কে" + "পণ্যের বিবরণ" — a two-column section shown below the hero.
+// LEFT  = rich-text product.description (clamped with a "আরও পড়ুন" toggle).
+// RIGHT = the product spec sheet (custom_fields) as an always-visible
+// icon + label/value table. Each column has its own titled header and self-
+// hides when its data is empty, so a product with only one of the two still
+// looks balanced. Themed via brand CSS vars.
 import { useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
+import DynamicIcon from "@/lib/icons/DynamicIcon";
 
-export default function DescriptionCard({ html }) {
+// Small titled header bar (brand accent stripe + heading) reused by both cols.
+function SectionTitle({ children }) {
+  return (
+    <div className="flex items-center gap-2 mb-3">
+      <span
+        className="w-1.5 h-6 rounded-full"
+        style={{ background: "var(--brand-primary)" }}
+      />
+      <h2
+        className="text-lg md:text-xl font-bold"
+        style={{
+          color: "var(--heading-color)",
+          fontWeight: "var(--brand-heading-weight, 700)",
+        }}
+      >
+        {children}
+      </h2>
+    </div>
+  );
+}
+
+export default function DescriptionCard({ html, customFields = [] }) {
   const [expanded, setExpanded] = useState(false);
-  if (!html || !String(html).trim()) return null;
+
+  const hasHtml = html && String(html).trim();
+  const specRows = (customFields || []).filter((f) => f?.label);
+  const hasSpec = specRows.length > 0;
+  if (!hasHtml && !hasSpec) return null;
 
   // Heuristic: only offer the toggle when the content is long enough to bother
   // clamping. Strip tags for a rough length estimate.
-  const plainLen = String(html).replace(/<[^>]*>/g, "").trim().length;
+  const plainLen = hasHtml
+    ? String(html).replace(/<[^>]*>/g, "").trim().length
+    : 0;
   const isLong = plainLen > 280;
 
   return (
     <section className="mb-8">
-      <div className="flex items-center gap-2 mb-3">
-        <span
-          className="w-1.5 h-6 rounded-full"
-          style={{ background: "var(--brand-primary)" }}
-        />
-        <h2
-          className="text-lg md:text-xl font-bold"
-          style={{
-            color: "var(--heading-color)",
-            fontWeight: "var(--brand-heading-weight, 700)",
-          }}
-        >
-          পণ্য সম্পর্কে
-        </h2>
-      </div>
+      {/* Two columns on desktop; stack on mobile. If only one side has data it
+          spans comfortably on its own. */}
+      <div className="grid md:grid-cols-2 gap-6 items-start">
+        {/* LEFT — description */}
+        {hasHtml && (
+          <div>
+            <SectionTitle>পণ্য সম্পর্কে</SectionTitle>
+            <div
+              className="rounded-2xl shadow-sm p-5 md:p-6"
+              style={{ background: "#fff" }}
+            >
+              <div
+                // `pdp-desc` namespaces the styles below so they affect only
+                // this card's rich-text HTML — no global leak.
+                className="pdp-desc text-sm md:text-base leading-relaxed transition-all duration-300"
+                style={{
+                  color: "var(--body-color)",
+                  ...(isLong && !expanded
+                    ? {
+                        maxHeight: "10rem",
+                        overflow: "hidden",
+                        WebkitMaskImage:
+                          "linear-gradient(to bottom, #000 60%, transparent)",
+                        maskImage:
+                          "linear-gradient(to bottom, #000 60%, transparent)",
+                      }
+                    : {}),
+                }}
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
 
-      <div
-        className="rounded-2xl shadow-sm p-5 md:p-6"
-        style={{ background: "#fff" }}
-      >
-        <div
-          // `pdp-desc` namespaces the styles below so they affect only this
-          // card's rich-text HTML — no global leak.
-          className="pdp-desc text-sm md:text-base leading-relaxed transition-all duration-300"
-          style={{
-            color: "var(--body-color)",
-            // Clamp long content until expanded; short content shows fully.
-            ...(isLong && !expanded
-              ? {
-                  maxHeight: "10rem",
-                  overflow: "hidden",
-                  WebkitMaskImage:
-                    "linear-gradient(to bottom, #000 60%, transparent)",
-                  maskImage: "linear-gradient(to bottom, #000 60%, transparent)",
-                }
-              : {}),
-          }}
-          dangerouslySetInnerHTML={{ __html: html }}
-        />
+              {isLong && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded((v) => !v)}
+                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
+                  style={{ color: "var(--brand-primary)" }}
+                >
+                  {expanded ? "কম দেখুন" : "আরও পড়ুন"}
+                  <FaChevronDown
+                    size={12}
+                    className="transition-transform duration-200"
+                    style={{ transform: expanded ? "rotate(180deg)" : "none" }}
+                  />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-        {isLong && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
-            className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
-            style={{ color: "var(--brand-primary)" }}
-          >
-            {expanded ? "কম দেখুন" : "আরও পড়ুন"}
-            <FaChevronDown
-              size={12}
-              className="transition-transform duration-200"
-              style={{ transform: expanded ? "rotate(180deg)" : "none" }}
-            />
-          </button>
+        {/* RIGHT — spec sheet (custom_fields), always fully visible */}
+        {hasSpec && (
+          <div>
+            <SectionTitle>পণ্যের বিবরণ</SectionTitle>
+            <ul
+              className="rounded-2xl shadow-sm divide-y overflow-hidden"
+              style={{ background: "#fff", borderColor: "var(--section-bg)" }}
+            >
+              {specRows.map((f, i) => (
+                <li
+                  key={i}
+                  className="flex items-center gap-3 px-5 py-3.5"
+                  style={{ borderColor: "var(--section-bg)" }}
+                >
+                  <span className="flex items-center gap-2.5 min-w-0 flex-1">
+                    {f.icon_key && (
+                      <span
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                        style={{
+                          background: "var(--section-bg)",
+                          color: "var(--brand-primary)",
+                        }}
+                      >
+                        <DynamicIcon name={f.icon_key} size={15} />
+                      </span>
+                    )}
+                    <span
+                      className="text-sm md:text-base font-medium"
+                      style={{ color: "var(--body-color)" }}
+                    >
+                      {f.label}
+                    </span>
+                  </span>
+                  <span
+                    className="text-sm md:text-base font-semibold text-right shrink-0"
+                    style={{ color: "var(--heading-color)" }}
+                  >
+                    {f.value || "—"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
 

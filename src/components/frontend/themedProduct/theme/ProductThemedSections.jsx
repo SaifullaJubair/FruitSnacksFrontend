@@ -39,6 +39,7 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
     product.nutrition ||
     (trustPoints?.length || 0) > 0 ||
     (product.faqs?.length || 0) > 0 ||
+    (product.custom_fields?.length || 0) > 0 ||
     (product.description && String(product.description).trim());
 
   if (!hasContent) return null;
@@ -52,7 +53,10 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
       <BenefitsUseCasesSection product={product} theme={theme} />
       <NutritionSection product={product} theme={theme} trustPoints={trustPoints} />
       <div className="max-w-6xl mx-auto px-4 mt-8">
-        <DescriptionCard html={product?.description} />
+        <DescriptionCard
+          html={product?.description}
+          customFields={product?.custom_fields}
+        />
       </div>
       {(setting?.enable_reviews ?? true) && <ReviewsSection product={product} theme={theme} />}
       <RelatedProductsThemed product_slug={product?.product_slug} />

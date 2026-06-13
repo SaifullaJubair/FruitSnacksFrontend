@@ -137,7 +137,14 @@ const SingleProduct = ({ product, theme }) => {
   const [variationProduct, setVariationProduct] = useState(null);
   const [stock, setStock] = useState(
     product?.is_variation
-      ? product?.variations?.[0]?.variation_quantity
+      ? // First-paint seed: use the first ACTIVE variation's stock, not
+        // variations[0] (which may be a disabled variation, falsely showing the
+        // product as out of stock for the split-second before the init effect
+        // resolves the real selected variation).
+        (
+          product?.variations?.find((v) => v?.is_active !== false) ||
+          product?.variations?.[0]
+        )?.variation_quantity
       : product?.product_quantity,
   );
   const [productPrice, setProductPrice] = useState(null);
@@ -153,6 +160,7 @@ const SingleProduct = ({ product, theme }) => {
   const whatsappNumber = settingData?.data?.[0]?.watsapp;
   // C13 PDP toggles
   const showSoldCount = settingData?.data?.[0]?.show_sold_count ?? true;
+  const showViewCount = settingData?.data?.[0]?.show_view_count ?? true;
   const showStockCountOnPdp = settingData?.data?.[0]?.show_stock_count_on_pdp ?? false;
   const allowImageDownload = settingData?.data?.[0]?.allow_image_download ?? false;
 
@@ -761,7 +769,12 @@ const SingleProduct = ({ product, theme }) => {
               </div>
 
               {/* F2 — PDP price meta: flash countdown + sold count + tier + group hint. */}
-              <PdpPriceMeta product={product} currencySymbol={currencySymbol} showSoldCount={showSoldCount} />
+              <PdpPriceMeta
+                product={product}
+                currencySymbol={currencySymbol}
+                showSoldCount={showSoldCount}
+                showViewCount={showViewCount}
+              />
 
               {/* SKU display — variation_sku when a specific variation is
                   selected, otherwise the parent product_sku. Industry standard
@@ -819,7 +832,7 @@ const SingleProduct = ({ product, theme }) => {
                     color: "var(--button-text, #fff)",
                   }}
                 >
-                  অর্ডার করুন এখনই <FaLock size={12} />
+                  অর্ডার করুন এখনই <BsCartCheckFill size={14} />
                 </a>
                 <WhatsAppOrderButton
                   whatsappNumber={whatsappNumber}
