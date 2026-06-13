@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import CategoryViewSection from "@/components/categoryview/CategoryViewSection";
 import { getFilterData } from "@/components/lib/getFilterData";
 import { getFilterHeadData } from "@/components/lib/getFilterHeadData";
@@ -15,12 +16,16 @@ const ShopPage = async () => {
 
   return (
     <div className="container mx-auto px-2 pb-5">
-      <CategoryViewSection
-        slug={[]}
-        filterData={filterData?.data}
-        filterHeadData={filterHeadData?.data}
-        initialTitle="All Products"
-      />
+      {/* CategoryViewSection uses useSearchParams() — must sit under a Suspense
+          boundary or Next.js bails the whole route to 404 at build/prerender. */}
+      <Suspense fallback={null}>
+        <CategoryViewSection
+          slug={[]}
+          filterData={filterData?.data}
+          filterHeadData={filterHeadData?.data}
+          initialTitle="All Products"
+        />
+      </Suspense>
     </div>
   );
 };

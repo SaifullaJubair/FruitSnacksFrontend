@@ -1,4 +1,5 @@
 // src/app/(frontend)/category/[...slug]/page.js
+import { Suspense } from "react";
 import CategoryViewSection from "@/components/categoryview/CategoryViewSection";
 import { getFilterData } from "@/components/lib/getFilterData";
 import { getFilterHeadData } from "@/components/lib/getFilterHeadData";
@@ -74,11 +75,14 @@ const CategoryPage = async ({ params }) => {
 
   return (
     <div className="container mx-auto px-2 pb-5">
-      <CategoryViewSection
-        slug={slug}
-        filterData={filterData?.data}
-        filterHeadData={filterHeadData?.data}
-      />
+      {/* CategoryViewSection uses useSearchParams() — needs a Suspense boundary. */}
+      <Suspense fallback={null}>
+        <CategoryViewSection
+          slug={slug}
+          filterData={filterData?.data}
+          filterHeadData={filterHeadData?.data}
+        />
+      </Suspense>
     </div>
   );
 };
