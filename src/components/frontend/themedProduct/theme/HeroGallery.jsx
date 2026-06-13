@@ -196,7 +196,7 @@ export default function HeroGallery({ product, variationProduct }) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.2 }}
-                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90"
+                className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95"
                 onClick={() => setLightboxIndex(null)}
               >
                 <button
@@ -224,15 +224,19 @@ export default function HeroGallery({ product, variationProduct }) {
                     {media.map((src, i) => (
                       <SwiperSlide
                         key={i}
-                        className="flex items-center justify-center"
+                        className="flex h-full items-center justify-center p-4"
                       >
                         {isVideo(src) ? (
                           // Video isn't wrapped in swiper-zoom-container — the
                           // Zoom module mis-handles <video> (audit HIGH #2).
+                          // h-[80vh] (not just max-h) so a small-resolution clip
+                          // still fills the lightbox instead of rendering as a
+                          // tiny native-size box; w-auto keeps aspect ratio.
                           <video
                             src={src}
                             controls
-                            className="max-h-[85vh] max-w-full"
+                            autoPlay
+                            className="h-[80vh] max-h-[80vh] w-auto max-w-full rounded-lg bg-black"
                           />
                         ) : (
                           <div className="swiper-zoom-container">
