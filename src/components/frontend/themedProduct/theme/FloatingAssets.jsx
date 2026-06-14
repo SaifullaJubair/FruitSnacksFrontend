@@ -16,6 +16,10 @@ const animClass = (type, speed) => {
 
 export default function FloatingAssets({ assets = [], section }) {
   if (!Array.isArray(assets) || assets.length === 0) return null;
+  // MULTI-NICHE-DEBT: each PDP section component passes a hardcoded food `section`
+  // string (hero/order/benefits/use_cases/nutrition/reviews/faq) here. When the PDP
+  // section registry + pdp_section_array lands, those section names must come from the
+  // active niche's registry so non-food PDPs can anchor floats. See docs/_ai/MULTI_NICHE_PLAN.md §4.
   // section can be a string or array of section names (for combined sections)
   const sections = Array.isArray(section) ? section : [section];
   const filtered = assets.filter(
