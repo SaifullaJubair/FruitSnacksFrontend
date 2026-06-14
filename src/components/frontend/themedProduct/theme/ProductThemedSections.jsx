@@ -44,20 +44,22 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
 
   if (!hasContent) return null;
 
-  // Description repositioned to mid-page (between Nutrition and Reviews) so
-  // the hero/order flow stays clean per the theme mockups. Card self-hides
-  // when product.description is empty (see DescriptionCard.jsx).
+  // Order (owner request): order form (in the SingleProduct hub above) → Video
+  // → Details (description + spec) → Benefits/UseCases → Nutrition → Reviews →
+  // Related → FAQ → Offer. Description+spec sits right after the video instead
+  // of buried mid-page. Card self-hides when both description + custom_fields
+  // are empty (see DescriptionCard.jsx).
   return (
     <div className="themed-product-page" style={{ background: "var(--page-bg)" }}>
       <VideoSection product={product} theme={theme} />
-      <BenefitsUseCasesSection product={product} theme={theme} />
-      <NutritionSection product={product} theme={theme} trustPoints={trustPoints} />
       <div className="max-w-6xl mx-auto px-4 mt-8">
         <DescriptionCard
           html={product?.description}
           customFields={product?.custom_fields}
         />
       </div>
+      <BenefitsUseCasesSection product={product} theme={theme} />
+      <NutritionSection product={product} theme={theme} trustPoints={trustPoints} />
       {(setting?.enable_reviews ?? true) && <ReviewsSection product={product} theme={theme} />}
       <RelatedProductsThemed product_slug={product?.product_slug} />
       <FaqSection product={product} theme={theme} />
