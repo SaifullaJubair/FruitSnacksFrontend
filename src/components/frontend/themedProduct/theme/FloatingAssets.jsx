@@ -33,17 +33,28 @@ export default function FloatingAssets({ assets = [], section }) {
         : "right"
       : a.position || "left";
 
+  // Vertical anchor inside the section. `align` (top/middle/bottom) is the
+  // primary driver; a per-side collision offset keeps two same-align assets
+  // on the same side from perfectly overlapping. Legacy assets without align
+  // fall back to the old stagger band.
+  const ALIGN_BASE = { top: 8, middle: 42, bottom: 72 };
+
   return (
     <>
       {filtered.map((a, i) => {
         const side = sideFor(a, i);
         const sideClass = side === "left" ? "left-0 md:left-2" : "right-0 md:right-2";
         const mobileClass = a.hide_on_mobile === false ? "" : "hidden md:block";
-        // stagger vertically within each side so two left-side assets don't overlap
+        // how many earlier same-side assets share this slot → collision offset
         const sameSideIdx = filtered
           .slice(0, i)
           .filter((x, j) => sideFor(x, j) === side).length;
-        const top = `${10 + (sameSideIdx % 4) * 35}%`;
+        const base =
+          a.align && ALIGN_BASE[a.align] != null
+            ? ALIGN_BASE[a.align]
+            : 10 + (sameSideIdx % 4) * 35; // legacy stagger fallback
+        // nudge stacked same-side assets ~8% apart, clamped to stay on-screen
+        const top = `${Math.min(base + (a.align ? (sameSideIdx % 3) * 8 : 0), 88)}%`;
         return (
           <img
             key={i}

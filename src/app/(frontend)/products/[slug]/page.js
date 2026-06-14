@@ -8,7 +8,7 @@ import { BASE_URL } from "@/components/utils/baseURL";
 import SingleProduct from "@/components/frontend/themedProduct/singeProduct/SingleProduct";
 import ProductThemedSections from "@/components/frontend/themedProduct/theme/ProductThemedSections";
 import OfferDiscoveryBanner from "@/components/frontend/themedProduct/theme/sections/OfferDiscoveryBanner";
-import ProductFloatingImages from "@/components/frontend/themedProduct/theme/ProductFloatingImages";
+import { mergeFloating } from "@/lib/theme/mergeFloating";
 import ThemeStyleInjector from "@/components/frontend/themedProduct/theme/ThemeStyleInjector";
 import { mergeTheme } from "@/lib/theme/mergeTheme";
 import Link from "next/link";
@@ -181,7 +181,19 @@ const ProductDetailsPage = async ({ params }) => {
     product?.theme_id && typeof product.theme_id === "object"
       ? product.theme_id
       : null;
-  const theme = mergeTheme(baseTheme);
+  const baseResolved = mergeTheme(baseTheme);
+  // Section-anchored floating: layer the per-product override (hide/replace/
+  // extras) over the theme's floating_assets ONCE here, then hand the merged
+  // list down via theme.floating_assets so all section <FloatingAssets/> mounts
+  // render the resolved set with no per-section wiring. Replaces the old
+  // full-page ProductFloatingImages (z-trapped) entirely.
+  const theme = {
+    ...baseResolved,
+    floating_assets: mergeFloating(
+      baseResolved?.floating_assets,
+      product?.floating_overrides,
+    ),
+  };
 
   // S3b (2026-06-04) — Product JSON-LD now includes SKU (when available)
   // and uses brand_name from product.brand_id when admin set a brand;
@@ -287,10 +299,11 @@ const ProductDetailsPage = async ({ params }) => {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      {/* Per-product floating accent images across the whole page (behind/front) */}
-      <ProductFloatingImages images={product?.floating_images} />
-      {/* Content sits between behind (z0) and front (z5) floating layers */}
-      <div className="relative" style={{ zIndex: 1 }}>
+      {/* Floating accent images are now section-anchored: each themed section
+          mounts its own <FloatingAssets/> from theme.floating_assets (already
+          merged with the product's floating_overrides above). No full-page
+          float layer / z-index trap anymore. */}
+      <div className="relative">
         <SingleProduct product={product} theme={theme} />
         {/* Mounted at the page level (not inside ProductThemedSections) so
             sparse products with no themed content but an active offer still

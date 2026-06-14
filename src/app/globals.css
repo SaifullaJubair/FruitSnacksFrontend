@@ -332,6 +332,15 @@ input[type="number"] {
 .brand-anim-spin-normal  { animation: brand-spin 6s linear infinite; }
 .brand-anim-spin-fast    { animation: brand-spin 3s linear infinite; }
 
+/* Accessibility: floating accent images are decorative — kill their motion
+   when the user asks for reduced motion. (Matches every brand-anim-* class
+   above via the shared prefix.) */
+@media (prefers-reduced-motion: reduce) {
+  [class*="brand-anim-"] {
+    animation: none !important;
+  }
+}
+
 /* Themed button base — used by Order Now / WhatsApp / etc. on product page */
 .brand-btn {
   background: var(--brand-primary, #10B981);
