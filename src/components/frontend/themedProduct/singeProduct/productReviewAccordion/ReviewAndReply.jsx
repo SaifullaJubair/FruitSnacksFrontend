@@ -9,20 +9,24 @@ const ReviewAndReply = ({ singleProduct, reviewsData }) => {
   // console.log(reviewsData);
   return (
     <div className="mt-4">
-      {reviewsData?.data?.map((review) => (
+      {reviewsData?.data?.map((review) => {
+        // Seeded reviews have no review_user_id — fall back to reviewer_name.
+        const displayName =
+          review?.review_user_id?.user_name || review?.reviewer_name || "ক্রেতা";
+        return (
         <div className="mb-6" key={review?._id}>
           <div className="flex items-start space-x-4">
             {/* User Image or Avatar */}
             {review?.review_user_id?.user_image ? (
               <img
                 src={review?.review_user_id?.user_image}
-                alt={review?.review_user_id?.user_name}
+                alt={displayName}
                 className="w-12 h-12  object-cover"
               />
             ) : (
               <div className="w-12 h-12  bg-gray-300 flex items-center justify-center">
                 <span className="text-xl font-semibold text-gray-700">
-                  {review?.review_user_id?.user_name?.charAt(0) || (
+                  {displayName?.charAt(0) || (
                     <FaRegUser />
                   )}
                 </span>
@@ -34,7 +38,7 @@ const ReviewAndReply = ({ singleProduct, reviewsData }) => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-semibold">
-                    {review?.review_user_id?.user_name}
+                    {displayName}
                   </p>
                   <div className="flex items-center space-x-1">
                     {[...Array(5)].map((_, index) => (
@@ -95,7 +99,8 @@ const ReviewAndReply = ({ singleProduct, reviewsData }) => {
           {/* Horizontal Line */}
           <hr className="my-4 border-t border-gray-200" />
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

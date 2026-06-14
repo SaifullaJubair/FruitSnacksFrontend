@@ -80,7 +80,7 @@ export default function ReviewsSection({ product, theme }) {
         >
           {reviews.map((r, i) => {
             const name =
-              r?.review_reviewer_name || r?.review_user_id?.user_name || "ক্রেতা";
+              r?.reviewer_name || r?.review_user_id?.user_name || "ক্রেতা";
             const initial = name.trim().charAt(0) || "ক";
             return (
               <SwiperSlide key={r._id || i} className="!h-auto">
