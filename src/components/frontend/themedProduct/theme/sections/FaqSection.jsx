@@ -4,8 +4,18 @@ import { useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import FloatingAssets from "../FloatingAssets";
 
+// An FAQ copied from a template can still carry an unresolved {{placeholder}}
+// when the product had no value for it (e.g. {{warranty}} on a product with no
+// warranty spec). Hide such an FAQ entirely so the customer never sees a raw
+// broken token. Admin is warned at copy-time; this is the storefront safety net.
+const hasUnresolvedPlaceholder = (text) => /\{\{[^}]+\}\}/.test(String(text || ""));
+
 export default function FaqSection({ product, theme }) {
-  const items = product?.faqs || [];
+  const items = (product?.faqs || []).filter(
+    (f) =>
+      !hasUnresolvedPlaceholder(f?.question) &&
+      !hasUnresolvedPlaceholder(f?.answer),
+  );
   const [openIdx, setOpenIdx] = useState(0);
   if (items.length === 0) return null;
 
