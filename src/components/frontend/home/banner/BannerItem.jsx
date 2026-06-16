@@ -52,7 +52,7 @@ const BannerItem = ({ bannerData }) => {
         >
         {items?.map((banner, i) => (
           <SwiperSlide key={banner?._id || i}>
-            <div className="relative w-full aspect-[3/1] sm:aspect-[16/6] overflow-hidden bg-gray-900">
+            <div className="relative w-full aspect-[16/10] sm:aspect-[16/6] overflow-hidden bg-gray-900">
               <Image
                 src={banner?.banner_image}
                 alt={banner?.banner_title || `Banner ${i + 1}`}

@@ -74,20 +74,21 @@ const CategoryGroup = ({ group, index }) => {
       {/* ── Category card — 2 cols wide ── */}
       <Link
         href={`/category/${group?.categoryDetails?.category_slug}`}
-        className="sm:col-span-2 group relative overflow-hidden rounded-2xl bg-gray-900 aspect-[4/3] sm:aspect-auto sm:min-h-[320px] flex flex-col justify-end"
+        className="sm:col-span-2 group relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 aspect-[4/3] sm:aspect-auto sm:min-h-[320px] flex flex-col justify-end"
       >
         {group?.categoryDetails?.category_logo && (
           <Image
             src={group.categoryDetails.category_logo}
             alt={group?.categoryDetails?.category_name || "Category"}
             fill
-            className="object-cover opacity-60 group-hover:scale-105 group-hover:opacity-75 transition-all duration-500"
+            className="object-cover opacity-90 group-hover:scale-105 transition-all duration-500"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 40vw, 33vw"
           />
         )}
 
-        {/* Gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
+        {/* Gradient overlay — soft, only deep enough at the bottom to keep text
+            readable (was an almost-black wash that made the card look dark). */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
 
         {/* Text */}
         <div className="relative z-10 p-5">

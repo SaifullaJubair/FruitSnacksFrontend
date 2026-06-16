@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 
@@ -14,11 +15,14 @@ import { addToCart } from "@/redux/feature/cart/cartSlice";
  * Returns:
  *   wishlisted   — boolean (live, listens to the global localStorage event)
  *   toggleWishlist(e)
- *   addOrQuickView(e)  — simple product → addToCart; variation → setQuickView(true)
- *   quickView, setQuickView  — caller renders <QuickViewModal> when true
+ *   handleAddToCart(variationId?)  — add to cart (variationId from a chip, or null)
+ *   buyNow(variationId?)           — add then router.push("/checkout")
+ *   quickView, setQuickView        — caller renders <QuickViewModal> when true
  */
 export default function useBoutiqueProductActions(product) {
   const dispatch = useDispatch();
+  const router = useRouter();
+  const cartProducts = useSelector((state) => state.cart.products);
   const [quickView, setQuickView] = useState(false);
 
   const readWishlisted = () => {
@@ -73,23 +77,49 @@ export default function useBoutiqueProductActions(product) {
     } catch {}
   };
 
-  const addOrQuickView = (e) => {
-    e?.preventDefault?.();
-    e?.stopPropagation?.();
-    if (product?.is_variation) {
-      setQuickView(true);
-      return;
+  // Add to cart. `variationId` = the selected variation's _id (boutique chips);
+  // null for a simple product. Returns true if it actually added (false if it
+  // was already in the cart) so callers like buyNow can still proceed.
+  const addToCartWith = (variationId = null) => {
+    const already = cartProducts?.some((item) =>
+      variationId
+        ? item.productId === product?._id &&
+          item.variation_product_id === variationId
+        : item.productId === product?._id && !item.variation_product_id,
+    );
+    if (already) {
+      toast.info("এই পণ্যটি ইতিমধ্যে কার্টে আছে", { autoClose: 1200 });
+      return false;
     }
     dispatch(
       addToCart({
         productId: product?._id,
-        variation_product_id: null,
+        variation_product_id: variationId || null,
         quantity: 1,
         product_slug: product?.product_slug || null,
       }),
     );
-    toast.success("কার্টে যোগ হয়েছে", { autoClose: 1200 });
+    return true;
   };
 
-  return { wishlisted, toggleWishlist, addOrQuickView, quickView, setQuickView };
+  const handleAddToCart = (variationId = null) => {
+    if (addToCartWith(variationId)) {
+      toast.success("কার্টে যোগ হয়েছে", { autoClose: 1200 });
+    }
+  };
+
+  // "এখনই অর্ডার করুন" — add (if needed) then go straight to checkout.
+  const buyNow = (variationId = null) => {
+    addToCartWith(variationId); // no-op toast if already there; still proceed
+    router.push("/checkout");
+  };
+
+  return {
+    wishlisted,
+    toggleWishlist,
+    handleAddToCart,
+    buyNow,
+    quickView,
+    setQuickView,
+  };
 }

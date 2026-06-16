@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { FiCheck, FiHeart, FiShoppingCart } from "react-icons/fi";
+import { FiCheck, FiHeart, FiShoppingCart, FiEye } from "react-icons/fi";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import "swiper/css";
@@ -103,7 +103,9 @@ function FeatureRow({ product, index, currency }) {
     ? product.variation_options
     : [];
   const hasOptions = product?.is_variation && options.length > 0;
-  const [activeVar, setActiveVar] = useState(null);
+  // Default to the first pack size so price always shows and Buy/Cart always
+  // has a valid variation (owner decision). Customer can change the chip.
+  const [activeVar, setActiveVar] = useState(hasOptions ? options[0] : null);
 
   // Price reflects the selected variation when one is picked, else product base.
   const basePrice = productPrice(product);
@@ -188,7 +190,7 @@ function FeatureRow({ product, index, currency }) {
             return (
               <MotionButton
                 key={v._id}
-                onClick={() => setActiveVar(selected ? null : v)}
+                onClick={() => setActiveVar(v)}
                 className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                   selected
                     ? "bg-primary-500 border-primary-500 text-white"
@@ -215,27 +217,55 @@ function FeatureRow({ product, index, currency }) {
         )}
       </Reveal>
 
-      <Reveal delay={0.25} className="flex flex-wrap items-center gap-3 pt-1">
+      {/* Quick actions — icon-only on mobile, icon+label on sm+ (saves space on
+          small screens, clearer on larger). */}
+      <Reveal delay={0.25} className="flex items-center gap-2.5 pt-1">
         <MotionButton
-          onClick={actions.addOrQuickView}
-          className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-full font-semibold transition-colors"
+          onClick={() => actions.handleAddToCart(activeVar?._id || null)}
+          aria-label="কার্টে যোগ করুন"
+          title="কার্টে যোগ করুন"
+          className="inline-flex items-center justify-center gap-2 h-11 w-11 sm:w-auto sm:px-4 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-primary-600 hover:border-primary-400 transition-colors text-sm font-medium"
         >
-          <FiShoppingCart />
-          কার্টে যোগ করুন
+          <FiShoppingCart className="shrink-0" />
+          <span className="hidden sm:inline">কার্ট</span>
         </MotionButton>
         <MotionButton
           onClick={actions.toggleWishlist}
-          aria-label="wishlist"
-          className={`inline-flex items-center justify-center w-11 h-11 rounded-full border transition-colors ${
+          aria-label="উইশলিস্ট"
+          title="উইশলিস্ট"
+          className={`inline-flex items-center justify-center gap-2 h-11 w-11 sm:w-auto sm:px-4 rounded-full border transition-colors text-sm font-medium ${
             actions.wishlisted
               ? "bg-red-50 border-red-200 text-red-500"
               : "bg-white border-gray-200 text-gray-500 hover:text-red-500"
           }`}
         >
-          <FiHeart className={actions.wishlisted ? "fill-current" : ""} />
+          <FiHeart className={`shrink-0 ${actions.wishlisted ? "fill-current" : ""}`} />
+          <span className="hidden sm:inline">উইশলিস্ট</span>
         </MotionButton>
-        <Link href={href} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
-          বিস্তারিত →
+        <MotionButton
+          onClick={() => actions.setQuickView(true)}
+          aria-label="দ্রুত দেখুন"
+          title="দ্রুত দেখুন"
+          className="inline-flex items-center justify-center gap-2 h-11 w-11 sm:w-auto sm:px-4 rounded-full border border-gray-200 bg-white text-gray-600 hover:text-primary-600 hover:border-primary-400 transition-colors text-sm font-medium"
+        >
+          <FiEye className="shrink-0" />
+          <span className="hidden sm:inline">দেখুন</span>
+        </MotionButton>
+      </Reveal>
+
+      {/* Primary actions — Buy now (highlight) + View details (outline) */}
+      <Reveal delay={0.3} className="flex flex-wrap items-center gap-3">
+        <MotionButton
+          onClick={() => actions.buyNow(activeVar?._id || null)}
+          className="inline-flex items-center justify-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-7 py-3 rounded-full font-semibold transition-colors shadow-lg shadow-primary-500/25"
+        >
+          এখনই অর্ডার করুন
+        </MotionButton>
+        <Link
+          href={href}
+          className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full font-semibold border border-gray-300 text-gray-700 hover:border-primary-400 hover:text-primary-600 transition-colors"
+        >
+          বিস্তারিত দেখুন
         </Link>
       </Reveal>
     </div>
