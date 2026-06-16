@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FiHeart, FiShoppingCart } from "react-icons/fi";
+import { motion, useReducedMotion } from "framer-motion";
 
 import useGetTrendingProducts from "@/components/lib/getTrendingProducts";
 import useGetSettingData from "@/components/lib/getSettingData";
@@ -10,6 +11,7 @@ import { productPrice, lineThroughPrice } from "@/utils/helper";
 import QuickViewModal from "@/components/shared/quickViewModal/QuickViewModal";
 import Contain from "@/components/common/Contain";
 import Reveal from "../boutique/reveal";
+import { GlowBlob, MotionButton } from "../boutique/bits";
 import useBoutiqueProductActions from "../boutique/useBoutiqueProductActions";
 
 /**
@@ -24,6 +26,7 @@ export default function HeroSpotlight() {
   const { data, isLoading } = useGetTrendingProducts();
   const { data: settingsData } = useGetSettingData();
   const currency = settingsData?.data?.[0]?.currency_symbol || "৳";
+  const reduce = useReducedMotion();
 
   const products = data?.data?.data || [];
   const product = products[0];
@@ -49,10 +52,17 @@ export default function HeroSpotlight() {
     <section className="py-6 md:py-12">
       <Contain>
         <div className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center rounded-3xl overflow-hidden bg-gradient-to-br from-[#FFF4EC] to-[#FFF9F2] p-6 sm:p-10 lg:p-16">
+          {/* Ambient depth (decorative) */}
+          <GlowBlob tone="warm" className="w-72 h-72 -top-16 -left-10" />
+          <GlowBlob tone="green" className="w-64 h-64 -bottom-20 right-0" />
+
           {/* Copy */}
-          <div className="order-2 lg:order-1 flex flex-col gap-5">
+          <div className="relative z-10 order-2 lg:order-1 flex flex-col gap-5">
+            <Reveal as="span" className="text-xs sm:text-sm font-semibold uppercase tracking-[0.2em] text-primary-500">
+              ★ আজকের বিশেষ পণ্য
+            </Reveal>
             {product.badge_text && (
-              <Reveal as="span" className="self-start rounded-full bg-primary-500/10 text-primary-600 px-4 py-1.5 text-sm font-semibold">
+              <Reveal as="span" delay={0.04} className="self-start rounded-full bg-primary-500/10 text-primary-600 px-4 py-1.5 text-sm font-semibold">
                 {product.badge_text}
               </Reveal>
             )}
@@ -65,26 +75,26 @@ export default function HeroSpotlight() {
               </Reveal>
             )}
             <Reveal delay={0.15} className="flex items-baseline gap-3">
-              <span className="text-2xl sm:text-3xl font-bold text-primary-600">
+              <span className="text-2xl sm:text-3xl font-bold text-primary-600 tabular-nums">
                 {currency}
                 {price}
               </span>
               {orig && orig > price && (
-                <span className="text-lg text-gray-400 line-through">
+                <span className="text-lg text-gray-400 line-through tabular-nums">
                   {currency}
                   {orig}
                 </span>
               )}
             </Reveal>
             <Reveal delay={0.2} className="flex flex-wrap items-center gap-3 pt-2">
-              <button
+              <MotionButton
                 onClick={actions.addOrQuickView}
                 className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-7 py-3.5 rounded-full font-semibold transition-colors"
               >
                 <FiShoppingCart className="text-lg" />
                 কার্টে যোগ করুন
-              </button>
-              <button
+              </MotionButton>
+              <MotionButton
                 onClick={actions.toggleWishlist}
                 aria-label="wishlist"
                 className={`inline-flex items-center justify-center w-12 h-12 rounded-full border transition-colors ${
@@ -94,7 +104,7 @@ export default function HeroSpotlight() {
                 }`}
               >
                 <FiHeart className={actions.wishlisted ? "fill-current" : ""} />
-              </button>
+              </MotionButton>
               <Link
                 href={href}
                 className="px-6 py-3.5 rounded-full font-semibold text-gray-700 hover:text-primary-600 transition-colors"
@@ -104,18 +114,24 @@ export default function HeroSpotlight() {
             </Reveal>
           </div>
 
-          {/* Image */}
-          <Reveal delay={0.1} y={32} className="order-1 lg:order-2">
-            <Link href={href} className="block relative aspect-square w-full max-w-lg mx-auto">
-              <Image
-                src={product.main_image || "/assets/images/placeholder.jpg"}
-                alt={product.product_name}
-                fill
-                priority
-                className="object-cover rounded-2xl shadow-xl"
-                sizes="(max-width: 1024px) 90vw, 45vw"
-              />
-            </Link>
+          {/* Image — gentle float (decorative; halts under reduced-motion) */}
+          <Reveal delay={0.1} y={32} className="relative z-10 order-1 lg:order-2">
+            <motion.div
+              animate={reduce ? undefined : { y: [0, -12, 0] }}
+              transition={reduce ? undefined : { duration: 6, repeat: Infinity, ease: "easeInOut" }}
+              className="block relative aspect-square w-full max-w-lg mx-auto"
+            >
+              <Link href={href} className="block relative w-full h-full">
+                <Image
+                  src={product.main_image || "/assets/images/placeholder.jpg"}
+                  alt={product.product_name}
+                  fill
+                  priority
+                  className="object-cover rounded-2xl shadow-xl"
+                  sizes="(max-width: 1024px) 90vw, 45vw"
+                />
+              </Link>
+            </motion.div>
           </Reveal>
         </div>
       </Contain>

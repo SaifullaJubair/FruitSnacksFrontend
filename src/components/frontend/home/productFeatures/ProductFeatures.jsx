@@ -15,6 +15,7 @@ import { productPrice, lineThroughPrice } from "@/utils/helper";
 import QuickViewModal from "@/components/shared/quickViewModal/QuickViewModal";
 import Contain from "@/components/common/Contain";
 import Reveal from "../boutique/reveal";
+import { SectionHeading, MotionButton } from "../boutique/bits";
 import useBoutiqueProductActions from "../boutique/useBoutiqueProductActions";
 
 // Cap big feature rows so a large trending list doesn't make an endless page
@@ -185,7 +186,7 @@ function FeatureRow({ product, index, currency }) {
           {options.map((v) => {
             const selected = activeVar?._id === v._id;
             return (
-              <button
+              <MotionButton
                 key={v._id}
                 onClick={() => setActiveVar(selected ? null : v)}
                 className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-colors ${
@@ -195,19 +196,19 @@ function FeatureRow({ product, index, currency }) {
                 }`}
               >
                 {chipLabel(v)}
-              </button>
+              </MotionButton>
             );
           })}
         </Reveal>
       )}
 
       <Reveal delay={0.2} className="flex items-center gap-3 pt-1">
-        <span className="text-xl font-bold text-primary-600">
+        <span className="text-xl font-bold text-primary-600 tabular-nums">
           {currency}
           {price}
         </span>
         {orig && orig > price && (
-          <span className="text-gray-400 line-through">
+          <span className="text-gray-400 line-through tabular-nums">
             {currency}
             {orig}
           </span>
@@ -215,14 +216,14 @@ function FeatureRow({ product, index, currency }) {
       </Reveal>
 
       <Reveal delay={0.25} className="flex flex-wrap items-center gap-3 pt-1">
-        <button
+        <MotionButton
           onClick={actions.addOrQuickView}
           className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white px-6 py-3 rounded-full font-semibold transition-colors"
         >
           <FiShoppingCart />
           কার্টে যোগ করুন
-        </button>
-        <button
+        </MotionButton>
+        <MotionButton
           onClick={actions.toggleWishlist}
           aria-label="wishlist"
           className={`inline-flex items-center justify-center w-11 h-11 rounded-full border transition-colors ${
@@ -232,7 +233,7 @@ function FeatureRow({ product, index, currency }) {
           }`}
         >
           <FiHeart className={actions.wishlisted ? "fill-current" : ""} />
-        </button>
+        </MotionButton>
         <Link href={href} className="text-gray-700 hover:text-primary-600 font-medium transition-colors">
           বিস্তারিত →
         </Link>
@@ -277,21 +278,25 @@ export default function ProductFeatures() {
   if (!rows.length) return null;
 
   return (
-    <section className="py-6 md:py-12">
+    <section className="py-8 md:py-16">
       <Contain>
-        {rows.map((p, i) => (
-          <div key={p._id}>
-            <FeatureRow product={p} index={i} currency={currency} />
-            {/* Breathing space + subtle divider between products (owner feedback) */}
-            {i < rows.length - 1 && (
-              <div className="my-12 md:my-20 flex items-center justify-center">
-                <span className="h-px w-16 bg-gradient-to-r from-transparent via-primary-300 to-transparent" />
-                <span className="mx-3 text-primary-300 text-sm">✦</span>
-                <span className="h-px w-16 bg-gradient-to-r from-transparent via-primary-300 to-transparent" />
-              </div>
-            )}
-          </div>
-        ))}
+        <SectionHeading
+          eyebrow="আমাদের পণ্য"
+          title="হাতে বাছাই করা সেরা পণ্য"
+          subtitle="প্রতিটি পণ্য যত্ন নিয়ে বাছাই করা — তাজা, প্রাকৃতিক ও স্বাস্থ্যকর।"
+        />
+        <div className="space-y-6 md:space-y-10">
+          {rows.map((p, i) => (
+            <div
+              key={p._id}
+              className={`rounded-3xl p-5 sm:p-8 md:p-12 ${
+                i % 2 === 1 ? "bg-[#FFF9F2]" : "bg-white shadow-sm ring-1 ring-gray-100"
+              }`}
+            >
+              <FeatureRow product={p} index={i} currency={currency} />
+            </div>
+          ))}
+        </div>
       </Contain>
     </section>
   );

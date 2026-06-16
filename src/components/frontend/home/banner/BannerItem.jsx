@@ -8,6 +8,7 @@ import "swiper/css/effect-fade";
 import Image from "next/image";
 import Link from "next/link";
 import { images } from "@/components/utils/ImageImport";
+import Contain from "@/components/common/Contain";
 
 const PLACEHOLDER_BANNERS = [
   {
@@ -34,23 +35,24 @@ const BannerItem = ({ bannerData }) => {
   const items = bannerData?.length ? bannerData : PLACEHOLDER_BANNERS;
 
   return (
-    <div className="w-full">
-      <Swiper
-        modules={[Pagination, Autoplay, EffectFade]}
-        effect="fade"
-        autoplay={{ delay: 4500, disableOnInteraction: false }}
-        pagination={{
-          clickable: true,
-          renderBullet: (_, className) =>
-            `<span class="${className} !w-6 !h-1.5 !rounded-sm !bg-white/50 [&.swiper-pagination-bullet-active]:!bg-white [&.swiper-pagination-bullet-active]:!w-8 transition-all duration-300"></span>`,
-        }}
-        loop={true}
-        slidesPerView={1}
-        className="w-full"
-      >
+    <div className="w-full pt-4 md:pt-6">
+      <Contain>
+        <Swiper
+          modules={[Pagination, Autoplay, EffectFade]}
+          effect="fade"
+          autoplay={{ delay: 4500, disableOnInteraction: false }}
+          pagination={{
+            clickable: true,
+            renderBullet: (_, className) =>
+              `<span class="${className} !w-6 !h-1.5 !rounded-sm !bg-white/50 [&.swiper-pagination-bullet-active]:!bg-white [&.swiper-pagination-bullet-active]:!w-8 transition-all duration-300"></span>`,
+          }}
+          loop={true}
+          slidesPerView={1}
+          className="w-full rounded-3xl overflow-hidden shadow-sm"
+        >
         {items?.map((banner, i) => (
           <SwiperSlide key={banner?._id || i}>
-            <div className="relative w-full aspect-[3/1] sm:aspect-[16/5] overflow-hidden bg-gray-900">
+            <div className="relative w-full aspect-[3/1] sm:aspect-[16/6] overflow-hidden bg-gray-900">
               <Image
                 src={banner?.banner_image}
                 alt={banner?.banner_title || `Banner ${i + 1}`}
@@ -60,24 +62,24 @@ const BannerItem = ({ bannerData }) => {
                 blurDataURL={images.loadingProductImg}
                 priority={i === 0}
               />
-              {/* gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/10 to-transparent" />
+              {/* gradient overlay — slightly deeper for readable text */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/25 to-transparent" />
 
               {/* Text + CTA */}
               {banner?.banner_title && (
                 <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 md:px-20">
-                  <p className="text-white/70 text-xs sm:text-sm font-medium tracking-widest uppercase mb-2">
+                  <p className="text-white/80 text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase mb-2">
                     FruitSnacks
                   </p>
-                  <h2 className="text-white font-bold text-lg sm:text-2xl md:text-4xl leading-tight max-w-md mb-4 drop-shadow-sm">
+                  <h2 className="text-white font-extrabold text-2xl sm:text-3xl md:text-5xl leading-tight max-w-xl mb-5 drop-shadow">
                     {banner.banner_title}
                   </h2>
                   {banner?.banner_path && (
                     <Link
                       href={banner.banner_path}
-                      className="inline-flex items-center gap-2 bg-primary text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 py-2 sm:py-2.5 hover:bg-primary-600 transition-colors w-fit"
+                      className="inline-flex items-center gap-2 bg-primary-500 hover:bg-primary-600 text-white text-sm font-semibold px-6 sm:px-7 py-2.5 sm:py-3 rounded-full transition-all hover:scale-[1.03] w-fit shadow-lg shadow-primary-500/30"
                     >
-                      Shop Now →
+                      এখনই কিনুন →
                     </Link>
                   )}
                 </div>
@@ -85,7 +87,8 @@ const BannerItem = ({ bannerData }) => {
             </div>
           </SwiperSlide>
         ))}
-      </Swiper>
+        </Swiper>
+      </Contain>
     </div>
   );
 };
