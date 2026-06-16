@@ -8,15 +8,45 @@ const ChatWidgetStacker = () => {
   const { data: settingData } = useGetSettingData();
   const setting = settingData?.data?.[0];
 
-  const messengerEnabled = setting?.chat_messenger_enabled;
+  // DB fields are chat_messenger_show / chat_livechat_show (setting.model.ts) —
+  // earlier this read *_enabled which never existed, so the button never rendered.
+  const messengerEnabled = setting?.chat_messenger_show;
   const messengerPageId = setting?.chat_messenger_page_id;
-  const livechatEnabled = setting?.chat_livechat_enabled;
+  const livechatEnabled = setting?.chat_livechat_show;
+  const livechatEmbed = setting?.chat_livechat_embed_code;
   const position = setting?.chat_widgets_position || "bottom-right";
 
-  // Inject live-chat embed code once enabled + available
-  // Note: embed code is NOT in the public /setting response (it's in SETTING_SECRET_FIELDS)
-  // The live-chat embed is injected server-side via layout instead — this component handles
-  // the Messenger button only; live-chat comes from a separate server-side script inject
+  // Live-chat embed (Tawk.to / Crisp / etc.): the admin pastes a full
+  // <script>…</script> snippet. React's dangerouslySetInnerHTML does NOT execute
+  // injected <script> tags (DOM spec), so we parse the snippet and re-create real
+  // <script> elements at runtime — inline code runs, and src scripts load.
+  useEffect(() => {
+    if (!livechatEnabled || !livechatEmbed) return;
+    if (document.getElementById("livechat-embed-root")) return; // guard double-inject
+
+    const root = document.createElement("div");
+    root.id = "livechat-embed-root";
+    root.style.display = "none";
+    document.body.appendChild(root);
+
+    // Parse the admin snippet, then clone each <script> into a fresh element so
+    // the browser actually executes it (cloned-via-innerHTML scripts are inert).
+    const holder = document.createElement("div");
+    holder.innerHTML = livechatEmbed;
+    holder.querySelectorAll("script").forEach((old) => {
+      const s = document.createElement("script");
+      [...old.attributes].forEach((a) => s.setAttribute(a.name, a.value));
+      if (old.textContent) s.textContent = old.textContent;
+      document.body.appendChild(s);
+    });
+
+    return () => {
+      // Best-effort cleanup on unmount (widget itself may persist its own nodes).
+      document.getElementById("livechat-embed-root")?.remove();
+    };
+  }, [livechatEnabled, livechatEmbed]);
+
+  // Inject the Facebook Messenger customer-chat SDK once enabled + page id set.
   useEffect(() => {
     if (!messengerEnabled || !messengerPageId) return;
     if (document.getElementById("fb-messenger-sdk")) return;
@@ -33,6 +63,9 @@ const ChatWidgetStacker = () => {
     document.body.appendChild(script);
   }, [messengerEnabled, messengerPageId]);
 
+  // No Messenger → render nothing visible. Live-chat is handled entirely by the
+  // useEffect above (runs before this return), so it still works when only
+  // live-chat is enabled and Messenger is off.
   if (!messengerEnabled || !messengerPageId) return null;
 
   const positionClass =
