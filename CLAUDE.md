@@ -193,7 +193,7 @@ Configured in [next.config.mjs](next.config.mjs): DigitalOcean Spaces, Contabo, 
 - **Hardcoded leather/Bangladesh copy** — in `getSeoConfig.js`, `pageSeo.js`, several home components. Intentional per CLAUDE.md (buyer overrides via Admin UI). See F-8.
 - **Folder typos:** `singeProduct/` (missing `l`), `cites.js`, `contants/`. See F-22.
 - **Two parallel data libraries:** Redux + RTK Query alongside TanStack Query. RTK Query is canonical. See F-9.
-- **Wishlist appears localStorage-only** — no backend wishlist module exists despite the tag type. Users lose wishlist across devices. See F-10.
+- **Wishlist is now DB-backed** (D15, 2026-06) — `/wishlist` backend module exists; logged-in users get cross-device sync, guests use localStorage merged on login. (F-10 in issues.md is stale.)
 - **Currency hardcoded `BDT`** in analytics, JSON-LD — buyer in another country needs to refactor. See F-21.
 
 When making changes:
