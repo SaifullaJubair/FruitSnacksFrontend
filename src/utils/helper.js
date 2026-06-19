@@ -29,8 +29,13 @@ export const productPrice = (product) => {
     const flashBase = product?.is_variation && v0
       ? v0.variation_price
       : product?.product_price;
-    if (fp?.flash_price_type && flashBase)
-      return calculatePrice(flashBase, fp.flash_sale_product_price, fp.flash_price_type);
+    // Flash "fixed" = ABSOLUTE target price (the flash_price IS the new price),
+    // NOT a subtraction — mirrors BE product.price.resolver.ts. (Admin labels
+    // this field "Flash price".) "percent" = % off the base. NOTE: this differs
+    // from campaign "fixed" which is a subtraction (applyCampaign) — that's why
+    // we don't route flash through calculatePrice for the fixed case.
+    if (fp?.flash_price_type === "percent" && flashBase)
+      return calculatePrice(flashBase, fp.flash_sale_product_price, "percent");
     return fp.flash_sale_product_price;
   }
 
@@ -121,10 +126,12 @@ export const singleProductPrice = (product) => {
         ? product?.variations?.[0]?.variation_price
         : product?.product_price;
 
-    if (priceType) {
-      return calculatePrice(originalPrice, discountPrice, priceType);
+    // Flash "fixed" = absolute price (BE resolver), "percent" = % off base.
+    // (Flash "fixed" is NOT a subtraction — unlike campaign "fixed".)
+    if (priceType === "percent") {
+      return calculatePrice(originalPrice, discountPrice, "percent");
     }
-    return discountPrice; // Fallback if no price type is specified
+    return discountPrice; // "fixed" → the flash price IS the price
   }
 
   // Check Campaign Details
