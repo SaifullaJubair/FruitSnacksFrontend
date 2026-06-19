@@ -26,9 +26,13 @@ export const productPrice = (product) => {
   // Flash sale overrides everything — base is always undiscounted original price
   if (product?.flash_sale_details?.flash_sale_product) {
     const fp = product.flash_sale_details.flash_sale_product;
+    // Percent flash applies off the post-discount price (variation_discount_price
+    // ?? variation_price), matching the BE resolver's `final_price` base — NOT
+    // the undiscounted price. Otherwise a product with both a discount and a
+    // percent flash shows a higher price than the BE charges.
     const flashBase = product?.is_variation && v0
-      ? v0.variation_price
-      : product?.product_price;
+      ? v0.variation_discount_price || v0.variation_price
+      : product?.product_discount_price || product?.product_price;
     // Flash "fixed" = ABSOLUTE target price (the flash_price IS the new price),
     // NOT a subtraction — mirrors BE product.price.resolver.ts. (Admin labels
     // this field "Flash price".) "percent" = % off the base. NOTE: this differs
@@ -121,10 +125,12 @@ export const singleProductPrice = (product) => {
     const flashProduct = product.flash_sale_details.flash_sale_product;
     const priceType = flashProduct?.flash_price_type;
     const discountPrice = flashProduct?.flash_sale_product_price;
+    // Percent base = post-discount price (matches BE resolver final_price).
     const originalPrice =
       product?.is_variation && product?.variations?.length > 0
-        ? product?.variations?.[0]?.variation_price
-        : product?.product_price;
+        ? product?.variations?.[0]?.variation_discount_price ||
+          product?.variations?.[0]?.variation_price
+        : product?.product_discount_price || product?.product_price;
 
     // Flash "fixed" = absolute price (BE resolver), "percent" = % off base.
     // (Flash "fixed" is NOT a subtraction — unlike campaign "fixed".)
