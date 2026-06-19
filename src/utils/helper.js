@@ -51,12 +51,6 @@ export const productPrice = (product) => {
   }
 
   // Base price for normal (non-promo): variation discount → variation → product discount → product
-  let price =
-    product?.is_variation && v0
-      ? v0.variation_discount_price || v0.variation_price
-      : product?.product_discount_price || product?.product_price;
-
-  // Variation or base
   if (product?.is_variation && v0)
     return v0.variation_discount_price || v0.variation_price;
 
