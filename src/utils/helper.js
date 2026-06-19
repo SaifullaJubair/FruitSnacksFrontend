@@ -34,19 +34,27 @@ export const productPrice = (product) => {
     return fp.flash_sale_product_price;
   }
 
-  // Base price for campaign/normal: variation discount → variation → product discount → product
+  // Campaign discount — base must be the REGULAR (undiscounted) price so the
+  // cart matches the PDP and the BE recompute authority. BE resolver uses
+  // `product_price` (product.price.resolver.ts) and applyCampaign(unit_regular)
+  // (order.recompute.ts), so campaign is applied on the list price, NOT on the
+  // already-discounted price. Mirrors the flash branch above.
+  // (Bug fix 2026-06-19: was `product_discount_price || product_price` →
+  // cart showed e.g. ৳450 while BE charged ৳750 — shown < charged.)
+  if (product?.campaign_details?.campaign_product) {
+    const cp = product.campaign_details.campaign_product;
+    const campaignBase =
+      product?.is_variation && v0 ? v0.variation_price : product?.product_price;
+    if (cp?.campaign_price_type && campaignBase)
+      return calculatePrice(campaignBase, cp.campaign_product_price, cp.campaign_price_type);
+    return cp.campaign_product_price;
+  }
+
+  // Base price for normal (non-promo): variation discount → variation → product discount → product
   let price =
     product?.is_variation && v0
       ? v0.variation_discount_price || v0.variation_price
       : product?.product_discount_price || product?.product_price;
-
-  // Campaign discount
-  if (product?.campaign_details?.campaign_product) {
-    const cp = product.campaign_details.campaign_product;
-    if (cp?.campaign_price_type)
-      return calculatePrice(price, cp.campaign_product_price, cp.campaign_price_type);
-    return cp.campaign_product_price;
-  }
 
   // Variation or base
   if (product?.is_variation && v0)
