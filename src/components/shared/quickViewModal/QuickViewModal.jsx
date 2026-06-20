@@ -315,6 +315,7 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
         variation_product_id: variationProduct?._id || null,
         quantity,
         product_slug: product.product_slug || null,
+        maxStock: stock, // F1.2 — clamp additive merge to live stock
       }),
     );
     setAddedToCart(true);
@@ -344,6 +345,7 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
         newVariationId: variationProduct?._id || null,
         qty: quantity,
         newSlug: product.product_slug || null,
+        maxStock: stock, // F1.2 — clamp merge to the new variant's live stock
       }),
     );
     toast.success("Cart updated!", { autoClose: 1500 });
@@ -363,6 +365,7 @@ const QuickViewModal = ({ product: listProduct, onClose, mode = "view", initialV
         variation_product_id: variationProduct?._id || null,
         quantity,
         product_slug: product.product_slug || null,
+        maxStock: stock, // F1.2 — clamp additive merge to live stock
       }),
     );
     toast.success("Added to cart!", { autoClose: 1500 });

@@ -111,6 +111,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
         variation_product_id: null,
         quantity: 1,
         product_slug: product?.product_slug || null,
+        maxStock: product?.product_quantity, // F1.2 — clamp repeat-adds to stock
       }),
     );
     toast.success("Added to cart", { autoClose: 1200 });

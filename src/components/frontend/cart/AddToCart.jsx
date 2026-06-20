@@ -4,6 +4,7 @@ import { useEffect, useMemo, useCallback, useState, useRef } from "react";
 import { FiLock } from "react-icons/fi";
 import { useForm } from "react-hook-form";
 import { splitName } from "@/utils/nameSplit";
+import { normalizeBdPhone } from "@/utils/phone";
 import { firePurchaseOnce } from "@/utils/purchaseDedup";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useDispatch, useSelector } from "react-redux";
@@ -303,6 +304,14 @@ const AddToCart = () => {
         return match ? match[2] : "";
       };
 
+      // F1.3 — submit ONE phone format. Logged-in path produced `01XXXXXXXXX`
+      // (user_phone slice), guest PhoneInput produces E.164 `+8801…`. Normalize
+      // both to E.164 here (symmetric with the backend); non-BD numbers pass
+      // through untouched for clone deployments.
+      const normalizedCustomerPhone = normalizeBdPhone(
+        customer_phone || formData.customer_phone,
+      );
+
       const orderData = {
         pathao_city_id: parseInt(divisionID),
         pathao_city_name: division,
@@ -315,7 +324,7 @@ const AddToCart = () => {
           new Date().toLocaleTimeString(),
         customer_id: userInfo?.data?._id,
         customer_name: formData.customer_name || userInfo?.data?.user_name,
-        customer_phone: customer_phone || formData.customer_phone,
+        customer_phone: normalizedCustomerPhone,
         billing_country: "Bangladesh",
         billing_city: district || userInfo?.data?.user_district,
         billing_state: division || userInfo?.data?.user_division,
