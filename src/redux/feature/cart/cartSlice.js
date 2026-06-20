@@ -15,27 +15,42 @@ const isSameItem = (item, productId, variationId) => {
   return item.productId === productId && !item.variation_product_id;
 };
 
+// F1.2 — clamp a desired quantity to available stock. maxStock is OPTIONAL:
+// callers that have live stock in scope (PDP / QuickView / product cards) pass
+// it so an additive merge can never exceed stock; callers without stock
+// (e.g. wishlist) omit it and the value is left as-is (the cart UI's own
+// increment/updateQuantity reducers already clamp on display). Always keep at
+// least 1.
+const clampQty = (desired, maxStock) => {
+  const q = Math.max(1, desired);
+  if (typeof maxStock === "number" && maxStock > 0) return Math.min(q, maxStock);
+  return q;
+};
+
 const cartSlice = createSlice({
   name: "cart",
   initialState,
   reducers: {
     // Add to cart
     addToCart: (state, action) => {
-      const { productId, variation_product_id, quantity = 1, product_slug } = action.payload;
+      const { productId, variation_product_id, quantity = 1, product_slug, maxStock } = action.payload;
       const existing = state.products.find((p) =>
         isSameItem(p, productId, variation_product_id),
       );
       if (existing) {
-        existing.quantity += quantity;
-        state.totalQuantity += quantity;
+        // F1.2 — additive merge clamped to stock (was unbounded +=).
+        const clamped = clampQty(existing.quantity + quantity, maxStock);
+        state.totalQuantity += clamped - existing.quantity;
+        existing.quantity = clamped;
       } else {
+        const clamped = clampQty(quantity, maxStock);
         state.products.push({
           productId,
           variation_product_id: variation_product_id || null,
-          quantity,
+          quantity: clamped,
           product_slug: product_slug || null,
         });
-        state.totalQuantity += quantity;
+        state.totalQuantity += clamped;
       }
     },
 
@@ -63,6 +78,7 @@ const cartSlice = createSlice({
         newVariationId,
         qty,
         newSlug,
+        maxStock, // F1.2 — stock of the NEW variant (optional, clamps merges)
       } = action.payload;
 
       const oldIndex = state.products.findIndex((p) =>
@@ -70,7 +86,7 @@ const cartSlice = createSlice({
       );
       if (oldIndex === -1) return;
       const oldQty = state.products[oldIndex].quantity;
-      const finalQty = qty ?? oldQty;
+      const finalQty = clampQty(qty ?? oldQty, maxStock);
 
       // Case 1: same variant → update qty only
       if (oldProductId === newProductId && oldVariationId === newVariationId) {
@@ -80,7 +96,8 @@ const cartSlice = createSlice({
         return;
       }
 
-      // Case 2: new variant already in cart → remove old, merge qty
+      // Case 2: new variant already in cart → remove old, merge qty (clamped to
+      // the new variant's stock so the merged line can't exceed it — F1.2).
       const existingNewIndex = state.products.findIndex((p) =>
         isSameItem(p, newProductId, newVariationId),
       );
@@ -88,8 +105,9 @@ const cartSlice = createSlice({
         state.totalQuantity -= oldQty;
         state.products.splice(oldIndex, 1);
         const adjusted = existingNewIndex > oldIndex ? existingNewIndex - 1 : existingNewIndex;
-        state.products[adjusted].quantity += finalQty;
-        state.totalQuantity += finalQty;
+        const merged = clampQty(state.products[adjusted].quantity + finalQty, maxStock);
+        state.totalQuantity += merged - state.products[adjusted].quantity;
+        state.products[adjusted].quantity = merged;
         return;
       }
 

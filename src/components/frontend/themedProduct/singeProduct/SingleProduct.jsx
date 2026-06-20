@@ -5,6 +5,7 @@
 // original SingleProduct; only the JSX is redesigned per the theme mockups and
 // driven by CSS variables (--brand-primary etc.) injected by ThemeStyleInjector.
 import { splitName } from "@/utils/nameSplit";
+import { normalizeBdPhone } from "@/utils/phone";
 import { firePurchaseOnce } from "@/utils/purchaseDedup";
 import { buildAnalyticsUserData } from "@/utils/buildAnalyticsUserData";
 import RightSideDeliveryInfo from "./rightSideShoppingSection/RightSideDeliveryInfo";
@@ -378,6 +379,7 @@ const SingleProduct = ({ product, theme }) => {
       quantity,
       variation_product_id: variationProduct?._id || null,
       product_slug: product?.product_slug || null,
+      maxStock: maxQuantity, // F1.2 — clamp additive merge to live stock
     };
     const inCart = cartProducts.some((item) =>
       variationProduct
@@ -546,7 +548,8 @@ const SingleProduct = ({ product, theme }) => {
       order_status: "pending",
       pending_time: today,
       customer_id: userInfo?.data?._id || null,
-      customer_phone: customer_phone || data?.customer_phone,
+      // F1.3 — submit one consistent phone format (E.164), symmetric with BE.
+      customer_phone: normalizeBdPhone(customer_phone || data?.customer_phone),
       billing_country: "Bangladesh",
       billing_city: district,
       billing_state: division,

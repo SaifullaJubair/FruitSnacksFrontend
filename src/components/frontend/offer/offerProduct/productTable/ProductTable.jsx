@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import OfferSummary from "./OfferSummary";
 import { districts } from "@/data/districts";
+import { normalizeBdPhone } from "@/utils/phone";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { toast } from "react-toastify";
 import { BASE_URL } from "@/components/utils/baseURL";
@@ -187,7 +188,8 @@ const ProductTable = ({ offerProducts, offer_id }) => {
       offer_id: offer_id,
       customer_id: userInfo?.data?._id,
       customer_name: data?.customer_name || userInfo?.data?.user_name,
-      customer_phone: data?.customer_phone,
+      // F1.3 — submit one consistent phone format (E.164), symmetric with BE.
+      customer_phone: normalizeBdPhone(data?.customer_phone),
       need_user_create: !userInfo?.data?.user_phone,
       billing_country: "Bangladesh",
       billing_city: district || userInfo?.data?.user_district,

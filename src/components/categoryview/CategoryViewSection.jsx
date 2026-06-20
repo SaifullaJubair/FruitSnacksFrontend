@@ -161,34 +161,28 @@ const CategoryViewSection = ({ slug, filterData, filterHeadData, initialSort, in
   const leafSlug = safeSlug[safeSlug.length - 1];
   const isTrending = selectedSort === "trending";
 
+  // F3.3 — "trending" goes through the trending_only flag; every other sort is
+  // a catalog-wide server-side sort param. selectedSort is in the queryKey so
+  // switching sort always refetches (was page-local before → "popular ≠ popular").
+  const sortParam =
+    selectedSort && !isTrending ? `&sort=${selectedSort}` : "";
+
   const { data, isLoading } = useQuery({
-    queryKey: [selectedFilters, slug, page, rows, isTrending, searchTerm],
+    queryKey: [selectedFilters, slug, page, rows, isTrending, searchTerm, selectedSort],
     queryFn: async () => {
       const trendingParam = isTrending ? "&trending_only=true" : "";
       const searchParam = searchTerm ? `&searchTerm=${encodeURIComponent(searchTerm)}` : "";
       const res = await fetch(
-        `${BASE_URL}/filter_product?categoryType=${leafSlug}&filterData=${queryString}&page=${page}&limit=${rows}${trendingParam}${searchParam}`,
+        `${BASE_URL}/filter_product?categoryType=${leafSlug}&filterData=${queryString}&page=${page}&limit=${rows}${trendingParam}${searchParam}${sortParam}`,
       );
       return res.json();
     },
   });
 
-  const sortedData = useMemo(() => {
-    if (!data?.data) return [];
-    const list = [...data.data];
-    const effectivePrice = (p) =>
-      p?.is_variation && p?.variations?.variation_price
-        ? Number(p.variations.variation_price)
-        : Number(p?.product_price || 0);
-    switch (selectedSort) {
-      case "price_asc": return list.sort((a, b) => effectivePrice(a) - effectivePrice(b));
-      case "price_desc": return list.sort((a, b) => effectivePrice(b) - effectivePrice(a));
-      case "popular": return list.sort((a, b) => (b?.sold_count || 0) - (a?.sold_count || 0));
-      case "trending": return list;
-      case "rating": return list.sort((a, b) => (b?.average_review_rating || 0) - (a?.average_review_rating || 0));
-      default: return list.sort((a, b) => new Date(b?.createdAt || 0) - new Date(a?.createdAt || 0));
-    }
-  }, [data, selectedSort]);
+  // Server already returns the page in the correct catalog-wide order; no
+  // page-local re-sort (that only reordered the current ~20 rows). Kept as a
+  // named passthrough so the render below is untouched.
+  const sortedData = data?.data || [];
 
   const startIndex = (page - 1) * rows + 1;
   const endIndex = Math.min(startIndex + rows - 1, data?.totalData || 0);

@@ -91,12 +91,20 @@ export default function useBoutiqueProductActions(product) {
       toast.info("এই পণ্যটি ইতিমধ্যে কার্টে আছে", { autoClose: 1200 });
       return false;
     }
+    // F1.2 — clamp to stock (selected variation's qty, else simple product qty).
+    const selectedVar = variationId
+      ? product?.variations?.find((v) => v?._id === variationId)
+      : null;
+    const maxStock = variationId
+      ? selectedVar?.variation_quantity
+      : product?.product_quantity;
     dispatch(
       addToCart({
         productId: product?._id,
         variation_product_id: variationId || null,
         quantity: 1,
         product_slug: product?.product_slug || null,
+        maxStock,
       }),
     );
     return true;

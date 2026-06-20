@@ -19,6 +19,7 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { BASE_URL } from "@/components/utils/baseURL";
+import { normalizeBdPhone } from "@/utils/phone";
 
 const sendCapture = (body) => {
   if (!body?.customer_phone) return;
@@ -60,7 +61,10 @@ const buildBody = ({
   }
   return {
     user_id: userId || undefined,
-    customer_phone: phone,
+    // F1.3 — store in the same E.164 form the order will use, so
+    // markAbandonedCartRecoveredByPhone(order.customer_phone) actually matches
+    // this row when the buyer returns and places the order.
+    customer_phone: normalizeBdPhone(phone) || phone,
     customer_name: name || undefined,
     customer_email: email || undefined,
     items,
