@@ -74,7 +74,11 @@ const AddToCart = () => {
       return res?.data || [];
     },
     enabled: mounted && products?.length > 0,
-    staleTime: Infinity,
+    // F1.1 — was Infinity (never refetched). Cart now carries campaign (and,
+    // later, flash) pricing that can expire while the cart sits open; the BE
+    // recompute pulls promotions fresh at checkout, so a stale cart would show
+    // a price the server won't honour. 60s caps the shown-vs-charged window.
+    staleTime: 60_000,
   });
   const isLoading = !mounted || cartLoading;
   const [divisionID, setDivisionID] = useState();

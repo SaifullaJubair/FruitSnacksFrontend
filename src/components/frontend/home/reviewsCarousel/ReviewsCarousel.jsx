@@ -22,17 +22,20 @@ const StarRating = ({ rating = 5 }) => (
   </div>
 );
 
+// F4.2 — DB field names are review_ratting (double-t), review_image,
+// review_product_id (populated). The old card read review_rating/review_photo/
+// product_id → always 0-star, no photo, no product name.
 const ReviewCard = ({ review }) => (
   <div className="bg-white border border-gray-100 rounded-xl p-5 shadow-sm h-full flex flex-col gap-3">
-    <StarRating rating={review?.review_rating} />
+    <StarRating rating={review?.review_ratting} />
     <p className="text-gray-600 text-sm leading-relaxed line-clamp-4 flex-1">
       &ldquo;{review?.review_description}&rdquo;
     </p>
     <div className="flex items-center gap-3 mt-auto pt-3 border-t border-gray-50">
-      {review?.review_photo ? (
+      {review?.review_image ? (
         <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0">
           <Image
-            src={review.review_photo}
+            src={review.review_image}
             alt={review?.reviewer_name || "Reviewer"}
             fill
             className="object-cover"
@@ -49,9 +52,9 @@ const ReviewCard = ({ review }) => (
         <p className="text-sm font-semibold text-gray-800">
           {review?.reviewer_name || "Customer"}
         </p>
-        {review?.product_id?.product_name && (
+        {review?.review_product_id?.product_name && (
           <p className="text-xs text-gray-400 line-clamp-1">
-            {review.product_id.product_name}
+            {review.review_product_id.product_name}
           </p>
         )}
       </div>
@@ -76,9 +79,10 @@ const ReviewsCarousel = ({ settings }) => {
   const autoQuery = useQuery({
     queryKey: ["reviews_carousel_auto"],
     queryFn: async () => {
-      const res = await fetch(
-        `${BASE_URL}/review?page=1&limit=10&review_status=active&review_rating=5&has_photo=true`
-      );
+      // F4.1 — public featured-reviews endpoint (active + 5-star + has photo).
+      // Was hitting `/review?...review_rating=5&has_photo=true` which routed to
+      // findUserReview → 400 (needs review_user_id) → carousel never rendered.
+      const res = await fetch(`${BASE_URL}/review/featured?limit=10`);
       if (!res.ok) return { data: [] };
       return res.json();
     },

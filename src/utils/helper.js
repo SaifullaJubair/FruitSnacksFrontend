@@ -26,29 +26,40 @@ export const productPrice = (product) => {
   // Flash sale overrides everything — base is always undiscounted original price
   if (product?.flash_sale_details?.flash_sale_product) {
     const fp = product.flash_sale_details.flash_sale_product;
+    // Percent flash applies off the post-discount price (variation_discount_price
+    // ?? variation_price), matching the BE resolver's `final_price` base — NOT
+    // the undiscounted price. Otherwise a product with both a discount and a
+    // percent flash shows a higher price than the BE charges.
     const flashBase = product?.is_variation && v0
-      ? v0.variation_price
-      : product?.product_price;
-    if (fp?.flash_price_type && flashBase)
-      return calculatePrice(flashBase, fp.flash_sale_product_price, fp.flash_price_type);
+      ? v0.variation_discount_price || v0.variation_price
+      : product?.product_discount_price || product?.product_price;
+    // Flash "fixed" = ABSOLUTE target price (the flash_price IS the new price),
+    // NOT a subtraction — mirrors BE product.price.resolver.ts. (Admin labels
+    // this field "Flash price".) "percent" = % off the base. NOTE: this differs
+    // from campaign "fixed" which is a subtraction (applyCampaign) — that's why
+    // we don't route flash through calculatePrice for the fixed case.
+    if (fp?.flash_price_type === "percent" && flashBase)
+      return calculatePrice(flashBase, fp.flash_sale_product_price, "percent");
     return fp.flash_sale_product_price;
   }
 
-  // Base price for campaign/normal: variation discount → variation → product discount → product
-  let price =
-    product?.is_variation && v0
-      ? v0.variation_discount_price || v0.variation_price
-      : product?.product_discount_price || product?.product_price;
-
-  // Campaign discount
+  // Campaign discount — base must be the REGULAR (undiscounted) price so the
+  // cart matches the PDP and the BE recompute authority. BE resolver uses
+  // `product_price` (product.price.resolver.ts) and applyCampaign(unit_regular)
+  // (order.recompute.ts), so campaign is applied on the list price, NOT on the
+  // already-discounted price. Mirrors the flash branch above.
+  // (Bug fix 2026-06-19: was `product_discount_price || product_price` →
+  // cart showed e.g. ৳450 while BE charged ৳750 — shown < charged.)
   if (product?.campaign_details?.campaign_product) {
     const cp = product.campaign_details.campaign_product;
-    if (cp?.campaign_price_type)
-      return calculatePrice(price, cp.campaign_product_price, cp.campaign_price_type);
+    const campaignBase =
+      product?.is_variation && v0 ? v0.variation_price : product?.product_price;
+    if (cp?.campaign_price_type && campaignBase)
+      return calculatePrice(campaignBase, cp.campaign_product_price, cp.campaign_price_type);
     return cp.campaign_product_price;
   }
 
-  // Variation or base
+  // Base price for normal (non-promo): variation discount → variation → product discount → product
   if (product?.is_variation && v0)
     return v0.variation_discount_price || v0.variation_price;
 
@@ -114,15 +125,19 @@ export const singleProductPrice = (product) => {
     const flashProduct = product.flash_sale_details.flash_sale_product;
     const priceType = flashProduct?.flash_price_type;
     const discountPrice = flashProduct?.flash_sale_product_price;
+    // Percent base = post-discount price (matches BE resolver final_price).
     const originalPrice =
       product?.is_variation && product?.variations?.length > 0
-        ? product?.variations?.[0]?.variation_price
-        : product?.product_price;
+        ? product?.variations?.[0]?.variation_discount_price ||
+          product?.variations?.[0]?.variation_price
+        : product?.product_discount_price || product?.product_price;
 
-    if (priceType) {
-      return calculatePrice(originalPrice, discountPrice, priceType);
+    // Flash "fixed" = absolute price (BE resolver), "percent" = % off base.
+    // (Flash "fixed" is NOT a subtraction — unlike campaign "fixed".)
+    if (priceType === "percent") {
+      return calculatePrice(originalPrice, discountPrice, "percent");
     }
-    return discountPrice; // Fallback if no price type is specified
+    return discountPrice; // "fixed" → the flash price IS the price
   }
 
   // Check Campaign Details
