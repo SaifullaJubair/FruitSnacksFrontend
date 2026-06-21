@@ -872,17 +872,22 @@ const SingleProduct = ({ product, theme }) => {
           {/* ════════════ ORDER SECTION ════════════ */}
           <section
             id="order-section"
-            className="rounded-2xl p-5 md:p-7 mb-8 scroll-mt-20"
+            className="relative overflow-hidden rounded-2xl p-5 md:p-7 mb-8 scroll-mt-20"
             style={{ background: "var(--section-bg, #fff)" }}
           >
+            {/* Theme floats anchored to the "order" section. Needs the relative
+                wrapper above so the absolute floats anchor inside this card.
+                pointer-events-none (in FloatingAssets) lets clicks reach the
+                weight picker / Add-to-Cart underneath. */}
+            <FloatingAssets assets={theme?.floating_assets} section="order" />
             <h2
-              className="text-xl md:text-2xl font-bold mb-5"
+              className="relative z-10 text-xl md:text-2xl font-bold mb-5"
               style={{ color: "var(--heading-color)" }}
             >
               অর্ডার করুন এখনই
             </h2>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* --- left: variant + qty --- */}
               <div className="space-y-5">
                 {/* Variations — axes only (spec-only attrs go in the Spec table).

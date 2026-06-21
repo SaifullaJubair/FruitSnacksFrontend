@@ -56,19 +56,33 @@ export default function BenefitsUseCasesSection({ product, theme }) {
               style={{ background: "#fff" }}
             >
               <ul className="space-y-3 max-w-[60%]">
-                {benefits.map((b, i) => (
-                  <li key={i} className="flex items-start gap-3">
-                    <span
-                      className="mt-0.5 flex items-center justify-center rounded-full shrink-0"
-                      style={{ width: 22, height: 22, background: "var(--brand-primary)", color: "var(--button-text,#fff)" }}
-                    >
-                      <FaCheck size={11} />
-                    </span>
-                    <span className="text-sm leading-snug" style={{ color: "var(--body-color)" }}>
-                      {b}
-                    </span>
-                  </li>
-                ))}
+                {benefits.map((b, i) => {
+                  // Back-compat: legacy rows are plain strings; new rows are
+                  // { text, icon_url?, icon_key? }. Icon priority mirrors
+                  // use_cases: custom upload > picked icon > themed FaCheck.
+                  const text = typeof b === "string" ? b : b?.text;
+                  const iconUrl = typeof b === "string" ? null : b?.icon_url;
+                  const iconKey = typeof b === "string" ? null : b?.icon_key;
+                  return (
+                    <li key={i} className="flex items-start gap-3">
+                      <span
+                        className="mt-0.5 flex items-center justify-center rounded-full shrink-0 overflow-hidden"
+                        style={{ width: 22, height: 22, background: "var(--brand-primary)", color: "var(--button-text,#fff)" }}
+                      >
+                        {iconUrl ? (
+                          <img src={iconUrl} alt="" width={14} height={14} className="object-contain" />
+                        ) : iconKey ? (
+                          <DynamicIcon name={iconKey} size={12} />
+                        ) : (
+                          <FaCheck size={11} />
+                        )}
+                      </span>
+                      <span className="text-sm leading-snug" style={{ color: "var(--body-color)" }}>
+                        {text}
+                      </span>
+                    </li>
+                  );
+                })}
               </ul>
               {benefitsImg && (
                 <img
