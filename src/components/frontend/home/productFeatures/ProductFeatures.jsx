@@ -165,7 +165,8 @@ function FeatureRow({ product, index, currency }) {
               <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-100 text-green-600 shrink-0">
                 <FiCheck className="text-xs" />
               </span>
-              {b}
+              {/* back-compat: legacy string rows vs new {text, icon_*} objects */}
+              {typeof b === "string" ? b : b?.text}
             </li>
           ))}
         </Reveal>
