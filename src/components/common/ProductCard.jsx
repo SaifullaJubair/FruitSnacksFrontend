@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 import { FiHeart, FiShoppingCart, FiEye } from "react-icons/fi";
 import { isHexColor, lineThroughPrice, productPrice } from "@/utils/helper";
@@ -43,17 +43,59 @@ const ProductCard = ({ product, badge, activeFilters }) => {
     ? product.attributes_details.flatMap((a) => a.attribute_values || []).filter((v) => isHexColor(v?.attribute_value_code))
     : (product?.attributes_details?.attribute_values || []).filter((v) => isHexColor(v?.attribute_value_code));
 
-  // Hover image — variations and other_images are arrays
-  const firstVariationImg = Array.isArray(product?.variations)
-    ? product.variations[0]?.variation_image
-    : product?.variations?.variation_image;
-  const firstOtherImg = Array.isArray(product?.other_images)
-    ? product.other_images[0]?.other_image
-    : product?.other_images?.other_image;
-  const hoverImg = product?.is_variation ? firstVariationImg || null : firstOtherImg || null;
-
+  // ── Card media model (owner request) ──────────────────────────────────
+  // Default (no hover): ALWAYS main_image — so the grid is calm and consistent.
+  // On hover (desktop): if the product has a main_video file, play it; else
+  // rotate through the other_images as a carousel. Mobile has no hover, so it
+  // just shows main_image (avoids many autoplaying videos = heavy/data cost).
+  //
+  // main_video is always an uploaded FILE here (pasted YouTube/Vimeo links live
+  // in `video_link`, used only on the PDP), so a plain <video> is safe.
+  const mainImage = product?.main_image || "/assets/images/placeholder.jpg";
   const hasVideo = Boolean(product?.main_video);
-  const showCrossfade = !hasVideo && hoverImg && hoverImg !== product?.main_image;
+
+  // other_images for the hover carousel (only used when there's no video).
+  const otherImages = (
+    Array.isArray(product?.other_images)
+      ? product.other_images
+      : product?.other_images
+        ? [product.other_images]
+        : []
+  )
+    .map((o) => o?.other_image)
+    .filter((src) => src && src !== mainImage);
+  const hasCarousel = !hasVideo && otherImages.length > 0;
+
+  const [hovered, setHovered] = useState(false);
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  const videoRef = useRef(null);
+  const carouselTimer = useRef(null);
+
+  // Drive the hover carousel: on enter, step through other_images; on leave,
+  // reset to the first frame so the next hover starts clean.
+  useEffect(() => {
+    if (!hasCarousel) return;
+    if (hovered) {
+      carouselTimer.current = setInterval(() => {
+        setCarouselIdx((i) => (i + 1) % otherImages.length);
+      }, 900);
+    } else {
+      setCarouselIdx(0);
+    }
+    return () => clearInterval(carouselTimer.current);
+  }, [hovered, hasCarousel, otherImages.length]);
+
+  // Play/pause the hover video so it doesn't keep buffering when not hovered.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (hovered) {
+      v.play().catch(() => {});
+    } else {
+      v.pause();
+      v.currentTime = 0;
+    }
+  }, [hovered]);
 
   // Build PDP href — category page can pass activeFilters to pre-select a variant
   const buildHref = () => {
@@ -122,35 +164,52 @@ const ProductCard = ({ product, badge, activeFilters }) => {
       <div className="group bg-white rounded-2xl border border-gray-100 hover:border-primary/20 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
 
         {/* ── Image area ── */}
-        <Link href={href} className="block relative overflow-hidden bg-gray-50 aspect-[3/4] shrink-0">
+        <Link
+          href={href}
+          className="block relative overflow-hidden bg-gray-50 aspect-[3/4] shrink-0"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
 
-          {/* Base: video stays visible always, image can crossfade */}
-          {hasVideo ? (
+          {/* Base layer — ALWAYS main_image. Stays mounted so the card never
+              flashes empty; the video / carousel frame fades in on top. */}
+          <Image
+            fill
+            src={mainImage}
+            alt={product?.product_name || "Product"}
+            className={`object-cover transition-all duration-500 ${
+              (hasVideo || hasCarousel) ? "group-hover:opacity-0" : "group-hover:scale-105"
+            }`}
+          />
+
+          {/* Hover video (desktop only — hidden on touch where there's no hover).
+              Fades in over the base image while hovering. */}
+          {hasVideo && (
             <video
+              ref={videoRef}
               src={product.main_video}
-              autoPlay loop muted playsInline
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          ) : (
-            <Image
-              fill
-              src={product?.main_image || "/assets/images/placeholder.jpg"}
-              alt={product?.product_name || "Product"}
-              className={`object-cover transition-all duration-500 ${
-                showCrossfade ? "group-hover:opacity-0" : "group-hover:scale-105"
-              }`}
+              loop
+              muted
+              playsInline
+              preload="none"
+              className="hidden md:block absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
           )}
 
-          {/* Crossfade hover image — only when no video and a different image exists */}
-          {showCrossfade && (
-            <Image
-              fill
-              src={hoverImg}
-              alt={product?.product_name || "Product"}
-              className="object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            />
-          )}
+          {/* Hover carousel (no video) — rotates other_images on hover. The
+              active frame fades in; off-hover it resets to frame 0. */}
+          {hasCarousel &&
+            otherImages.map((src, i) => (
+              <Image
+                key={src}
+                fill
+                src={src}
+                alt={product?.product_name || "Product"}
+                className={`object-cover absolute inset-0 transition-opacity duration-500 hidden md:block ${
+                  hovered && carouselIdx === i ? "opacity-100" : "opacity-0"
+                }`}
+              />
+            ))}
 
           {/* Discount badge — top left */}
           {discount > 0 && (
