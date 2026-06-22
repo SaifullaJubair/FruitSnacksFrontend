@@ -52,14 +52,12 @@ export async function generateMetadata() {
     },
 
     // ── 4. Icons ──────────────────────────────────────────
-    // NOTE: external S3 URLs in `icons` don't render in browser tabs —
-    // Next.js doesn't proxy them. The actual <link rel="icon"> is injected
-    // manually in RootLayout <head> below using the DB favicon URL.
-    icons: {
-      icon: "/favicon.ico",
-      shortcut: "/favicon.ico",
-      apple: "/apple-touch-icon.png",
-    },
+    // Intentionally NOT set here. Next.js metadata `icons` would emit its own
+    // <link rel="icon" href="/favicon.ico">, which competes with the DB-driven
+    // favicon injected manually in RootLayout <head> below — and the browser
+    // often wins for the static /favicon.ico, so the Admin Site-Settings favicon
+    // never showed. By omitting it, the ONLY <link rel="icon"> is the DB one
+    // (with a hard-coded FruitSnacks fallback). See RootLayout <head>.
 
     // ── 5. Format Detection ───────────────────────────────
     formatDetection: {
@@ -110,8 +108,20 @@ export default async function RootLayout({ children }) {
     <html lang="bn" className={sansFont.variable}>
       <head>
         {seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}
+        {/* DB-driven favicon (Admin → Site Settings). This is the ONLY
+            <link rel="icon"> on the page. The old static src/app/favicon.ico
+            (Artisan Leather leftover) was deleted so Next.js no longer
+            auto-injects a competing /favicon.ico link. The DB value can contain
+            spaces (uploaded filenames), so encode it — un-encoded spaces make
+            the browser drop the link. If the shop hasn't set a favicon yet we
+            emit nothing and let the browser show its default, rather than point
+            at a /favicon.ico that no longer exists. */}
         {seo.favicon && seo.favicon !== "/favicon.ico" && (
-          <link rel="icon" href={seo.favicon} />
+          <>
+            <link rel="icon" href={encodeURI(seo.favicon)} />
+            <link rel="shortcut icon" href={encodeURI(seo.favicon)} />
+            <link rel="apple-touch-icon" href={encodeURI(seo.favicon)} />
+          </>
         )}
       </head>
       <body className={bodyFont.className}>
