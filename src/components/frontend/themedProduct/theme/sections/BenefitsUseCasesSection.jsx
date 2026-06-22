@@ -28,9 +28,18 @@ export default function BenefitsUseCasesSection({ product, theme }) {
   const useCases = product?.use_cases || [];
   // Per-section side image with main_image as fallback so existing products
   // still get an accent visual when admin hasn't uploaded a dedicated one.
+  // The admin can fully hide a side image (including the fallback) via the
+  // Page Content toggle. Gate is `!== false` so legacy products without the
+  // flag keep showing the image.
   const mainImg = product?.main_image;
-  const benefitsImg = product?.benefits_side_image || mainImg;
-  const useCasesImg = product?.use_cases_side_image || mainImg;
+  const benefitsImg =
+    product?.benefits_side_image_show !== false
+      ? product?.benefits_side_image || mainImg
+      : null;
+  const useCasesImg =
+    product?.use_cases_side_image_show !== false
+      ? product?.use_cases_side_image || mainImg
+      : null;
   if (benefits.length === 0 && useCases.length === 0) return null;
 
   const onlyOne = benefits.length === 0 || useCases.length === 0;
@@ -77,7 +86,7 @@ export default function BenefitsUseCasesSection({ product, theme }) {
                           <FaCheck size={11} />
                         )}
                       </span>
-                      <span className="text-sm leading-snug" style={{ color: "var(--body-color)" }}>
+                      <span className="text-sm leading-snug line-clamp-3" style={{ color: "var(--body-color)" }}>
                         {text}
                       </span>
                     </li>
@@ -121,7 +130,7 @@ export default function BenefitsUseCasesSection({ product, theme }) {
                           <Icon size={17} />
                         )}
                       </span>
-                      <span className="text-sm font-medium leading-tight" style={{ color: "var(--body-color)" }}>
+                      <span className="text-sm font-medium leading-tight line-clamp-2" style={{ color: "var(--body-color)" }}>
                         {u.text}
                       </span>
                     </div>

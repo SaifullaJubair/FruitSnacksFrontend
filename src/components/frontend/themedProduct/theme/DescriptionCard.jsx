@@ -47,26 +47,32 @@ export default function DescriptionCard({ html, customFields = [] }) {
 
   return (
     <section className="mb-8">
-      {/* Two columns on desktop; stack on mobile. If only one side has data it
-          spans comfortably on its own. */}
-      <div className="grid md:grid-cols-2 gap-6 items-start">
+      {/* Two columns on desktop; stack on mobile. items-stretch makes both
+          columns equal height, so a long description clamps to the spec card's
+          height (with "আরও পড়ুন") instead of overflowing past it — the two
+          cards line up. If only one side has data it spans on its own. */}
+      <div className="grid md:grid-cols-2 gap-6 items-stretch">
         {/* LEFT — description */}
         {hasHtml && (
-          <div>
+          <div className="flex flex-col">
             <SectionTitle>পণ্য সম্পর্কে</SectionTitle>
             <div
-              className="rounded-2xl shadow-sm p-5 md:p-6"
+              className="rounded-2xl shadow-sm p-5 md:p-6 flex-1 flex flex-col min-h-0"
               style={{ background: "#fff" }}
             >
               <div
                 // `pdp-desc` namespaces the styles below so they affect only
-                // this card's rich-text HTML — no global leak.
+                // this card's rich-text HTML — no global leak. When collapsed,
+                // flex-1 + min-h-0 + overflow-hidden clamps the text to the
+                // card's (stretched) height rather than a fixed maxHeight, so
+                // it matches the spec card next to it.
                 className="pdp-desc text-sm md:text-base leading-relaxed transition-all duration-300"
                 style={{
                   color: "var(--body-color)",
                   ...(isLong && !expanded
                     ? {
-                        maxHeight: "10rem",
+                        flex: "1 1 0%",
+                        minHeight: 0,
                         overflow: "hidden",
                         WebkitMaskImage:
                           "linear-gradient(to bottom, #000 60%, transparent)",
@@ -82,7 +88,7 @@ export default function DescriptionCard({ html, customFields = [] }) {
                 <button
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
-                  className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold"
+                  className="mt-3 shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold self-start"
                   style={{ color: "var(--brand-primary)" }}
                 >
                   {expanded ? "কম দেখুন" : "আরও পড়ুন"}
@@ -99,16 +105,19 @@ export default function DescriptionCard({ html, customFields = [] }) {
 
         {/* RIGHT — spec sheet (custom_fields), always fully visible */}
         {hasSpec && (
-          <div>
+          <div className="flex flex-col">
             <SectionTitle>পণ্যের বিবরণ</SectionTitle>
             <ul
-              className="rounded-2xl shadow-sm divide-y overflow-hidden"
+              className="rounded-2xl shadow-sm divide-y overflow-hidden flex-1"
               style={{ background: "#fff", borderColor: "var(--section-bg)" }}
             >
               {specRows.map((f, i) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 px-5 py-3.5"
+                  // Stack label over value on mobile (a long value otherwise
+                  // collides with the label since both sit on one flex row),
+                  // back to side-by-side on sm+.
+                  className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 px-5 py-3.5"
                   style={{ borderColor: "var(--section-bg)" }}
                 >
                   <span className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -131,7 +140,7 @@ export default function DescriptionCard({ html, customFields = [] }) {
                     </span>
                   </span>
                   <span
-                    className="text-sm md:text-base font-semibold text-right shrink-0"
+                    className="text-sm md:text-base font-semibold text-left sm:text-right shrink-0"
                     style={{ color: "var(--heading-color)" }}
                   >
                     {f.value || "—"}

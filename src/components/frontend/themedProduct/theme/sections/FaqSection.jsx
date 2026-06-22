@@ -20,11 +20,15 @@ export default function FaqSection({ product, theme }) {
   if (items.length === 0) return null;
 
   // Per-section side image with sensible fallbacks: admin-uploaded faq_side_image
-  // → first other_image → main_image.
+  // → first other_image → main_image. Admin can fully hide it (including the
+  // fallbacks) via the Page Content toggle. Gate is `!== false` so legacy
+  // products without the flag keep showing the image.
   const img =
-    product?.faq_side_image ||
-    product?.other_images?.[0]?.other_image ||
-    product?.main_image;
+    product?.faq_side_image_show !== false
+      ? product?.faq_side_image ||
+        product?.other_images?.[0]?.other_image ||
+        product?.main_image
+      : null;
 
   return (
     <section

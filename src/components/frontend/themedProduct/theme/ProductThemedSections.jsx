@@ -33,6 +33,7 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
   // only have a description and nothing else populated yet.
   const hasContent =
     product.main_video ||
+    product.video_link ||
     (product.process_steps?.length || 0) > 0 ||
     (product.benefits?.length || 0) > 0 ||
     (product.use_cases?.length || 0) > 0 ||

@@ -670,6 +670,13 @@ const SingleProduct = ({ product, theme }) => {
         <div className="max-w-6xl mx-auto px-4">
           {/* ════════════ HERO ════════════ */}
           <section className="relative overflow-hidden py-6 md:py-10 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            {/* Hero floats anchor to the whole section. On large screens the
+                grid is side-by-side so left-aligned floats sit over the text
+                column (above the badge — the spot that looked good). On mobile
+                the grid stacks with the IMAGE on top (order-1), so we anchor
+                mobile floats to the top band and lift them above the gallery
+                (z) — see FloatingAssets mobile handling — so they sit ON the
+                product image instead of being buried under it. */}
             <FloatingAssets assets={theme?.floating_assets} section="hero" />
             {/* Left — text */}
             <div className="space-y-4 order-2 lg:order-1 relative z-10">

@@ -48,7 +48,12 @@ export default function FloatingAssets({ assets = [], section }) {
       {filtered.map((a, i) => {
         const side = sideFor(a, i);
         const sideClass = side === "left" ? "left-0 md:left-2" : "right-0 md:right-2";
-        const mobileClass = a.hide_on_mobile === false ? "" : "hidden md:block";
+        // Floats are md+ only. On mobile the hero grid stacks with the product
+        // image near full width, leaving no clean side gutter — a float there
+        // either overlaps the product or hides behind it. So we hide floats on
+        // small screens entirely (decorative-only; no content lost). The admin
+        // "Show on mobile" toggle was removed to match this.
+        const mobileClass = "hidden md:block";
         // how many earlier same-side assets share this slot → collision offset
         const sameSideIdx = filtered
           .slice(0, i)

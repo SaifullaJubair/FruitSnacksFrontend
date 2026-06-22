@@ -175,8 +175,9 @@ const RightSideDeliveryInfo = ({
             )}
           </div>
 
-          {/* District + Thana in 2 columns */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* District + Thana — stack on mobile (the "সিলেক্ট করুন" label wraps
+              and breaks when squeezed into 2 narrow columns), 2-up on sm+. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label
                 className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
