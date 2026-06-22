@@ -54,17 +54,36 @@ const ProductCard = ({ product, badge, activeFilters }) => {
   const mainImage = product?.main_image || "/assets/images/placeholder.jpg";
   const hasVideo = Boolean(product?.main_video);
 
-  // other_images for the hover carousel (only used when there's no video).
-  const otherImages = (
-    Array.isArray(product?.other_images)
-      ? product.other_images
-      : product?.other_images
-        ? [product.other_images]
-        : []
+  // Hover carousel frames (only used when there's no video). Merge the
+  // per-variation images (colours/sizes) FIRST — customers care most about
+  // seeing the variants — then the generic other_images. De-dupe and drop the
+  // main_image (already the base layer), then cap so a product with many
+  // variations doesn't make the hover loop endlessly.
+  const HOVER_FRAME_CAP = 6;
+  const toArr = (v) => (Array.isArray(v) ? v : v ? [v] : []);
+  // The list/grid API (filter_product) ships a ready-merged `card_hover_images`
+  // (variation_images + other_images, de-duped, main_image dropped, capped) so
+  // the grid payload stays lean. When that field is absent (e.g. PDP-related
+  // contexts that return the full product), fall back to merging client-side
+  // from variations.variation_images + other_images.
+  const carouselImages = (
+    toArr(product?.card_hover_images).length
+      ? toArr(product.card_hover_images)
+      : [
+          ...toArr(product?.variations).flatMap((v) =>
+            toArr(v?.variation_images).length
+              ? toArr(v.variation_images)
+              : v?.variation_image
+                ? [v.variation_image]
+                : [],
+          ),
+          ...toArr(product?.other_images).map((o) => o?.other_image),
+        ]
   )
-    .map((o) => o?.other_image)
-    .filter((src) => src && src !== mainImage);
-  const hasCarousel = !hasVideo && otherImages.length > 0;
+    .filter((src) => src && src !== mainImage)
+    .filter((src, i, arr) => arr.indexOf(src) === i) // de-dupe
+    .slice(0, HOVER_FRAME_CAP);
+  const hasCarousel = !hasVideo && carouselImages.length > 0;
 
   const [hovered, setHovered] = useState(false);
   const [carouselIdx, setCarouselIdx] = useState(0);
@@ -77,13 +96,13 @@ const ProductCard = ({ product, badge, activeFilters }) => {
     if (!hasCarousel) return;
     if (hovered) {
       carouselTimer.current = setInterval(() => {
-        setCarouselIdx((i) => (i + 1) % otherImages.length);
+        setCarouselIdx((i) => (i + 1) % carouselImages.length);
       }, 900);
     } else {
       setCarouselIdx(0);
     }
     return () => clearInterval(carouselTimer.current);
-  }, [hovered, hasCarousel, otherImages.length]);
+  }, [hovered, hasCarousel, carouselImages.length]);
 
   // Play/pause the hover video so it doesn't keep buffering when not hovered.
   useEffect(() => {
@@ -196,10 +215,10 @@ const ProductCard = ({ product, badge, activeFilters }) => {
             />
           )}
 
-          {/* Hover carousel (no video) — rotates other_images on hover. The
-              active frame fades in; off-hover it resets to frame 0. */}
+          {/* Hover carousel (no video) — rotates variation + other images on
+              hover. The active frame fades in; off-hover it resets to frame 0. */}
           {hasCarousel &&
-            otherImages.map((src, i) => (
+            carouselImages.map((src, i) => (
               <Image
                 key={src}
                 fill
