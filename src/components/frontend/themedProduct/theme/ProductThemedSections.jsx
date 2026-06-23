@@ -5,6 +5,7 @@
 
 import VideoSection from "./sections/VideoSection";
 import BenefitsUseCasesSection from "./sections/BenefitsUseCasesSection";
+import SizeGuideSection from "./sections/SizeGuideSection";
 import NutritionSection from "./sections/NutritionSection";
 import ReviewsSection from "./sections/ReviewsSection";
 import FaqSection from "./sections/FaqSection";
@@ -37,6 +38,8 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
     (product.process_steps?.length || 0) > 0 ||
     (product.benefits?.length || 0) > 0 ||
     (product.use_cases?.length || 0) > 0 ||
+    (product.size_guide_rows?.length || 0) > 0 ||
+    product.size_chart ||
     product.nutrition ||
     (trustPoints?.length || 0) > 0 ||
     (product.faqs?.length || 0) > 0 ||
@@ -60,6 +63,7 @@ export default function ProductThemedSections({ product, theme: passedTheme, set
         />
       </div>
       <BenefitsUseCasesSection product={product} theme={theme} />
+      <SizeGuideSection product={product} theme={theme} />
       <NutritionSection product={product} theme={theme} trustPoints={trustPoints} />
       {(setting?.enable_reviews ?? true) && <ReviewsSection product={product} theme={theme} />}
       <RelatedProductsThemed product_slug={product?.product_slug} />
