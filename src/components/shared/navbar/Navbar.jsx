@@ -44,8 +44,19 @@ const SearchBar = ({ className = "" }) => {
   useEffect(() => {
     setSearchTerm(searchText);
     if (searchText) {
+      // Only fire the analytics event on type — no auto-redirect. The user
+      // picks a suggestion, presses Enter, or clicks "View all" to navigate.
       trackSearch(searchText);
-      router.push(`/shop?search=${encodeURIComponent(searchText.trim())}`);
+    } else if (pathname === "/shop") {
+      // Box emptied (backspace or clear) while on the shop page → drop the
+      // stale ?search param so the full list returns, no Enter/click needed.
+      // Never navigates away from home or any other page.
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("search")) {
+        params.delete("search");
+        const qs = params.toString();
+        router.replace(`/shop${qs ? `?${qs}` : ""}`, { scroll: false });
+      }
     }
   }, [searchText]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -425,10 +436,17 @@ const Navbar = ({ menuData: menuDataProp }) => {
   const [accountOpen, setAccountOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [wishlistLength, setWishlistLength] = useState(0);
+  // Cart/wishlist counts come from localStorage-hydrated state, so the server
+  // (empty) and the client (has items) render different badge markup → React
+  // hydration mismatch (#418). Gate the badges behind a mount flag so the
+  // first client render matches the server; badges then appear right after.
+  const [mounted, setMounted] = useState(false);
 
   const accountRef = useRef(null);
   const siteData = settingsData?.data?.[0];
   const menuData = menuDataProp?.data || menuDataProp || [];
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const update = () => {
@@ -497,7 +515,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
             </nav>
 
             {/* ── Search (fills remaining space) ── */}
-            <SearchBar className="hidden md:flex flex-1 min-w-0" />
+            <SearchBar className="hidden md:flex flex-1 min-w-0 max-w-2xl mx-auto" />
 
             {/* ── Mobile: spacer ── */}
             <div className="flex-1 md:hidden" />
@@ -508,7 +526,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
               {/* Wishlist */}
               <Link href="/wishlist" className="relative flex flex-col items-center gap-0.5 p-2 text-gray-500 hover:text-primary transition-colors group">
                 <FiHeart size={20} className="group-hover:scale-110 transition-transform" />
-                {wishlistLength > 0 && (
+                {mounted && wishlistLength > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-primary text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-0.5 leading-none">
                     {wishlistLength}
                   </span>
@@ -519,7 +537,7 @@ const Navbar = ({ menuData: menuDataProp }) => {
               {/* Cart */}
               <Link href="/checkout" className="relative flex flex-col items-center gap-0.5 p-2 text-gray-500 hover:text-primary transition-colors group">
                 <FiShoppingCart size={20} className="group-hover:scale-110 transition-transform" />
-                {products?.length > 0 && (
+                {mounted && products?.length > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[9px] font-bold min-w-[16px] h-4 rounded-full flex items-center justify-center px-0.5 leading-none">
                     {products.length}
                   </span>

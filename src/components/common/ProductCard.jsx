@@ -180,24 +180,29 @@ const ProductCard = ({ product, badge, activeFilters }) => {
 
   return (
     <>
-      <div className="group bg-white rounded-2xl border border-gray-100 hover:border-primary/20 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col">
+      <div
+        className="group bg-white rounded-2xl border border-gray-200 shadow-[0_1px_3px_rgba(16,12,10,0.08)] hover:border-primary/30 hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+      >
 
         {/* ── Image area ── */}
         <Link
           href={href}
           className="block relative overflow-hidden bg-gray-50 aspect-[3/4] shrink-0"
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
         >
 
           {/* Base layer — ALWAYS main_image. Stays mounted so the card never
-              flashes empty; the video / carousel frame fades in on top. */}
+              flashes empty; the video / carousel frame fades in on top.
+              The fade-out is gated to lg+ (mouse) only: on touch, a tap fires a
+              momentary :hover which would blank the base image while the hover
+              frames (hidden md:block) aren't there — leaving a white card. */}
           <Image
             fill
             src={mainImage}
             alt={product?.product_name || "Product"}
             className={`object-cover transition-all duration-500 ${
-              (hasVideo || hasCarousel) ? "group-hover:opacity-0" : "group-hover:scale-105"
+              (hasVideo || hasCarousel) ? "lg:group-hover:opacity-0" : "lg:group-hover:scale-105"
             }`}
           />
 
@@ -211,7 +216,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
               muted
               playsInline
               preload="none"
-              className="hidden md:block absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              className="hidden lg:block absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
           )}
 
@@ -224,7 +229,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
                 fill
                 src={src}
                 alt={product?.product_name || "Product"}
-                className={`object-cover absolute inset-0 transition-opacity duration-500 hidden md:block ${
+                className={`object-cover absolute inset-0 transition-opacity duration-500 hidden lg:block ${
                   hovered && carouselIdx === i ? "opacity-100" : "opacity-0"
                 }`}
               />
@@ -250,15 +255,17 @@ const ProductCard = ({ product, badge, activeFilters }) => {
               className={`w-7 h-7 rounded-full flex items-center justify-center shadow-sm transition-all duration-200 ${
                 wishlisted
                   ? "bg-red-50 text-red-500"
-                  : "bg-white/90 text-gray-400 opacity-0 group-hover:opacity-100 hover:bg-red-50 hover:text-red-400"
+                  : "bg-white/90 text-gray-400 lg:opacity-0 lg:group-hover:opacity-100 hover:bg-red-50 hover:text-red-400"
               }`}
             >
               <FiHeart size={12} fill={wishlisted ? "currentColor" : "none"} />
             </button>
           </div>
 
-          {/* Bottom action bar — slides up on hover */}
-          <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 flex">
+          {/* Bottom action bar. Touch devices have no hover, so it's always
+              visible there; only on lg+ (mouse) screens is it hidden until the
+              card is hovered, then slides up. */}
+          <div className="absolute inset-x-0 bottom-0 z-10 flex transition-transform duration-300 lg:translate-y-full lg:group-hover:translate-y-0">
             <button
               type="button"
               onClick={handleAddToCart}
@@ -278,13 +285,13 @@ const ProductCard = ({ product, badge, activeFilters }) => {
           </div>
         </Link>
 
-        {/* ── Info ── */}
-        <div className="p-3 flex flex-col gap-1.5 flex-1">
-          <Link href={href}>
-            <h3 className="text-xs sm:text-sm text-gray-800 font-medium line-clamp-2 leading-snug hover:text-primary transition-colors min-h-[2.5rem]">
-              {product?.product_name}
-            </h3>
-          </Link>
+        {/* ── Info ── whole block is a link so tapping the name, swatches or
+            price anywhere in the body opens the product (esp. important on
+            touch, where there's no hover action bar to rely on). */}
+        <Link href={href} className="p-3 flex flex-col gap-1.5 flex-1">
+          <h3 className="text-xs sm:text-sm text-gray-800 font-medium line-clamp-2 leading-snug group-hover:text-primary transition-colors min-h-[2.5rem]">
+            {product?.product_name}
+          </h3>
 
           {/* Color swatches */}
           {colors?.length > 0 && (
@@ -319,7 +326,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
               </span>
             )}
           </div>
-        </div>
+        </Link>
       </div>
 
       {quickView && (
