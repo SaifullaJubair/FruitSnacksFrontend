@@ -493,7 +493,7 @@ const AddToCart = () => {
   if (!products?.length)
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4">
-        <div className="text-center max-w-sm bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+        <div className="text-center max-w-sm bg-white rounded-2xl border border-secondary-100/70 shadow-[0_1px_3px_rgba(62,39,35,0.06)] p-8">
           <img
             src="/assets/images/empty/Empty-cuate.png"
             alt="Empty cart"
@@ -529,55 +529,62 @@ const AddToCart = () => {
         <Contain>
           {/* Page header */}
           <div className="pt-6 pb-4">
-            <h1 className="text-xl font-bold text-gray-900">Checkout</h1>
+            <h1 className="text-2xl md:text-3xl font-serif font-bold text-secondary tracking-tight">
+              Complete your order
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">
               {products?.length} {products?.length === 1 ? "item" : "items"} in your cart
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-10">
-            {/* Left column: cart items only (2/3 width) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 pb-10 items-start">
+            {/* Left column: the delivery form (2/3 width). It is the long,
+                attention-heavy part, so it takes the wide side — a 1-item cart
+                no longer leaves a huge empty column here. */}
             <div className="md:col-span-2">
-              {isLoading ? (
-                <CartTableSkeleton />
+              {userGetLoading ? (
+                <DeliveryInformationSkeleton />
               ) : (
-                <CartTable
-                  products={products}
-                  couponData={couponData}
-                  shopProduct={cartData}
-                  adjustedPrices={adjustedPrices}
-                  onRemoveFromCache={handleRemoveFromCache}
+                <DeliveryInformation
+                  register={register}
+                  userInfo={userInfo}
+                  errors={errors}
+                  setUserPhoneLogin={setUserPhoneLogin}
+                  setUserPhone={handlePhoneChangeWithTracking}
+                  customer_phone={customer_phone}
+                  setDivision={setDivision}
+                  setDistrictId={setDistrictId}
+                  setDivisionID={setDivisionID}
+                  division={division}
+                  district={district}
+                  setDistrict={setDistrict}
+                  setIsOpenDistrict={setIsOpenDistrict}
+                  isOpenDistrict={isOpenDistrict}
+                  refetchZone={refetchZone}
+                  zoneLoading={zoneLoading}
+                  zoneData={zoneData}
+                  savedAddresses={savedAddresses}
+                  onPickSavedAddress={applySavedAddress}
+                  showEmailField={showEmailField}
                 />
               )}
             </div>
 
-            {/* Right column: Delivery form + Summary stacked (1/3 width, sticky + scrollable) */}
+            {/* Right column: bag + summary + Place Order together (1/3 width),
+                sticky so Place Order stays on screen regardless of cart size.
+                No max-h/overflow here — the bag scrolls internally instead, so
+                there is never a second scrollbar on this column. */}
             <div className="md:col-span-1">
-              <div className="md:sticky md:top-[90px] md:max-h-[calc(100vh-100px)] md:overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-gray-200 scrollbar-track-transparent pr-0.5">
-                {userGetLoading ? (
-                  <DeliveryInformationSkeleton />
+              <div className="md:sticky md:top-[90px] space-y-4">
+                {isLoading ? (
+                  <CartTableSkeleton />
                 ) : (
-                  <DeliveryInformation
-                    register={register}
-                    userInfo={userInfo}
-                    errors={errors}
-                    setUserPhoneLogin={setUserPhoneLogin}
-                    setUserPhone={handlePhoneChangeWithTracking}
-                    customer_phone={customer_phone}
-                    setDivision={setDivision}
-                    setDistrictId={setDistrictId}
-                    setDivisionID={setDivisionID}
-                    division={division}
-                    district={district}
-                    setDistrict={setDistrict}
-                    setIsOpenDistrict={setIsOpenDistrict}
-                    isOpenDistrict={isOpenDistrict}
-                    refetchZone={refetchZone}
-                    zoneLoading={zoneLoading}
-                    zoneData={zoneData}
-                    savedAddresses={savedAddresses}
-                    onPickSavedAddress={applySavedAddress}
-                    showEmailField={showEmailField}
+                  <CartTable
+                    products={products}
+                    couponData={couponData}
+                    shopProduct={cartData}
+                    adjustedPrices={adjustedPrices}
+                    onRemoveFromCache={handleRemoveFromCache}
                   />
                 )}
                 <CartSummary
@@ -603,7 +610,7 @@ const AddToCart = () => {
         </Contain>
 
         {/* Mobile fixed bottom bar — hidden on md+ (desktop uses sidebar Place Order) */}
-        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-gray-200 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] px-4 py-3">
+        <div className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-white border-t border-secondary-100 shadow-[0_-4px_20px_rgba(62,39,35,0.12)] px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
             <div className="flex-1">
               <p className="text-[10px] text-gray-400 leading-none mb-0.5">Total</p>

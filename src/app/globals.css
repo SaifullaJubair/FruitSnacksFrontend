@@ -410,3 +410,25 @@ input[type="number"] {
   outline: none;
   font-family: var(--brand-font);
 }
+
+/* Checkout: the bag item list scrolls inside its own card so Order Summary,
+   Total and Place Order stay visible no matter how many items are in the cart.
+   Styled thin + on-brand rather than the default chunky scrollbar. */
+.bag-scroll {
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: rgba(27, 94, 32, 0.35) transparent;
+}
+.bag-scroll::-webkit-scrollbar {
+  display: block;
+  width: 7px;
+}
+.bag-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.bag-scroll::-webkit-scrollbar-thumb {
+  background-color: rgba(27, 94, 32, 0.3);
+  border-radius: 6px;
+}
+.bag-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(27, 94, 32, 0.5);
+}
