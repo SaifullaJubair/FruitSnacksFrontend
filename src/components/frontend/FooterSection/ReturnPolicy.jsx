@@ -1,28 +1,7 @@
-"use client";
+import PolicyPageLayout from "@/components/frontend/policyPage/PolicyPageLayout";
 
-import Contain from "@/components/common/Contain";
-import useGetSettingData from "@/components/lib/getSettingData";
-import CustomLoader from "@/components/shared/loader/CustomLoader";
-
-const ReturnPolicy = () => {
-    const { data: settingsData, isLoading } = useGetSettingData();
-    const footerData = settingsData?.data[0];
-   
-  return (
-    <div>
-      {" "}
-      <Contain>
-        {isLoading ? (
-          <CustomLoader />
-        ) : (
-          <div
-            className="my-6"
-            dangerouslySetInnerHTML={{ __html: footerData?.return_policy }}
-          />
-        )}
-      </Contain>
-    </div>
-  );
-};
+// Content comes from Admin -> Settings -> Policies; layout + metadata are shared
+// (see policyPage/policyMeta.js).
+const ReturnPolicy = () => <PolicyPageLayout slug="return-policy" />;
 
 export default ReturnPolicy;
