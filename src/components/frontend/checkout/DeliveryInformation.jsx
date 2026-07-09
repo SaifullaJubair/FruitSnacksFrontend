@@ -14,13 +14,15 @@ const selectStyles = {
     ...base,
     minHeight: 44,
     borderRadius: 12,
-    fontSize: 15,
+    // 16px, not 15: iOS Safari zooms the page whenever a focused form control's
+    // font is under 16px. Applies to react-select's own search input too.
+    fontSize: 16,
     backgroundColor: state.isFocused ? "#ffffff" : "rgba(240,233,232,0.2)",
     borderColor: state.isFocused ? "#1B5E20" : "#D7C3C0",
     boxShadow: state.isFocused ? "0 0 0 2px rgba(27,94,32,0.10)" : "none",
     "&:hover": { borderColor: state.isFocused ? "#1B5E20" : "#BC9D98" },
   }),
-  placeholder: (base) => ({ ...base, color: "#9ca3af", fontSize: 15 }),
+  placeholder: (base) => ({ ...base, color: "#9ca3af", fontSize: 16 }),
   option: (base, state) => ({
     ...base,
     fontSize: 14,
@@ -126,7 +128,7 @@ const DeliveryInformation = ({
             type="text"
             autoComplete="name"
             placeholder="Your full name"
-            className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[15px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
+            className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[16px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
           />
           {errors.customer_name && (
             <p className="text-red-600 text-xs mt-1 ml-0.5" role="alert">
@@ -155,7 +157,7 @@ const DeliveryInformation = ({
                 autoComplete="tel"
                 defaultValue={userInfo?.data?.user_phone}
                 placeholder="01XXXXXXXXX"
-                className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[15px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
+                className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[16px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
               />
               {errors.customer_phone && (
                 <p className="text-red-600 text-xs mt-1 ml-0.5" role="alert">
@@ -165,7 +167,7 @@ const DeliveryInformation = ({
             </div>
           ) : (
             <PhoneInput
-              className="custom-phone-input w-full border border-secondary-100 rounded-xl bg-secondary-50/20 px-3.5 py-2.5 text-[15px] text-black placeholder:text-gray-400 focus-within:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all"
+              className="custom-phone-input w-full border border-secondary-100 rounded-xl bg-secondary-50/20 px-3.5 py-2.5 text-[16px] text-black placeholder:text-gray-400 focus-within:bg-white focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-all"
               placeholder="01XXXXXXXXX"
               id="customer_phone"
               value={customer_phone}
@@ -250,7 +252,7 @@ const DeliveryInformation = ({
             type="text"
             autoComplete="street-address"
             placeholder="House, road, area…"
-            className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[15px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
+            className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[16px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
           />
           {errors.address && (
             <p className="text-red-600 text-xs mt-1 ml-0.5" role="alert">
@@ -273,7 +275,7 @@ const DeliveryInformation = ({
               type="email"
               autoComplete="email"
               placeholder="your@email.com"
-              className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[15px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
+              className="w-full border border-secondary-100 rounded-xl px-3.5 py-2.5 text-[16px] outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
             />
           </div>
         )}

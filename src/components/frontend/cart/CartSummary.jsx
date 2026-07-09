@@ -153,7 +153,7 @@ const CartSummary = ({
                   type="text"
                   aria-label="Promo code"
                   autoFocus
-                  className="flex-1 text-[15px] border border-secondary-100 rounded-xl px-3.5 py-2.5 outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
+                  className="flex-1 text-[16px] border border-secondary-100 rounded-xl px-3.5 py-2.5 outline-none bg-secondary-50/20 focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/10 transition-all placeholder:text-gray-400"
                   placeholder="Enter code"
                   value={couponCode || ""}
                   onChange={(e) => setCouponCode(e.target.value)}
