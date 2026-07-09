@@ -2,11 +2,20 @@ import { getSeoConfig } from "@/components/lib/getSeoConfig";
 import Providers from "@/components/providers/Providers";
 import QueryProviders from "@/components/providers/QueryProviders";
 import { bodyFont, sansFont } from "@/utils/font";
+// PERF: every `import "x.css"` here becomes its own render-blocking <link> on
+// EVERY route. On slow 4G the homepage was serialising ~10 stylesheets into
+// ~4,950 ms of blocked paint — for only 35.7 KiB. So only genuinely global CSS
+// stays here:
+//   - skeleton.css  : 14 components across most routes (1 KiB)
+//   - ReactToastify : the ToastContainer below is mounted in this layout
+//   - globals.css   : Tailwind
+// Moved out:
+//   - react-photo-view.css (18.5 KiB) → co-located with its 6 consumers
+//     (PDP gallery, cart, profile). The homepage has no lightbox.
+//   - react-tooltip.css → deleted; nothing in src/ ever imported react-tooltip.
 import "react-loading-skeleton/dist/skeleton.css";
-import "react-photo-view/dist/react-photo-view.css";
 import { Slide, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import "react-tooltip/dist/react-tooltip.css";
 import "./globals.css";
 import AnalyticsAdvancedMatching from "@/components/analyticsScripts/utils/AnalyticsAdvancedMatching";
 import FbclidCapture from "@/components/analyticsScripts/utils/FbclidCapture";
@@ -16,6 +25,38 @@ import GoogleTagManager, {
   GoogleTagManagerNoScript,
 } from "@/components/analyticsScripts/googleAnalytics/GoogleTagManager";
 import MicrosoftClarity from "@/components/analyticsScripts/microsoftClarity/MicrosoftClarity";
+import { BASE_URL } from "@/components/utils/baseURL";
+
+/**
+ * PERF — warm up the API origin so the browser does DNS + TCP + TLS while it is
+ * still parsing HTML, instead of after the first fetch fires. PageSpeed measured
+ * ~300 ms of LCP sitting in that handshake.
+ *
+ * A preconnect socket is only reused by a request in the SAME CORS mode, and we
+ * get one hint per origin. The app mixes both modes against the API:
+ *   - anonymous       — getSettingData / getTrendingProducts (plain fetch, no
+ *                       credentials). These drive the Navbar + first content, so
+ *                       they are the ones on the LCP path.
+ *   - use-credentials — useUserInfoQuery, cart sync (credentials: "include").
+ * We hint the anonymous mode because that is what the render-path fetches use.
+ *
+ * `crossorigin` (valueless) means anonymous. Writing crossorigin="use-credentials"
+ * here would open a socket the settings/trending fetches cannot reuse.
+ *
+ * The S3 image host is deliberately NOT preconnected: images are served through
+ * /_next/image, so the *server* fetches from S3 and the browser never opens a
+ * connection to it. PageSpeed correctly flagged that hint as unused.
+ *
+ * Derived from env, never hardcoded. Bad/unset env yields no hint rather than a
+ * broken one.
+ */
+function apiOrigin() {
+  try {
+    return BASE_URL ? new URL(BASE_URL).origin : null;
+  } catch {
+    return null; // malformed NEXT_PUBLIC_API_URL — skip the hint, don't crash render
+  }
+}
 
 export async function generateMetadata() {
   const seo = await getSeoConfig();
@@ -107,6 +148,9 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="bn" className={sansFont.variable}>
       <head>
+        {/* Warm up the API connection — see apiOrigin() above for why this is
+            anonymous mode and why the S3 host is intentionally absent. */}
+        {apiOrigin() && <link rel="preconnect" href={apiOrigin()} crossOrigin="" />}
         {seo.gtmId && <GoogleTagManager gtmId={seo.gtmId} />}
         {/* DB-driven favicon (Admin → Site Settings). This is the ONLY
             <link rel="icon"> on the page. The old static src/app/favicon.ico

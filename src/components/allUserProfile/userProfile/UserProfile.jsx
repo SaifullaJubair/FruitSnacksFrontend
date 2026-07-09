@@ -30,6 +30,10 @@ import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import { LoaderOverlay } from "@/components/shared/loader/LoaderOverlay";
 import { BASE_URL } from "@/components/utils/baseURL";
 
+// CSS co-located with its only consumers. Importing it in the root layout made
+// every route (incl. the homepage, which has no lightbox) render-block on 18.5 KiB.
+import "react-photo-view/dist/react-photo-view.css";
+
 // ── Sidebar nav items ──────────────────────────────────────────────
 const SIDEBAR_ITEMS = [
   { name: "dashboard",       icon: MdOutlineHome,     label: "Dashboard" },

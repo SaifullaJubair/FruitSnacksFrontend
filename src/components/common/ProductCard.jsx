@@ -11,6 +11,16 @@ import { useDispatch } from "react-redux";
 import { addToCart } from "@/redux/feature/cart/cartSlice";
 import QuickViewModal from "@/components/shared/quickViewModal/QuickViewModal";
 
+// Rendered width of a card image, matching the grids that use this component
+// (2-up on mobile, 3-up from sm, 4-to-6-up on lg/xl). Without this, `fill`
+// defaults to 100vw and next/image serves a phone a 750px file for a ~334px
+// slot. Kept as one constant so the base layer and the hover carousel agree.
+// The one outlier is CategoryWiseProduct's mobile slider (~1 card per view);
+// it gets a slightly small candidate rather than making every other grid pay
+// for a larger one.
+const PRODUCT_CARD_SIZES =
+  "(max-width: 640px) 50vw, (max-width: 1024px) 33vw, (max-width: 1280px) 25vw, 20vw";
+
 /**
  * Shared product card used across all sections.
  *
@@ -199,6 +209,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
               frames (hidden md:block) aren't there — leaving a white card. */}
           <Image
             fill
+            sizes={PRODUCT_CARD_SIZES}
             src={mainImage}
             alt={product?.product_name || "Product"}
             className={`object-cover transition-all duration-500 ${
@@ -227,6 +238,7 @@ const ProductCard = ({ product, badge, activeFilters }) => {
               <Image
                 key={src}
                 fill
+                sizes={PRODUCT_CARD_SIZES}
                 src={src}
                 alt={product?.product_name || "Product"}
                 className={`object-cover absolute inset-0 transition-opacity duration-500 hidden lg:block ${

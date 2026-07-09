@@ -14,6 +14,10 @@ import { PhotoProvider, PhotoView } from "react-photo-view";
 import { FiMinus, FiPlus, FiTrash2, FiEye } from "react-icons/fi";
 import QuickViewModal from "@/components/shared/quickViewModal/QuickViewModal";
 
+// CSS co-located with its only consumers. Importing it in the root layout made
+// every route (incl. the homepage, which has no lightbox) render-block on 18.5 KiB.
+import "react-photo-view/dist/react-photo-view.css";
+
 const CartTable = ({
   products,
   couponData,
