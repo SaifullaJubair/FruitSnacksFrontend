@@ -1,7 +1,14 @@
 "use client";
 // Use cases — circular brand-tinted icon badges + label in soft cards.
-import { FaUtensils } from "react-icons/fa6";
+//
+// Icon priority: admin's custom upload (icon_url) > icon picked in the admin
+// IconPicker (icon_key) > no icon at all. There is deliberately NO fallback
+// glyph: this section used to hardcode a fork-and-knife, which is wrong on any
+// store that doesn't sell food — and it ignored icon_key entirely, so an icon
+// the admin actually picked never rendered. When a row has neither, the badge
+// circle is omitted too, otherwise the card shows an empty coloured puck.
 import FloatingAssets from "../FloatingAssets";
+import DynamicIcon, { hasIcon } from "@/lib/icons/DynamicIcon";
 
 export default function UseCasesSection({ product, theme }) {
   const items = product?.use_cases || [];
@@ -32,41 +39,49 @@ export default function UseCasesSection({ product, theme }) {
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-          {items.map((u, i) => (
-            <div
-              key={i}
-              className="flex flex-col items-center text-center gap-3 rounded-xl p-5 transition-transform hover:-translate-y-0.5"
-              style={{ background: "#fff" }}
-            >
-              <span
-                className="flex items-center justify-center rounded-full"
-                style={{
-                  width: 56,
-                  height: 56,
-                  background: "var(--brand-primary-light)",
-                  color: "var(--brand-primary-dark)",
-                }}
+          {items.map((u, i) => {
+            // Only draw the badge when something will actually appear inside
+            // it — an icon_key that no longer resolves would otherwise leave a
+            // bare coloured circle.
+            const showBadge = Boolean(u.icon_url) || hasIcon(u.icon_key);
+            return (
+              <div
+                key={i}
+                className="flex flex-col items-center text-center gap-3 rounded-xl p-5 transition-transform hover:-translate-y-0.5"
+                style={{ background: "#fff" }}
               >
-                {u.icon_url ? (
-                  <img
-                    src={u.icon_url}
-                    alt=""
-                    width={30}
-                    height={30}
-                    className="object-contain"
-                  />
-                ) : (
-                  <FaUtensils size={22} />
+                {showBadge && (
+                  <span
+                    className="flex items-center justify-center rounded-full"
+                    style={{
+                      width: 56,
+                      height: 56,
+                      background: "var(--brand-primary-light)",
+                      color: "var(--brand-primary-dark)",
+                    }}
+                  >
+                    {u.icon_url ? (
+                      <img
+                        src={u.icon_url}
+                        alt=""
+                        width={30}
+                        height={30}
+                        className="object-contain"
+                      />
+                    ) : (
+                      <DynamicIcon name={u.icon_key} size={22} />
+                    )}
+                  </span>
                 )}
-              </span>
-              <span
-                className="text-sm font-medium leading-tight"
-                style={{ color: "var(--body-color)" }}
-              >
-                {u.text}
-              </span>
-            </div>
-          ))}
+                <span
+                  className="text-sm font-medium leading-tight"
+                  style={{ color: "var(--body-color)" }}
+                >
+                  {u.text}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
     </section>
