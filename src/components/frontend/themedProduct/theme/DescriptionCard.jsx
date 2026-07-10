@@ -1,18 +1,74 @@
 "use client";
 // "পণ্য সম্পর্কে" + "পণ্যের বিবরণ" — a two-column section shown below the hero.
-// LEFT  = rich-text product.description (clamped with a "আরও পড়ুন" toggle).
-// RIGHT = the product spec sheet (custom_fields) as an always-visible
-// icon + label/value table. Each column has its own titled header and self-
-// hides when its data is empty, so a product with only one of the two still
-// looks balanced. Themed via brand CSS vars.
+// LEFT  = rich-text product.description.
+// RIGHT = the product spec sheet (custom_fields) as an icon + label/value table.
+// Both clamp to the same height and grow their own "আরও পড়ুন" toggle when they
+// overflow, so the taller side never stretches the row. Each column has its own
+// titled header and self-hides when its data is empty, so a product with only
+// one of the two still looks balanced. Themed via brand CSS vars.
 import { useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import DynamicIcon from "@/lib/icons/DynamicIcon";
 
-// Collapsed height cap for the description. Roughly one screenful minus the
-// card header and the toggle, so "আরও পড়ুন" is reachable without scrolling
-// past it — the whole point of collapsing.
+// Collapsed height cap, shared by both columns so they stay the same height
+// whichever one is longer. Roughly one screenful minus the card header and the
+// toggle, so the toggle is reachable without scrolling past it — the whole
+// point of collapsing.
 const COLLAPSED_MAX_H = 420;
+
+// Does this element's content exceed the collapsed cap?
+//
+// Starts `true` so SSR and the first client render agree (no hydration
+// mismatch, no toggle popping in); the effect only ever turns it OFF, hiding a
+// toggle that would have done nothing. A character count can't answer this — a
+// small table renders tall, and 300 characters of prose fit comfortably — so we
+// measure scrollHeight, which is the full content height even while maxHeight
+// clips it. Re-measures on resize: a narrower viewport reflows content taller.
+function useOverflows(ref, enabled, deps = []) {
+  const [overflows, setOverflows] = useState(true);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || !enabled) return undefined;
+    const measure = () => setOverflows(el.scrollHeight > COLLAPSED_MAX_H + 8);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref, enabled, ...deps]);
+  return overflows;
+}
+
+// The shared "আরও পড়ুন / কম দেখুন" control.
+function MoreToggle({ expanded, onToggle }) {
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      className="mt-3 shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold self-start"
+      style={{ color: "var(--brand-primary)" }}
+    >
+      {expanded ? "কম দেখুন" : "আরও পড়ুন"}
+      <FaChevronDown
+        size={12}
+        className="transition-transform duration-200"
+        style={{ transform: expanded ? "rotate(180deg)" : "none" }}
+      />
+    </button>
+  );
+}
+
+// maxHeight + fade, applied only while genuinely clipping (otherwise the fade
+// washes out the bottom of fully-visible content).
+const clampStyle = (on) =>
+  on
+    ? {
+        maxHeight: COLLAPSED_MAX_H,
+        overflow: "hidden",
+        WebkitMaskImage: "linear-gradient(to bottom, #000 65%, transparent)",
+        maskImage: "linear-gradient(to bottom, #000 65%, transparent)",
+      }
+    : {};
 
 // Small titled header bar (brand accent stripe + heading) reused by both cols.
 function SectionTitle({ children }) {
@@ -36,51 +92,44 @@ function SectionTitle({ children }) {
 }
 
 export default function DescriptionCard({ html, customFields = [] }) {
-  const [expanded, setExpanded] = useState(false);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [specExpanded, setSpecExpanded] = useState(false);
   const descRef = useRef(null);
-  // Does the content actually exceed the collapsed cap? The character heuristic
-  // below can't know: a small table or list renders tall, and 300 characters of
-  // plain prose fit comfortably. Start `true` so SSR and the first client render
-  // agree (no hydration mismatch, no toggle popping in); the effect only ever
-  // turns it OFF, hiding a toggle that would have done nothing.
-  const [overflows, setOverflows] = useState(true);
+  const specRef = useRef(null);
 
   const hasHtml = html && String(html).trim();
   const specRows = (customFields || []).filter((f) => f?.label);
   const hasSpec = specRows.length > 0;
 
-  // Heuristic: only offer the toggle when the content is long enough to bother
-  // clamping. Strip tags for a rough length estimate.
-  const plainLen = hasHtml
-    ? String(html).replace(/<[^>]*>/g, "").trim().length
-    : 0;
-  const isLong = plainLen > 280;
+  // Cheap pre-filter so we don't observe elements that obviously can't
+  // overflow. The hook does the real measuring. (Rows: ~56px each at the
+  // current padding, so anything under ~6 is certainly short.)
+  const descMightOverflow =
+    !!hasHtml &&
+    String(html)
+      .replace(/<[^>]*>/g, "")
+      .trim().length > 280;
+  const specMightOverflow = specRows.length > 6;
 
-  // scrollHeight is the full content height even while maxHeight clips it.
-  // Re-measure on resize: a narrower viewport reflows the text taller, so a
-  // description that fits on desktop may overflow on a phone.
-  // (Declared before the early return below — hooks must not be conditional.)
-  useEffect(() => {
-    const el = descRef.current;
-    if (!el || !isLong) return undefined;
-    const measure = () => setOverflows(el.scrollHeight > COLLAPSED_MAX_H + 8);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [html, isLong]);
+  // Hooks must run unconditionally — before the early return below.
+  const descOverflows = useOverflows(descRef, descMightOverflow, [html]);
+  const specOverflows = useOverflows(specRef, specMightOverflow, [
+    specRows.length,
+  ]);
 
   if (!hasHtml && !hasSpec) return null;
 
-  // Clamp only when there is something to hide.
-  const clamped = isLong && overflows && !expanded;
+  // Clamp only when there is genuinely something to hide.
+  const descClamped = descMightOverflow && descOverflows && !descExpanded;
+  const specClamped = specMightOverflow && specOverflows && !specExpanded;
 
   return (
     <section className="mb-8">
-      {/* Two columns on desktop; stack on mobile. items-stretch only makes the
-          two white cards share the row's height so they line up visually — it
-          does NOT bound the description (see the collapse note below). If only
-          one side has data it spans on its own. */}
+      {/* Two columns on desktop; stack on mobile. items-stretch makes the two
+          white cards share the row's height so they line up. Each side clamps
+          its own content to the SAME cap and grows its own toggle, so whichever
+          one is longer no longer decides the row's height. If only one side has
+          data it spans on its own. */}
       <div className="grid md:grid-cols-2 gap-6 items-stretch">
         {/* LEFT — description */}
         {hasHtml && (
@@ -104,91 +153,89 @@ export default function DescriptionCard({ html, customFields = [] }) {
                 // "collapsed" block was 1201px on desktop and 1516px on mobile,
                 // with scrollHeight identical to clientHeight. You had to scroll
                 // ~1.8 screens on a phone to reach "আরও পড়ুন".
-                //
-                // The fade only applies when the text is genuinely cut off,
-                // otherwise it washed out the last 40% of fully-visible copy.
                 ref={descRef}
                 className="pdp-desc text-sm md:text-base leading-relaxed"
                 style={{
                   color: "var(--body-color)",
-                  ...(clamped
-                    ? {
-                        maxHeight: COLLAPSED_MAX_H,
-                        overflow: "hidden",
-                        WebkitMaskImage:
-                          "linear-gradient(to bottom, #000 65%, transparent)",
-                        maskImage:
-                          "linear-gradient(to bottom, #000 65%, transparent)",
-                      }
-                    : {}),
+                  ...clampStyle(descClamped),
                 }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
 
-              {isLong && overflows && (
-                <button
-                  type="button"
-                  onClick={() => setExpanded((v) => !v)}
-                  className="mt-3 shrink-0 inline-flex items-center gap-1.5 text-sm font-semibold self-start"
-                  style={{ color: "var(--brand-primary)" }}
-                >
-                  {expanded ? "কম দেখুন" : "আরও পড়ুন"}
-                  <FaChevronDown
-                    size={12}
-                    className="transition-transform duration-200"
-                    style={{ transform: expanded ? "rotate(180deg)" : "none" }}
-                  />
-                </button>
+              {descMightOverflow && descOverflows && (
+                <MoreToggle
+                  expanded={descExpanded}
+                  onToggle={() => setDescExpanded((v) => !v)}
+                />
               )}
             </div>
           </div>
         )}
 
-        {/* RIGHT — spec sheet (custom_fields), always fully visible */}
+        {/* RIGHT — spec sheet (custom_fields). Clamped on the same terms as the
+            description, so a long spec table can't stretch the row either. */}
         {hasSpec && (
           <div className="flex flex-col">
             <SectionTitle>পণ্যের বিবরণ</SectionTitle>
-            <ul
-              className="rounded-2xl shadow-sm divide-y overflow-hidden flex-1"
-              style={{ background: "#fff", borderColor: "var(--section-bg)" }}
+            <div
+              className="rounded-2xl shadow-sm overflow-hidden flex-1 flex flex-col"
+              style={{ background: "#fff" }}
             >
-              {specRows.map((f, i) => (
-                <li
-                  key={i}
-                  // Stack label over value on mobile (a long value otherwise
-                  // collides with the label since both sit on one flex row),
-                  // back to side-by-side on sm+.
-                  className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 px-5 py-3.5"
-                  style={{ borderColor: "var(--section-bg)" }}
-                >
-                  <span className="flex items-center gap-2.5 min-w-0 flex-1">
-                    {f.icon_key && (
-                      <span
-                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                        style={{
-                          background: "var(--section-bg)",
-                          color: "var(--brand-primary)",
-                        }}
-                      >
-                        <DynamicIcon name={f.icon_key} size={15} />
-                      </span>
-                    )}
-                    <span
-                      className="text-sm md:text-base font-medium"
-                      style={{ color: "var(--body-color)" }}
-                    >
-                      {f.label}
-                    </span>
-                  </span>
-                  <span
-                    className="text-sm md:text-base font-semibold text-left sm:text-right shrink-0"
-                    style={{ color: "var(--heading-color)" }}
+              <ul
+                ref={specRef}
+                className="divide-y"
+                style={{
+                  borderColor: "var(--section-bg)",
+                  ...clampStyle(specClamped),
+                }}
+              >
+                {specRows.map((f, i) => (
+                  <li
+                    key={i}
+                    // Stack label over value on mobile (a long value otherwise
+                    // collides with the label since both sit on one flex row),
+                    // back to side-by-side on sm+.
+                    className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 px-5 py-3.5"
+                    style={{ borderColor: "var(--section-bg)" }}
                   >
-                    {f.value || "—"}
-                  </span>
-                </li>
-              ))}
-            </ul>
+                    <span className="flex items-center gap-2.5 min-w-0 flex-1">
+                      {f.icon_key && (
+                        <span
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+                          style={{
+                            background: "var(--section-bg)",
+                            color: "var(--brand-primary)",
+                          }}
+                        >
+                          <DynamicIcon name={f.icon_key} size={15} />
+                        </span>
+                      )}
+                      <span
+                        className="text-sm md:text-base font-medium"
+                        style={{ color: "var(--body-color)" }}
+                      >
+                        {f.label}
+                      </span>
+                    </span>
+                    <span
+                      className="text-sm md:text-base font-semibold text-left sm:text-right shrink-0"
+                      style={{ color: "var(--heading-color)" }}
+                    >
+                      {f.value || "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {specMightOverflow && specOverflows && (
+                <div className="px-5 pb-4">
+                  <MoreToggle
+                    expanded={specExpanded}
+                    onToggle={() => setSpecExpanded((v) => !v)}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -238,10 +285,18 @@ export default function DescriptionCard({ html, customFields = [] }) {
           margin: 0.2rem 0;
         }
         /* Nested-list markers by depth. */
-        .pdp-desc :global(ul ul) { list-style: circle; }
-        .pdp-desc :global(ul ul ul) { list-style: square; }
-        .pdp-desc :global(ol ol) { list-style: lower-alpha; }
-        .pdp-desc :global(ol ol ol) { list-style: lower-roman; }
+        .pdp-desc :global(ul ul) {
+          list-style: circle;
+        }
+        .pdp-desc :global(ul ul ul) {
+          list-style: square;
+        }
+        .pdp-desc :global(ol ol) {
+          list-style: lower-alpha;
+        }
+        .pdp-desc :global(ol ol ol) {
+          list-style: lower-roman;
+        }
         /* List-item alignment fix — move the marker with the text when a list
            item is centre/right/justify aligned (else the bullet stays left). */
         .pdp-desc :global(li:has(> p[style*="text-align: center"])),
