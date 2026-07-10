@@ -5,9 +5,14 @@
 // icon + label/value table. Each column has its own titled header and self-
 // hides when its data is empty, so a product with only one of the two still
 // looks balanced. Themed via brand CSS vars.
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import DynamicIcon from "@/lib/icons/DynamicIcon";
+
+// Collapsed height cap for the description. Roughly one screenful minus the
+// card header and the toggle, so "আরও পড়ুন" is reachable without scrolling
+// past it — the whole point of collapsing.
+const COLLAPSED_MAX_H = 420;
 
 // Small titled header bar (brand accent stripe + heading) reused by both cols.
 function SectionTitle({ children }) {
@@ -32,11 +37,17 @@ function SectionTitle({ children }) {
 
 export default function DescriptionCard({ html, customFields = [] }) {
   const [expanded, setExpanded] = useState(false);
+  const descRef = useRef(null);
+  // Does the content actually exceed the collapsed cap? The character heuristic
+  // below can't know: a small table or list renders tall, and 300 characters of
+  // plain prose fit comfortably. Start `true` so SSR and the first client render
+  // agree (no hydration mismatch, no toggle popping in); the effect only ever
+  // turns it OFF, hiding a toggle that would have done nothing.
+  const [overflows, setOverflows] = useState(true);
 
   const hasHtml = html && String(html).trim();
   const specRows = (customFields || []).filter((f) => f?.label);
   const hasSpec = specRows.length > 0;
-  if (!hasHtml && !hasSpec) return null;
 
   // Heuristic: only offer the toggle when the content is long enough to bother
   // clamping. Strip tags for a rough length estimate.
@@ -45,46 +56,76 @@ export default function DescriptionCard({ html, customFields = [] }) {
     : 0;
   const isLong = plainLen > 280;
 
+  // scrollHeight is the full content height even while maxHeight clips it.
+  // Re-measure on resize: a narrower viewport reflows the text taller, so a
+  // description that fits on desktop may overflow on a phone.
+  // (Declared before the early return below — hooks must not be conditional.)
+  useEffect(() => {
+    const el = descRef.current;
+    if (!el || !isLong) return undefined;
+    const measure = () => setOverflows(el.scrollHeight > COLLAPSED_MAX_H + 8);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [html, isLong]);
+
+  if (!hasHtml && !hasSpec) return null;
+
+  // Clamp only when there is something to hide.
+  const clamped = isLong && overflows && !expanded;
+
   return (
     <section className="mb-8">
-      {/* Two columns on desktop; stack on mobile. items-stretch makes both
-          columns equal height, so a long description clamps to the spec card's
-          height (with "আরও পড়ুন") instead of overflowing past it — the two
-          cards line up. If only one side has data it spans on its own. */}
+      {/* Two columns on desktop; stack on mobile. items-stretch only makes the
+          two white cards share the row's height so they line up visually — it
+          does NOT bound the description (see the collapse note below). If only
+          one side has data it spans on its own. */}
       <div className="grid md:grid-cols-2 gap-6 items-stretch">
         {/* LEFT — description */}
         {hasHtml && (
           <div className="flex flex-col">
             <SectionTitle>পণ্য সম্পর্কে</SectionTitle>
             <div
-              className="rounded-2xl shadow-sm p-5 md:p-6 flex-1 flex flex-col min-h-0"
+              className="rounded-2xl shadow-sm p-5 md:p-6 flex-1 flex flex-col"
               style={{ background: "#fff" }}
             >
               <div
                 // `pdp-desc` namespaces the styles below so they affect only
-                // this card's rich-text HTML — no global leak. When collapsed,
-                // flex-1 + min-h-0 + overflow-hidden clamps the text to the
-                // card's (stretched) height rather than a fixed maxHeight, so
-                // it matches the spec card next to it.
-                className="pdp-desc text-sm md:text-base leading-relaxed transition-all duration-300"
+                // this card's rich-text HTML — no global leak.
+                //
+                // Collapsed = a hard maxHeight. This used to be
+                // `flex: 1 1 0%` + min-h-0 + overflow-hidden, on the theory that
+                // the text would clamp to the spec card's height. It only does
+                // that when the spec card is the TALLER column; when the
+                // description is taller (the normal case for a long one) the
+                // grid row grows to fit it and flex-1 simply fills that height —
+                // so nothing was ever clipped. Measured on a real product: the
+                // "collapsed" block was 1201px on desktop and 1516px on mobile,
+                // with scrollHeight identical to clientHeight. You had to scroll
+                // ~1.8 screens on a phone to reach "আরও পড়ুন".
+                //
+                // The fade only applies when the text is genuinely cut off,
+                // otherwise it washed out the last 40% of fully-visible copy.
+                ref={descRef}
+                className="pdp-desc text-sm md:text-base leading-relaxed"
                 style={{
                   color: "var(--body-color)",
-                  ...(isLong && !expanded
+                  ...(clamped
                     ? {
-                        flex: "1 1 0%",
-                        minHeight: 0,
+                        maxHeight: COLLAPSED_MAX_H,
                         overflow: "hidden",
                         WebkitMaskImage:
-                          "linear-gradient(to bottom, #000 60%, transparent)",
+                          "linear-gradient(to bottom, #000 65%, transparent)",
                         maskImage:
-                          "linear-gradient(to bottom, #000 60%, transparent)",
+                          "linear-gradient(to bottom, #000 65%, transparent)",
                       }
                     : {}),
                 }}
                 dangerouslySetInnerHTML={{ __html: html }}
               />
 
-              {isLong && (
+              {isLong && overflows && (
                 <button
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
