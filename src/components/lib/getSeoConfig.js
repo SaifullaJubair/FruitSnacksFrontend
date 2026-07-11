@@ -22,21 +22,20 @@ export async function getSeoConfig() {
     console.error("Server Setting Data Fetch Error:", error);
   }
 
+  // Fallbacks are product-line-neutral on purpose. They stand in only until the
+  // shop owner fills Site Settings, and they ship to every clone of this codebase
+  // — the previous ones advertised the leather wallets, bags and belts of the shop
+  // this was cloned from, so a fruit-snack storefront introduced itself to Google
+  // as a leather goods store.
   const siteName = s?.title || "FruitSnacks";
   const seoTitle =
-    s?.seo_title || `${siteName} – Premium Genuine Leather Products Bangladesh`;
+    s?.seo_title || `${siteName} – Premium Quality Products in Bangladesh`;
   const seoDescription =
     s?.seo_description ||
-    `${siteName} – Bangladesh এর সেরা genuine leather wallet, bag ও belt। High quality, affordable price। Cash on delivery সারাদেশে।`;
+    `${siteName} – প্রিমিয়াম কোয়ালিটির পণ্য, সেরা দামে। সারা বাংলাদেশে দ্রুত ডেলিভারি ও ক্যাশ অন ডেলিভারি সুবিধা।`;
   const seoKeywords = s?.seo_keywords
     ? s.seo_keywords.split(",").map((k) => k.trim())
-    : [
-        "leather wallet",
-        "genuine leather",
-        "leather bag",
-        "leather belt",
-        "bangladesh",
-      ];
+    : ["online shopping", "bangladesh", "cash on delivery", "home delivery"];
 
   return {
     siteName,

@@ -5,14 +5,14 @@ import { MdOutlinePayment } from "react-icons/md";
 
 const services = [
   {
-    icon: <PiHammerLight className="text-3xl text-primary-400" />,
-    title: "Built to Last",
-    desc: "Reinforced stitching at every joint",
+    icon: <PiLeafLight className="text-3xl text-primary-400" />,
+    title: "100% Natural",
+    desc: "No added sugar or colour",
   },
   {
-    icon: <PiLeafLight className="text-3xl text-primary-400" />,
-    title: "Genuine Leather",
-    desc: "100% authentic material",
+    icon: <PiHammerLight className="text-3xl text-primary-400" />,
+    title: "No Preservatives",
+    desc: "Dried and packed at peak freshness",
   },
   {
     icon: <TbArrowsExchange className="text-3xl text-primary-400" />,

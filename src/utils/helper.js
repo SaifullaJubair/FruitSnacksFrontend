@@ -17,6 +17,31 @@ import { applyCartLayers } from "./applyCartLayers";
 //   }
 // };
 
+/**
+ * The strike-through price, or null when there is nothing to strike through.
+ *
+ * Every PDP and the quick-view modal keep the struck-out price in local state,
+ * and each one used to assign `variation_price` straight from the API. That
+ * field is 0 for delta-model variations and for rows an admin saved before
+ * typing a base price, and 0 is the one falsy value React still renders — so
+ * `{lineThrough && <s>{lineThrough}</s>}` printed a bare "0" beside the price,
+ * `0 != null` slipped past the subtotal guard and zeroed the order summary, and
+ * the percent-off maths divided by zero into -Infinity. Route every assignment
+ * through this so a missing price is null, which React and the guards both
+ * already handle.
+ *
+ * Returns null unless the regular price is real AND above what the buyer pays —
+ * an equal or higher "discount" is not a discount, and striking through an
+ * identical number just looks broken.
+ */
+export const strikeThroughPrice = (regular, finalPrice) => {
+  const r = Number(regular);
+  const f = Number(finalPrice);
+  if (!Number.isFinite(r) || r <= 0) return null;
+  if (!Number.isFinite(f) || f <= 0) return null;
+  return r > f ? r : null;
+};
+
 export const productPrice = (product) => {
   // variations is always an array — use first entry for card-level display
   const v0 = Array.isArray(product?.variations)

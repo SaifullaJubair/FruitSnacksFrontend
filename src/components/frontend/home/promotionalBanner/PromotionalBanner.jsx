@@ -23,12 +23,12 @@ const PromotionalBanner = () => {
                 Limited Time Offer
               </p>
               <h2 className="text-accent-100 text-3xl md:text-5xl font-bold leading-tight mb-4">
-                Imported <br />
-                <span className="text-accent-700">Genuine Leather</span>
+                100% Natural <br />
+                <span className="text-accent-700">Dried Fruits</span>
               </h2>
               <p className="text-accent-300/60 text-sm md:text-base max-w-sm mb-8">
-                Premium quality leather wallets, crafted with precision and
-                passion. Built to last a lifetime.
+                No added sugar, no colour, no preservatives — just fruit, dried
+                and packed at its peak.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
                 <Link
@@ -49,7 +49,7 @@ const PromotionalBanner = () => {
             {/* Right - Stats */}
             <div className="grid grid-cols-2 gap-4 md:gap-6">
               {[
-                { number: "100%", label: "Genuine Leather" },
+                { number: "100%", label: "Natural" },
                 { number: "5★", label: "Customer Rating" },
                 { number: "2+", label: "Years Experience" },
                 { number: "24/7", label: "Customer Support" },

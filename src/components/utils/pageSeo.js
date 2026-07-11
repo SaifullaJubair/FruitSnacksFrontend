@@ -13,45 +13,49 @@ export const PAGE_SEO = {
     path: "",
   },
   allProducts: {
-    title:
-      "All Products | Shop All Genuine Leather Products | Wallets, Bags & Belts",
+    // Product-line-neutral, like `home` above: this file is the fallback used when
+    // a page has no /page-seo row, and it ships to every clone of this codebase.
+    // It used to describe the leather wallets, bags and belts of the shop this was
+    // cloned from — which is what a fruit-snack storefront served to Google. The
+    // owner sets real copy from Admin → Page SEO; these only fill the gap.
+    title: "All Products | Full Collection",
     description:
-      "আমাদের সব এক্সক্লুসিভ লেদার কালেকশন। প্রিমিয়াম মানিব্যাগ, ফ্যাশনেবল লেডিস ব্যাগ ও টেকসই লেদার বেল্ট কিনুন সেরা দামে। সারা বাংলাদেশে হোম ডেলিভারি।",
+      "আমাদের সম্পূর্ণ প্রোডাক্ট কালেকশন দেখুন। প্রিমিয়াম কোয়ালিটি, সেরা দাম ও সারা বাংলাদেশে হোম ডেলিভারি।",
     path: "all-products",
     noIndex: true,
   },
   allTrending: {
-    title: "Trending Products | Best Selling Wallets & Bags",
+    title: "Trending Products | Best Sellers",
     description:
-      "বর্তমানে সবচেয়ে জনপ্রিয় ও ট্রেন্ডিং লেদার প্রোডাক্টগুলো দেখে নিন। কাস্টমারদের পছন্দের শীর্ষে থাকা মানিব্যাগ, লেডিস ব্যাগ ও বেল্ট এখন এক জায়গায়।",
+      "বর্তমানে সবচেয়ে জনপ্রিয় ও ট্রেন্ডিং প্রোডাক্টগুলো দেখে নিন। কাস্টমারদের পছন্দের শীর্ষে থাকা আইটেম এখন এক জায়গায়।",
     path: "all-trending-products",
     noIndex: true,
   },
   newArrival: {
-    title: "New Arrival Leather Collection | Latest Wallets & Belts",
+    title: "New Arrivals | Latest Collection",
     description:
-      "আমাদের স্টকে আসা একদম নতুন ডিজাইনের লেদার মানিব্যাগ, লেডিস ব্যাগ এবং বেল্ট। লেটেস্ট কালেকশন থেকে আপনার পছন্দের পণ্যটি বেছে নিন।",
+      "আমাদের স্টকে আসা একদম নতুন প্রোডাক্টগুলো দেখুন। লেটেস্ট কালেকশন থেকে আপনার পছন্দের পণ্যটি বেছে নিন।",
     path: "new-arrival",
     noIndex: true,
   },
   topProduct: {
-    title: "Top Rated Leather Products | Premium Quality Selection",
+    title: "Top Rated Products | Best Quality",
     description:
-      "সবচেয়ে বেশি বিক্রিত এবং টপ রেটেড লেদার আইটেম। আমাদের সেরা কোয়ালিটির মানিব্যাগ, ব্যাগ এবং বেল্টের কালেকশন দেখুন।",
+      "সবচেয়ে বেশি বিক্রিত এবং টপ রেটেড আইটেম। আমাদের সেরা কোয়ালিটির কালেকশন দেখুন।",
     path: "top-product",
     noIndex: true,
   },
   latestProduct: {
-    title: "Latest Leather Goods | Just Launched Collection",
+    title: "Latest Products | Just Launched",
     description:
-      "নতুন এবং এক্সক্লুসিভ সব লেদার এক্সেসরিজ। স্টাইল এবং আভিজাত্যের সেরা সংমিশ্রণে তৈরি আমাদের লেটেস্ট মানিব্যাগ ও লেডিস ব্যাগ।",
+      "নতুন এবং এক্সক্লুসিভ সব প্রোডাক্ট। আমাদের লেটেস্ট কালেকশন দেখে নিন।",
     path: "latest-product",
     noIndex: true,
   },
   aboutUs: {
-    title: "About Our Brand | Trusted Leather Goods Shop in BD",
+    title: "About Us | Our Story & Values",
     description:
-      "বাংলাদেশে খাঁটি চামড়ার (Genuine Leather) পণ্য সরবরাহে আমরা একটি বিশ্বস্ত নাম। আমাদের মানিব্যাগ, ব্যাগ ও বেল্টের গুণগত মান সম্পর্কে জানুন।",
+      "মানসম্পন্ন পণ্য ও নির্ভরযোগ্য সেবায় আমরা একটি বিশ্বস্ত নাম। আমাদের পণ্যের গুণগত মান সম্পর্কে জানুন।",
     path: "about-us",
   },
   privacyPolicy: {
@@ -116,7 +120,7 @@ export const PAGE_SEO = {
     noIndex: true,
   },
   wishlist: {
-    title: "Your Wishlist | Favorite Leather Items",
+    title: "Your Wishlist | Saved Items",
     description: "",
     path: "wishlist",
     noIndex: true,
