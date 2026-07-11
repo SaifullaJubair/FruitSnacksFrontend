@@ -5,7 +5,6 @@
 //   setting.offer_end_at   — countdown target (ISO). Banner hides once passed.
 // Themed via brand vars: full-bleed brand-primary background.
 import { useEffect, useState } from "react";
-import { FaTruckFast, FaMoneyBillWave, FaArrowRotateLeft } from "react-icons/fa6";
 
 // Counts down to a fixed ISO target. `expired` flips true when time runs out.
 function useCountdownTo(endAt) {
@@ -59,74 +58,55 @@ export default function OfferBanner({ product, setting }) {
     </div>
   );
 
-  const perks = [
-    { icon: <FaTruckFast size={15} />, text: "ফ্রি ডেলিভারি" },
-    { icon: <FaMoneyBillWave size={15} />, text: "ক্যাশ অন ডেলিভারি" },
-    { icon: <FaArrowRotateLeft size={15} />, text: "সহজ রিটার্ন পলিসি" },
-  ];
-
   return (
     <section style={{ background: "var(--brand-primary)" }}>
-      <div className="max-w-6xl mx-auto px-4 py-7 md:py-9 grid md:grid-cols-3 gap-6 items-center">
+      {/* Two columns: the offer + timer on the left, the product on the right.
+          There used to be a third column of hardcoded perks (Free Delivery /
+          Cash on Delivery / Easy Return Policy) — the admin could not edit them,
+          so they were a promise the shop had not actually made from here. The
+          same three claims already live in the site-wide Brand Promise section,
+          which IS admin-driven. */}
+      <div className="max-w-6xl mx-auto px-4 py-7 md:py-9 grid md:grid-cols-2 gap-6 items-center">
         {/* Left — offer + timer */}
         <div className="text-center md:text-left">
           <p
             className="text-sm font-semibold mb-1 opacity-90"
             style={{ color: "var(--button-text, #fff)" }}
           >
-            আজকের বিশেষ অফার
+            Today's Special Offer
           </p>
           <h2
             className="text-2xl md:text-3xl font-black mb-3"
             style={{ color: "var(--button-text, #fff)" }}
           >
-            {offerText || "২ টি কিনলে ১ টি ফ্রি"}
+            {offerText || "Buy 2 Get 1 Free"}
           </h2>
           <div className="flex gap-2 justify-center md:justify-start">
             {d > 0 && (
               <>
-                <TimeBox value={String(d).padStart(2, "0")} label="দিন" />
+                <TimeBox value={String(d).padStart(2, "0")} label="Days" />
                 <span className="text-xl font-black self-start mt-2" style={{ color: "var(--button-text, #fff)" }}>:</span>
               </>
             )}
-            <TimeBox value={h} label="ঘণ্টা" />
+            <TimeBox value={h} label="Hours" />
             <span className="text-xl font-black self-start mt-2" style={{ color: "var(--button-text, #fff)" }}>:</span>
-            <TimeBox value={m} label="মিনিট" />
+            <TimeBox value={m} label="Min" />
             <span className="text-xl font-black self-start mt-2" style={{ color: "var(--button-text, #fff)" }}>:</span>
-            <TimeBox value={s} label="সেকেন্ড" />
+            <TimeBox value={s} label="Sec" />
           </div>
         </div>
 
-        {/* Center — product image */}
-        <div className="flex justify-center">
-          {image && (
+        {/* Right — product image */}
+        {image && (
+          <div className="flex justify-center md:justify-end">
             <img
               src={image}
               alt={product?.product_name || ""}
-              className="w-40 h-40 object-cover rounded-2xl shadow-lg ring-4"
+              className="w-40 h-40 md:w-48 md:h-48 object-cover rounded-2xl shadow-lg ring-4"
               style={{ "--tw-ring-color": "rgba(255,255,255,0.25)" }}
             />
-          )}
-        </div>
-
-        {/* Right — perks */}
-        <div className="space-y-2.5 justify-self-center md:justify-self-end">
-          {perks.map((p, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2.5 text-sm font-medium"
-              style={{ color: "var(--button-text, #fff)" }}
-            >
-              <span
-                className="flex items-center justify-center rounded-full"
-                style={{ width: 30, height: 30, background: "rgba(255,255,255,0.18)" }}
-              >
-                {p.icon}
-              </span>
-              {p.text}
-            </div>
-          ))}
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );

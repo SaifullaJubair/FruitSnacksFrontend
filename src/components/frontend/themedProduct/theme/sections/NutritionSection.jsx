@@ -1,45 +1,17 @@
 "use client";
-// Nutrition (left) + "আমাদের প্রতিশ্রুতি" trust grid (right) — 2-column, side
-// by side per the theme reference. Trust supports 2×3 (up to 6) compact tiles
-// with icon + title + optional subtitle. Each card stays the same height.
+// Nutrition (left) + "Our Promise" trust grid (right) — 2-column, side by
+// side per the theme reference. Trust supports 2×3 (up to 6) compact tiles with
+// icon + title + optional subtitle. Each card stays the same height.
+//
+// The left card is keyed on `product.nutrition` — a field name inherited from
+// the food catalogue this codebase was cloned from. It is a free-form
+// label/value table, and this shop uses it for real spec rows (upper material,
+// construction, outsole, card slots, RFID…). The field name is schema and stays;
+// nothing user-facing says "nutrition".
+import { FaShieldHalved } from "react-icons/fa6";
 import { FaInfoCircle } from "react-icons/fa";
-import {
-  FaShieldHeart,
-  FaTruckFast,
-  FaSeedling,
-  FaAward,
-  FaBoxArchive,
-  FaThumbsUp,
-} from "react-icons/fa6";
 import FloatingAssets from "../FloatingAssets";
-import DynamicIcon from "@/lib/icons/DynamicIcon";
-
-const TRUST_ICONS = [
-  FaSeedling,
-  FaShieldHeart,
-  FaAward,
-  FaBoxArchive,
-  FaTruckFast,
-  FaThumbsUp,
-];
-
-// Soft subtitles used when admin hasn't supplied one (theme reference shows
-// every trust tile with a short supporting line). Cycles if more than 6.
-const TRUST_FALLBACK_SUBS = [
-  "কোনো কৃত্রিম উপাদান নয়",
-  "১০০% নিরাপদ",
-  "প্রিমিয়াম কোয়ালিটি",
-  "ফ্রেশ ও বিশুদ্ধ",
-  "সারাদেশে দ্রুত পৌঁছে",
-  "আমাদের অঙ্গীকার",
-];
-
-// Filler tiles to complete the 6-cell grid when admin only set 4 trust cards.
-// These render only if the real trust list has fewer than 6 items.
-const TRUST_EXTRA = [
-  { title: "ফ্রেশ ও বিশুদ্ধ", description: "সরাসরি ফার্ম থেকে" },
-  { title: "গ্রাহক সন্তুষ্টি", description: "আমাদের অঙ্গীকার" },
-];
+import DynamicIcon, { hasIcon } from "@/lib/icons/DynamicIcon";
 
 export default function NutritionSection({ product, theme, trustPoints }) {
   const n = product?.nutrition;
@@ -147,20 +119,27 @@ export default function NutritionSection({ product, theme, trustPoints }) {
           </div>
         )}
 
-        {/* ── RIGHT: আমাদের প্রতিশ্রুতি (trust 3×2 grid, compact tiles) ── */}
+        {/* ── RIGHT: Our Promise (trust 3×2 grid, compact tiles) ── */}
         {trust.length > 0 && (
           <div className="flex flex-col">
-            <Heading>আমাদের প্রতিশ্রুতি</Heading>
+            <Heading>Our Promise</Heading>
             <div
               className="rounded-2xl shadow-sm p-5 md:p-6 grid grid-cols-2 md:grid-cols-3 gap-5 md:gap-6 flex-1 content-around"
               style={{ background: "#fff" }}
             >
-              {[...trust, ...TRUST_EXTRA].slice(0, 6).map((t, i) => {
-                const TrustIcon = TRUST_ICONS[i % TRUST_ICONS.length];
-                const subtitle =
-                  t.description ||
-                  t.subtitle ||
-                  TRUST_FALLBACK_SUBS[i % TRUST_FALLBACK_SUBS.length];
+              {/* Render exactly the promises the admin entered — no more.
+                  This used to pad the grid to 6 with hardcoded TRUST_EXTRA
+                  tiles, pick an icon by ROW INDEX out of a fixed list, and
+                  invent a subtitle by index when none was given. All three made
+                  up content the admin never wrote: a shop with 3 promises
+                  silently showed 5, each with an unrelated glyph. Same defect
+                  as the use-case icons (see BenefitsUseCasesSection).
+
+                  Icon priority: uploaded > picked > a neutral shield. hasIcon()
+                  because DynamicIcon returns null for a key that no longer
+                  resolves, which would leave an empty coloured puck. */}
+              {trust.slice(0, 6).map((t, i) => {
+                const subtitle = t.description || t.subtitle || "";
                 return (
                   <div key={i} className="flex flex-col items-center text-center gap-2.5">
                     <span
@@ -174,10 +153,10 @@ export default function NutritionSection({ product, theme, trustPoints }) {
                     >
                       {t.icon_url ? (
                         <img src={t.icon_url} alt="" width={30} height={30} className="object-contain" />
-                      ) : t.icon_key ? (
+                      ) : hasIcon(t.icon_key) ? (
                         <DynamicIcon name={t.icon_key} size={26} />
                       ) : (
-                        <TrustIcon size={26} />
+                        <FaShieldHalved size={26} />
                       )}
                     </span>
                     <div>
@@ -187,12 +166,14 @@ export default function NutritionSection({ product, theme, trustPoints }) {
                       >
                         {t.title}
                       </p>
-                      <p
-                        className="text-[11px] md:text-xs mt-1 leading-snug"
-                        style={{ color: "var(--body-color)", opacity: 0.75 }}
-                      >
-                        {subtitle}
-                      </p>
+                      {subtitle && (
+                        <p
+                          className="text-[11px] md:text-xs mt-1 leading-snug"
+                          style={{ color: "var(--body-color)", opacity: 0.75 }}
+                        >
+                          {subtitle}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
