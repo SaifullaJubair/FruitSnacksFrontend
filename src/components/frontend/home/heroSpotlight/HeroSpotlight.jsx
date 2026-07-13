@@ -88,9 +88,14 @@ export default async function HeroSpotlight() {
             </Reveal>
           </div>
 
-          {/* Image — server-rendered so its URL is in the initial HTML and Next
-              can emit a <link rel=preload fetchpriority=high> for the LCP. */}
-          <Reveal delay={0.1} y={32} className="relative z-10 order-1 lg:order-2">
+          {/* Image — deliberately NOT wrapped in <Reveal>.
+              This is the LCP element. Reveal starts at opacity:0 and only fades
+              in once framer-motion has hydrated, which held the paint for 2,650ms
+              of "element render delay" — the image had already downloaded in
+              340ms and then sat there, invisible, waiting for JavaScript. Getting
+              the URL into the HTML is pointless if a client animation then hides
+              the pixels. It paints as soon as it arrives now. */}
+          <div className="relative z-10 order-1 lg:order-2">
             <div className="block relative aspect-square w-full max-w-lg mx-auto">
               <Link href={href} className="block relative w-full h-full">
                 <Image
@@ -100,11 +105,13 @@ export default async function HeroSpotlight() {
                   priority
                   fetchPriority="high"
                   className="object-cover rounded-2xl shadow-xl"
-                  sizes="(max-width: 1024px) 90vw, 45vw"
+                  // The image sits in a max-w-lg (512px) box, so 90vw over-asked:
+                  // a 360px phone was served a 750px file for a 343px slot.
+                  sizes="(max-width: 640px) 92vw, (max-width: 1024px) 60vw, 512px"
                 />
               </Link>
             </div>
-          </Reveal>
+          </div>
         </div>
       </Contain>
     </section>

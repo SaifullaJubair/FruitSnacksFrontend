@@ -78,7 +78,7 @@ const BannerItem = ({ bannerData }) => {
                 alt={banner?.banner_title || `Banner ${i + 1}`}
                 fill
                 className="object-cover opacity-90"
-                sizes="(max-width: 640px) 100vw, (max-width: 1200px) 92vw, 1200px"
+                sizes="(max-width: 640px) 96vw, (max-width: 1200px) 92vw, 1200px"
                 {...(i === 0
                   ? { priority: true, fetchPriority: "high" }
                   : {
