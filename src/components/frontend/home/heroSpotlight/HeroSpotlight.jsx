@@ -104,6 +104,7 @@ export default async function HeroSpotlight() {
                   fill
                   priority
                   fetchPriority="high"
+                  quality={65}
                   className="object-cover rounded-2xl shadow-xl"
                   // The image sits in a max-w-lg (512px) box, so 90vw over-asked:
                   // a 360px phone was served a 750px file for a 343px slot.

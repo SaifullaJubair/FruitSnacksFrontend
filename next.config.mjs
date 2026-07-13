@@ -13,6 +13,11 @@ const nextConfig = {
     // replacing an image always yields a new URL — a long TTL can never serve a
     // stale one. 30 days.
     minimumCacheTTL: 60 * 60 * 24 * 30,
+    // Product shots are photos of food behind rounded corners and a shadow —
+    // there is no fine detail to protect, and PageSpeed was reporting ~300 KiB
+    // of pure encoding waste across the homepage. 75 -> 65 is invisible on this
+    // material and takes roughly a quarter off every image on the page.
+    qualities: [65, 75],
     // NOTE: deviceSizes/imageSizes are deliberately left at their defaults.
     // Narrowing them makes the optimizer reject any width outside the list with
     // a 400 — which would break already-indexed /_next/image?...&w=828 URLs on

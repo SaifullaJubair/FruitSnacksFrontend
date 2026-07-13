@@ -7,15 +7,16 @@ import { bodyFont, sansFont } from "@/utils/font";
 // ~4,950 ms of blocked paint — for only 35.7 KiB. So only genuinely global CSS
 // stays here:
 //   - skeleton.css  : 14 components across most routes (1 KiB)
-//   - ReactToastify : the ToastContainer below is mounted in this layout
 //   - globals.css   : Tailwind
 // Moved out:
 //   - react-photo-view.css (18.5 KiB) → co-located with its 6 consumers
 //     (PDP gallery, cart, profile). The homepage has no lightbox.
 //   - react-tooltip.css → deleted; nothing in src/ ever imported react-tooltip.
+//   - ReactToastify.css (16 KiB) → now travels with <LazyToaster>, which is
+//     dynamically imported. It was blocking the first paint of every route for a
+//     container that renders nothing until a toast actually fires.
 import "react-loading-skeleton/dist/skeleton.css";
-import { Slide, ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import LazyToaster from "@/components/shared/LazyToaster";
 import "./globals.css";
 import AnalyticsAdvancedMatching from "@/components/analyticsScripts/utils/AnalyticsAdvancedMatching";
 import FbclidCapture from "@/components/analyticsScripts/utils/FbclidCapture";
@@ -197,12 +198,7 @@ export default async function RootLayout({ children }) {
             />
             <main>
               {children}
-              <ToastContainer
-                position="bottom-right"
-                autoClose={1500}
-                transition={Slide}
-                closeOnClick
-              />
+              <LazyToaster />
             </main>
           </QueryProviders>
         </Providers>
