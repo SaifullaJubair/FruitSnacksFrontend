@@ -1,8 +1,5 @@
-"use client";
-
-// Server components (Banner/hero, FlashSale) are rendered directly in Home.jsx —
-// this component handles only client-side sections driven by home_section_array.
-// IDs here MUST match HOME_SECTION_DEFAULTS in setting.services.ts (source of truth).
+// SPIKE: "use client" removed — testing whether a Server Component can dispatch
+// async Server Components through the SECTION_COMPONENTS map.
 import TrendingProduct from "./trendingProduct/TrendingProduct";
 import LatestProducts from "./latestProducts/LatestProducts";
 import CategoryWiseProduct from "./categoryWiseProduct/CategoryWiseProduct";
