@@ -11,22 +11,29 @@ import { images } from "@/components/utils/ImageImport";
 import Contain from "@/components/common/Contain";
 import { toInternalPath } from "@/components/utils/internalPath";
 
+// Shown until the shop uploads its own banners (Admin → Banner). These used to
+// be hot-linked from images.unsplash.com, which made the LCP element a
+// third-party request: a separate DNS lookup, TLS handshake and fetch before the
+// largest image on the page could even start downloading — PageSpeed measured
+// 5.6s of load duration on it over slow 4G. They are now local, same-origin, and
+// re-encoded to WebP (332 KB → 91 KB), so Next serves them straight from the CDN
+// edge and can size them to the viewport.
 const PLACEHOLDER_BANNERS = [
   {
     _id: "ph1",
-    banner_image: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1400&q=80",
+    banner_image: "/assets/banners/b1.webp",
     banner_title: "Fresh Fruits Delivered Daily",
     banner_path: "/shop",
   },
   {
     _id: "ph2",
-    banner_image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?w=1400&q=80",
+    banner_image: "/assets/banners/b2.webp",
     banner_title: "Premium Snacks Collection",
     banner_path: "/shop",
   },
   {
     _id: "ph3",
-    banner_image: "https://images.unsplash.com/photo-1490474418585-ba9bad8fd0ea?w=1400&q=80",
+    banner_image: "/assets/banners/b3.webp",
     banner_title: "Healthy & Delicious",
     banner_path: "/shop",
   },

@@ -21,7 +21,12 @@ const MetaPixelScript = ({ pixelId }) => {
   if (!pixelId) return null;
   return (
     <>
-      <Script id="meta-pixel" strategy="afterInteractive">
+      {/* lazyOnload: the pixel cost ~199ms of main-thread work during hydration,
+          and it ships 33.5 KiB of Babel polyfills we cannot control. Deferring it
+          is safe — the fbq() shim below installs a queue (n.queue.push) before
+          fbevents.js arrives, so a PageView or Purchase fired early is replayed
+          once it loads, not lost. */}
+      <Script id="meta-pixel" strategy="lazyOnload">
         {`
           !function(f,b,e,v,n,t,s)
           {if(f.fbq)return;n=f.fbq=function(){n.callMethod?

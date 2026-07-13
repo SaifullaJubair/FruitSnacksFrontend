@@ -6,7 +6,11 @@ import Script from "next/script";
 const MicrosoftClarity = ({ clarityId }) => {
   if (!clarityId) return null;
   return (
-    <Script id="microsoft-clarity" strategy="afterInteractive">
+    // lazyOnload, not afterInteractive: session-recording has no bearing on what
+    // the customer sees, and afterInteractive put it on the main thread during
+    // hydration — 218ms of script evaluation competing with the page becoming
+    // usable. It now runs once the page is idle.
+    <Script id="microsoft-clarity" strategy="lazyOnload">
       {`
         (function(c,l,a,r,i,t,y){
           c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};

@@ -29,7 +29,9 @@ const TikTokPixelScript = ({ pixelId }) => {
   if (!pixelId) return null;
   return (
     <>
-      <Script id="tiktok-pixel" strategy="afterInteractive">
+      {/* lazyOnload — same reasoning as the Meta pixel: ttq.setAndDefer queues
+          every call, so events fired before the script lands are replayed. */}
+      <Script id="tiktok-pixel" strategy="lazyOnload">
         {`
           !function (w, d, t) {
             w.TiktokAnalyticsObject=t;
