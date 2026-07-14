@@ -3,14 +3,24 @@
 import Script from "next/script";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, Suspense } from "react";
+import { generateEventId } from "../utils/metaPixel/useMetaPixel";
+import { sendServerEvent } from "../utils/metaPixel/metaServerEvent";
 
+// PageView previously had NO server-side (CAPI) counterpart — the browser
+// fbq() call fired alone, with no eventID, so Meta could never dedupe it
+// against anything server-side. Threading eventID through both legs here
+// mirrors every other tracked event (ViewContent, AddToCart, Purchase...).
 const PageViewTracker = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   useEffect(() => {
-    if (typeof window !== "undefined" && window.fbq) {
-      window.fbq("track", "PageView");
-    }
+    if (typeof window === "undefined" || !window.fbq) return;
+    const eventId = generateEventId();
+    window.fbq("track", "PageView", {}, { eventID: eventId });
+    sendServerEvent({
+      event_name: "PageView",
+      event_id: eventId,
+    });
   }, [pathname, searchParams]);
   return null;
 };
@@ -25,7 +35,10 @@ const MetaPixelScript = ({ pixelId }) => {
           and it ships 33.5 KiB of Babel polyfills we cannot control. Deferring it
           is safe — the fbq() shim below installs a queue (n.queue.push) before
           fbevents.js arrives, so a PageView or Purchase fired early is replayed
-          once it loads, not lost. */}
+          once it loads, not lost.
+          No 'track PageView' here anymore — PageViewTracker's effect fires on
+          first mount too, so this init script + that effect used to double-count
+          the initial pageview. PageViewTracker is now the single source. */}
       <Script id="meta-pixel" strategy="lazyOnload">
         {`
           !function(f,b,e,v,n,t,s)
@@ -37,7 +50,6 @@ const MetaPixelScript = ({ pixelId }) => {
           s.parentNode.insertBefore(t,s)}(window, document,'script',
           'https://connect.facebook.net/en_US/fbevents.js');
           fbq('init', '${pixelId}');
-          fbq('track', 'PageView');
         `}
       </Script>
       <noscript>
