@@ -9,12 +9,39 @@ import { getCurrencyCode } from "@/utils/currency";
 import { calculatePrice } from "@/utils/helper";
 
 // ── helpers ────────────────────────────────────────────
+// The Meta/TikTok pixel <Script>s load with strategy="lazyOnload" (deferred
+// until the browser is idle, to keep them off the critical path). Settings
+// (meta_pixel_enabled etc.) load via a fast, cached react-query call and
+// routinely resolve BEFORE that lazy script has installed window.fbq/ttq —
+// so a bare `if (window.fbq)` check silently drops the call: the CAPI
+// (server) leg still fires, but the browser leg never does, breaking dedup.
+// Meta's own shim solves this for calls made after fbq() exists, by queuing
+// them internally — the gap is only the window before fbq/ttq exist AT ALL.
+// Retry briefly (idle-CPU heartbeats are ~100ms) instead of dropping.
+const waitFor = (check, run, args, attempts = 20) => {
+  if (typeof window === "undefined") return;
+  if (check()) {
+    run(...args);
+    return;
+  }
+  if (attempts <= 0) return;
+  setTimeout(() => waitFor(check, run, args, attempts - 1), 100);
+};
+
 const fbq = (...args) => {
-  if (typeof window !== "undefined" && window.fbq) window.fbq(...args);
+  waitFor(
+    () => typeof window.fbq === "function",
+    (...a) => window.fbq(...a),
+    args,
+  );
 };
 
 const ttq = (...args) => {
-  if (typeof window !== "undefined" && window.ttq) window.ttq.track(...args);
+  waitFor(
+    () => typeof window.ttq?.track === "function",
+    (...a) => window.ttq.track(...a),
+    args,
+  );
 };
 
 // ── GTM dataLayer push ─────────────────────────────────

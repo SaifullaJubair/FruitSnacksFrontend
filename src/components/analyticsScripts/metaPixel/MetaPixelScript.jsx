@@ -10,17 +10,32 @@ import { sendServerEvent } from "../utils/metaPixel/metaServerEvent";
 // fbq() call fired alone, with no eventID, so Meta could never dedupe it
 // against anything server-side. Threading eventID through both legs here
 // mirrors every other tracked event (ViewContent, AddToCart, Purchase...).
+//
+// The <Script> below loads with strategy="lazyOnload" (deferred until the
+// browser is idle) so window.fbq often doesn't exist yet on this effect's
+// FIRST run (it fires on mount, same tick as the initial pageview). A bare
+// `if (!window.fbq) return` drops that call outright instead of missing a
+// beat — retry briefly instead, so the initial PageView isn't lost.
+const trackPageView = (attempts = 20) => {
+  if (typeof window === "undefined") return;
+  if (typeof window.fbq !== "function") {
+    if (attempts <= 0) return;
+    setTimeout(() => trackPageView(attempts - 1), 100);
+    return;
+  }
+  const eventId = generateEventId();
+  window.fbq("track", "PageView", {}, { eventID: eventId });
+  sendServerEvent({
+    event_name: "PageView",
+    event_id: eventId,
+  });
+};
+
 const PageViewTracker = () => {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   useEffect(() => {
-    if (typeof window === "undefined" || !window.fbq) return;
-    const eventId = generateEventId();
-    window.fbq("track", "PageView", {}, { eventID: eventId });
-    sendServerEvent({
-      event_name: "PageView",
-      event_id: eventId,
-    });
+    trackPageView();
   }, [pathname, searchParams]);
   return null;
 };
