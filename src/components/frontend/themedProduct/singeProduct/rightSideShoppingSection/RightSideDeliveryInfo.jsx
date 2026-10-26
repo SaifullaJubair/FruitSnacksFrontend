@@ -1,5 +1,4 @@
 "use client";
-import { cities } from "@/data/cites";
 import { useEffect, useState } from "react";
 import { FaChevronDown } from "react-icons/fa6";
 import Skeleton from "react-loading-skeleton";
@@ -51,14 +50,24 @@ const RightSideDeliveryInfo = ({
   register,
   userInfo,
   errors,
-  setDivision,
-  setDistrictId,
-  setDivisionID,
-  setDistrict,
-  setIsOpenDistrict,
-  isOpenDistrict,
+  // Geo picker — Division → District → Upazila. division/district keep
+  // their PRE-geo-module meaning (display NAME) so billing_city/
+  // billing_state and the shipping-cost string-match stay untouched — see
+  // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 2.
+  divisions,
+  divisionsLoading,
   division,
+  divisionId,
+  setDivision,
+  districts,
+  districtsLoading,
   district,
+  districtId,
+  setDistrict,
+  upazilas,
+  upazilasLoading,
+  upazila,
+  setUpazila,
   watch,
   loading,
   isAccordionOpen,
@@ -66,8 +75,6 @@ const RightSideDeliveryInfo = ({
   customer_phone,
   setUserPhone,
   setUserPhoneLogin,
-  zoneLoading,
-  zoneData,
 }) => {
   if (loading) {
     return (
@@ -175,9 +182,37 @@ const RightSideDeliveryInfo = ({
             )}
           </div>
 
-          {/* District + Thana — stack on mobile (the "সিলেক্ট করুন" label wraps
-              and breaks when squeezed into 2 narrow columns), 2-up on sm+. */}
+          {/* Division + District — stack on mobile (the "সিলেক্ট করুন" label
+              wraps and breaks when squeezed into 2 narrow columns), 2-up on
+              sm+. Reads our own geo tree, not Pathao's live API — see geo
+              module / docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label
+                className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
+                style={{ color: "var(--heading-color)" }}
+              >
+                <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
+                বিভাগ
+              </label>
+              <Select
+                placeholder="সিলেক্ট করুন"
+                options={divisions}
+                value={divisionId ? { _id: divisionId, name_en: division } : null}
+                isLoading={divisionsLoading}
+                getOptionLabel={(x) => x?.name_en}
+                getOptionValue={(x) => x?._id}
+                onChange={(opt) => {
+                  setDistrict(undefined, undefined);
+                  setUpazila?.(undefined, undefined);
+                  setDivision(opt?._id, opt?.name_en);
+                }}
+                styles={selectStyles}
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
+              />
+            </div>
             <div>
               <label
                 className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
@@ -188,17 +223,15 @@ const RightSideDeliveryInfo = ({
               </label>
               <Select
                 placeholder="সিলেক্ট করুন"
-                options={cities}
-                value={division ? { city_name: division } : null}
-                getOptionLabel={(x) => x?.city_name}
-                getOptionValue={(x) => x?.city_id}
+                options={districts}
+                value={districtId ? { _id: districtId, name_en: district } : null}
+                isDisabled={!divisionId}
+                getOptionLabel={(x) => x?.name_en}
+                getOptionValue={(x) => x?._id}
+                isLoading={districtsLoading}
                 onChange={(opt) => {
-                  setIsOpenDistrict(false);
-                  setDistrict(undefined);
-                  setDistrictId(undefined);
-                  setDivision(opt?.city_name);
-                  setDivisionID(opt?.city_id); // ✅ এটা set হলেই useGetZoneData auto fetch করবে
-                  setTimeout(() => setIsOpenDistrict(true), 50);
+                  setUpazila?.(undefined, undefined);
+                  setDistrict(opt?._id, opt?.name_en);
                 }}
                 styles={selectStyles}
                 menuPortalTarget={
@@ -206,33 +239,33 @@ const RightSideDeliveryInfo = ({
                 }
               />
             </div>
-            {(isOpenDistrict || zoneLoading) && (
-              <div>
-                <label
-                  className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
-                  style={{ color: "var(--heading-color)" }}
-                >
-                  <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
-                  থানা
-                </label>
-                <Select
-                  placeholder="সিলেক্ট করুন"
-                  options={zoneData?.data}
-                  value={district ? { zone_name: district } : null}
-                  getOptionLabel={(x) => x?.zone_name}
-                  getOptionValue={(x) => x?.zone_id}
-                  isLoading={zoneLoading}
-                  onChange={(opt) => {
-                    setDistrict(opt?.zone_name);
-                    setDistrictId(opt?.zone_id);
-                  }}
-                  styles={selectStyles}
-                  menuPortalTarget={
-                    typeof document !== "undefined" ? document.body : null
-                  }
-                />
-              </div>
-            )}
+          </div>
+          <div>
+            <label
+              className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
+              style={{ color: "var(--heading-color)" }}
+            >
+              <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
+              থানা/এলাকা{" "}
+              <span className="font-normal opacity-60">(ঐচ্ছিক)</span>
+            </label>
+            <Select
+              placeholder="সিলেক্ট করুন (ঐচ্ছিক)"
+              options={upazilas}
+              value={upazila ? { name_en: upazila } : null}
+              isDisabled={!districtId}
+              isLoading={upazilasLoading}
+              isClearable
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
+              onChange={(opt) => {
+                setUpazila?.(opt?._id, opt?.name_en);
+              }}
+              styles={selectStyles}
+              menuPortalTarget={
+                typeof document !== "undefined" ? document.body : null
+              }
+            />
           </div>
 
           {/* Address */}

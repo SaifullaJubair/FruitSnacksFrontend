@@ -1,4 +1,3 @@
-import { cities } from "@/data/cites";
 import PhoneInput, { isValidPhoneNumber } from "react-phone-number-input";
 import Select from "react-select";
 import { FaMapMarkedAlt, FaStar } from "react-icons/fa";
@@ -39,21 +38,28 @@ const DeliveryInformation = ({
   register,
   userInfo,
   errors,
-  districtsData,
   setUserPhoneLogin,
   customer_phone,
   setUserPhone,
+  // Geo picker — Division → District → Upazila. Names below are kept from
+  // the pre-geo-module picker (division/district) so the shipping-cost
+  // string-match in order.recompute.ts and the request payload shape in
+  // AddToCart.jsx stay untouched (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md
+  // Phase 2 — this is a deliberate compatibility choice, not an oversight).
+  divisions,
+  divisionsLoading,
+  division, // selected division NAME (e.g. "Dhaka") — unchanged meaning
+  divisionId, // selected division's geo_locations _id
   setDivision,
-  setDistrictId,
-  setDivisionID,
-  division,
-  district,
+  districts,
+  districtsLoading,
+  district, // selected district NAME — unchanged meaning
+  districtId, // selected district's geo_locations _id
   setDistrict,
-  setIsOpenDistrict,
-  isOpenDistrict,
-  refetchZone,
-  zoneLoading,
-  zoneData,
+  upazilas,
+  upazilasLoading,
+  upazila, // selected upazila NAME — optional, finest level
+  setUpazila,
   // S6 (2026-06-04) — saved-addresses picker. Both props are optional;
   // anonymous (FB-ads) checkout flows never receive them.
   savedAddresses = [],
@@ -186,28 +192,28 @@ const DeliveryInformation = ({
           )}
         </div>
 
-        {/* City + Zone side by side */}
+        {/* Division → District → Upazila, cascading. Reads our own geo tree
+            (no Pathao credentials needed — see geo module), not Pathao's
+            live zone-list API. Upazila is optional: a customer can finish
+            checkout having only picked down to District. */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
-              City <span className="text-primary">*</span>
+              Division <span className="text-primary">*</span>
             </label>
             <Select
-              id="city"
-              name="city"
-              placeholder="Select city"
-              options={cities}
-              value={division ? { city_name: division } : null}
-              getOptionLabel={(x) => x?.city_name}
-              getOptionValue={(x) => x?.city_id}
+              id="division"
+              name="division"
+              placeholder="Select division"
+              options={divisions}
+              value={divisionId ? { _id: divisionId, name_en: division } : null}
+              isLoading={divisionsLoading}
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
               onChange={(selectedOption) => {
-                refetchZone();
-                setIsOpenDistrict(false);
-                setDistrict();
-                setDistrictId();
-                setDivisionID(selectedOption?.city_id);
-                setDivision(selectedOption?.city_name);
-                setTimeout(() => setIsOpenDistrict(true), 100);
+                setDistrict(undefined, undefined);
+                setUpazila?.(undefined, undefined);
+                setDivision(selectedOption?._id, selectedOption?.name_en);
               }}
               menuPortalTarget={document.body}
               styles={selectStyles}
@@ -215,26 +221,48 @@ const DeliveryInformation = ({
           </div>
           <div>
             <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
-              Zone <span className="text-primary">*</span>
+              District <span className="text-primary">*</span>
             </label>
             <Select
-              id="Zone"
-              name="Zone"
-              placeholder="Select zone"
-              options={zoneData?.data}
-              value={district ? { zone_name: district } : null}
-              isDisabled={!isOpenDistrict && !zoneLoading}
-              isLoading={zoneLoading}
-              getOptionLabel={(x) => x?.zone_name}
-              getOptionValue={(x) => x?.zone_id}
+              id="district"
+              name="district"
+              placeholder="Select district"
+              options={districts}
+              value={districtId ? { _id: districtId, name_en: district } : null}
+              isDisabled={!divisionId}
+              isLoading={districtsLoading}
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
               onChange={(selectedOption) => {
-                setDistrict(selectedOption?.zone_name);
-                setDistrictId(selectedOption?.zone_id);
+                setUpazila?.(undefined, undefined);
+                setDistrict(selectedOption?._id, selectedOption?.name_en);
               }}
               menuPortalTarget={document.body}
               styles={selectStyles}
             />
           </div>
+        </div>
+        <div>
+          <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
+            Area / Upazila <span className="text-gray-400 normal-case font-normal tracking-normal">(optional, helps courier accuracy)</span>
+          </label>
+          <Select
+            id="upazila"
+            name="upazila"
+            placeholder="Select area (optional)"
+            options={upazilas}
+            value={upazila ? { name_en: upazila } : null}
+            isDisabled={!districtId}
+            isLoading={upazilasLoading}
+            isClearable
+            getOptionLabel={(x) => x?.name_en}
+            getOptionValue={(x) => x?._id}
+            onChange={(selectedOption) => {
+              setUpazila?.(selectedOption?._id, selectedOption?.name_en);
+            }}
+            menuPortalTarget={document.body}
+            styles={selectStyles}
+          />
         </div>
         <div className="">
           <label

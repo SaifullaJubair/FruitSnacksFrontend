@@ -28,8 +28,7 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import { BASE_URL } from "@/components/utils/baseURL";
-import { cities } from "@/data/cites";
-import useGetZoneData from "@/components/lib/getZoneData";
+import useGetGeoChildren from "@/components/lib/getGeoChildren";
 
 const emptyForm = {
   label: "",
@@ -48,9 +47,19 @@ const Addresses = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
-  const [divisionID, setDivisionID] = useState(null);
-  const [isZoneOpen, setIsZoneOpen] = useState(true);
-  const { data: zoneData, isLoading: zoneLoading } = useGetZoneData(divisionID);
+  // Geo picker — Division → District, same pattern as the checkout pickers
+  // (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md). form.division/
+  // form.district stay NAME-only, same as before this module — the address
+  // schema is name-based, not id-based, so there is no geo_locations id to
+  // persist here yet (a saved address picked at checkout therefore still
+  // can't pre-select a dropdown row by id — see the gap noted in
+  // AddToCart.jsx's applySavedAddress; unchanged by this migration).
+  const [divisionId, setDivisionId] = useState(null);
+  const [districtId, setDistrictId] = useState(null);
+  const { data: divisionsResp, isLoading: divisionsLoading } =
+    useGetGeoChildren(null, { isRoot: true });
+  const { data: districtsResp, isLoading: districtsLoading } =
+    useGetGeoChildren(divisionId);
 
   const fetchList = async () => {
     setLoading(true);
@@ -75,8 +84,8 @@ const Addresses = () => {
   const openAdd = () => {
     setEditingId(null);
     setForm({ ...emptyForm, is_default: list.length === 0 });
-    setDivisionID(null);
-    setIsZoneOpen(true);
+    setDivisionId(null);
+    setDistrictId(null);
     setShowForm(true);
   };
 
@@ -91,8 +100,11 @@ const Addresses = () => {
       address_line: addr.address_line || "",
       is_default: !!addr.is_default,
     });
-    setDivisionID(null);
-    setIsZoneOpen(true);
+    // Existing addresses carry no geo_locations id (name-only schema, see
+    // note above) — the dropdowns can't pre-select by id, the name still
+    // shows via form.division/form.district read-only until re-picked.
+    setDivisionId(null);
+    setDistrictId(null);
     setShowForm(true);
   };
 
@@ -249,30 +261,31 @@ const Addresses = () => {
               className="border px-3 py-2 text-sm rounded outline-primary"
             />
             <Select
-              placeholder="City"
-              options={cities}
-              value={form.division ? { city_name: form.division } : null}
-              getOptionLabel={(x) => x?.city_name}
-              getOptionValue={(x) => x?.city_id}
+              placeholder="Division"
+              options={divisionsResp?.data}
+              value={form.division ? { name_en: form.division } : null}
+              isLoading={divisionsLoading}
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
               onChange={(opt) => {
-                setIsZoneOpen(false);
-                setForm({ ...form, division: opt?.city_name || "", district: "" });
-                setDivisionID(opt?.city_id);
-                setTimeout(() => setIsZoneOpen(true), 100);
+                setForm({ ...form, division: opt?.name_en || "", district: "" });
+                setDivisionId(opt?._id || null);
+                setDistrictId(null);
               }}
               menuPortalTarget={typeof document !== "undefined" ? document.body : null}
               styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
             />
             <Select
-              placeholder="Zone / Thana"
-              options={zoneData?.data}
-              value={form.district ? { zone_name: form.district } : null}
-              isDisabled={!isZoneOpen || !divisionID}
-              isLoading={zoneLoading}
-              getOptionLabel={(x) => x?.zone_name}
-              getOptionValue={(x) => x?.zone_id}
+              placeholder="District"
+              options={districtsResp?.data}
+              value={form.district ? { name_en: form.district } : null}
+              isDisabled={!divisionId}
+              isLoading={districtsLoading}
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
               onChange={(opt) => {
-                setForm({ ...form, district: opt?.zone_name || "" });
+                setForm({ ...form, district: opt?.name_en || "" });
+                setDistrictId(opt?._id || null);
               }}
               menuPortalTarget={typeof document !== "undefined" ? document.body : null}
               styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}

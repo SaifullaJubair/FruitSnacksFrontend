@@ -33,7 +33,7 @@ import { productPrice, useCartCalculations } from "@/utils/helper";
 import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
-import useGetZoneData from "@/components/lib/getZoneData";
+import useGetGeoChildren from "@/components/lib/getGeoChildren";
 
 // ✅ একটাই hook — সব platform
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
@@ -83,11 +83,20 @@ const AddToCart = () => {
     staleTime: 60_000,
   });
   const isLoading = !mounted || cartLoading;
-  const [divisionID, setDivisionID] = useState();
+  // Geo picker state. `division`/`district` keep their PRE-geo-module
+  // meaning (the display NAME, e.g. "Dhaka") on purpose — billing_city /
+  // billing_state / the shipping-cost string-match in order.recompute.ts
+  // all read those names and must not change shape (see
+  // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 2). `*Id` fields are the
+  // new geo_locations _id, sent alongside so the backend can resolve a
+  // Pathao city_id/zone_id at dispatch time without the frontend ever
+  // seeing Pathao's numbers.
+  const [divisionId, setDivisionId] = useState();
   const [division, setDivision] = useState();
-  const [districtId, setDistrictId] = useState("");
+  const [districtId, setDistrictId] = useState();
   const [district, setDistrict] = useState();
-  const [isOpenDistrict, setIsOpenDistrict] = useState(true);
+  const [upazilaId, setUpazilaId] = useState();
+  const [upazila, setUpazila] = useState();
   const [couponData, setCouponData] = useState(null);
   const [couponCode, setCouponCode] = useState("");
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
@@ -140,8 +149,16 @@ const AddToCart = () => {
 
   // S6 — apply a saved address to the checkout form. Only fills BLANK
   // fields by default so we never clobber what the buyer already typed.
-  // Phone is filled when empty; division/district drive the controlled
-  // city/zone state so the courier zone API refetches automatically.
+  // Phone is filled when empty.
+  //
+  // ⚠️ Saved addresses (Addresses.jsx) still store division/district by
+  // NAME only, not by geo_locations id — that picker is migrated in a later
+  // phase (see plan doc, Phase 4). So a saved address can fill the display
+  // name here but cannot supply divisionId/districtId, which means the
+  // cascading dropdown below won't show it as "selected" and the customer
+  // must re-pick division/district from the dropdown even though the name
+  // is prefilled. Not a regression — this exact gap already existed before
+  // the geo migration (saved addresses never carried pathao_city_id either).
   const applySavedAddress = (addr) => {
     if (!addr) return;
     if (addr.recipient_name) setValue("customer_name", addr.recipient_name);
@@ -152,9 +169,11 @@ const AddToCart = () => {
     }
     if (addr.division && addr.division !== division) {
       setDivision(addr.division);
-      setDistrict();
-      setDistrictId();
-      setIsOpenDistrict(true);
+      setDivisionId(undefined);
+      setDistrict(undefined);
+      setDistrictId(undefined);
+      setUpazila(undefined);
+      setUpazilaId(undefined);
     }
     if (addr.district) setDistrict(addr.district);
     if (addr.address_line) setValue("address", addr.address_line);
@@ -175,11 +194,15 @@ const AddToCart = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedAddresses]);
 
-  const {
-    data: zoneData,
-    isLoading: zoneLoading,
-    refetch: refetchZone,
-  } = useGetZoneData(divisionID);
+  // Division → District → Upazila, cascading from our own geo collection.
+  // Divisions load unconditionally (the root list); each lower level is
+  // gated on its parent being picked.
+  const { data: divisionsResp, isLoading: divisionsLoading } =
+    useGetGeoChildren(null, { isRoot: true });
+  const { data: districtsResp, isLoading: districtsLoading } =
+    useGetGeoChildren(divisionId);
+  const { data: upazilasResp, isLoading: upazilasLoading } =
+    useGetGeoChildren(districtId);
 
   const shippingCharge = useMemo(
     () =>
@@ -295,7 +318,7 @@ const AddToCart = () => {
         return;
       }
       if (!district || !division) {
-        toast.error("Please select a City and Zone.");
+        toast.error("Please select a Division and District.");
         return;
       }
 
@@ -320,10 +343,14 @@ const AddToCart = () => {
       const purchaseEventId = generateEventId();
 
       const orderData = {
-        pathao_city_id: parseInt(divisionID),
-        pathao_city_name: division,
-        pathao_zone_id: parseInt(districtId),
-        pathao_zone_name: district,
+        // Geo tree ids — resolved server-side into a Pathao city_id/zone_id
+        // at dispatch time (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md
+        // Phase 5). The frontend never sees Pathao's own numbers; only the
+        // names it already showed the customer go in billing_city/
+        // billing_state below, same as before this migration.
+        geo_division_id: divisionId || null,
+        geo_district_id: districtId || null,
+        geo_upazila_id: upazilaId || null,
         order_status: "pending",
         pending_time:
           new Date().toISOString().split("T")[0] +
@@ -472,8 +499,9 @@ const AddToCart = () => {
       settingData,
       dispatch,
       navigate,
-      divisionID,
+      divisionId,
       districtId,
+      upazilaId,
       queryClient,
       trackPurchase,
     ],
@@ -561,17 +589,29 @@ const AddToCart = () => {
                   setUserPhoneLogin={setUserPhoneLogin}
                   setUserPhone={handlePhoneChangeWithTracking}
                   customer_phone={customer_phone}
-                  setDivision={setDivision}
-                  setDistrictId={setDistrictId}
-                  setDivisionID={setDivisionID}
+                  divisions={divisionsResp?.data}
+                  divisionsLoading={divisionsLoading}
                   division={division}
+                  divisionId={divisionId}
+                  setDivision={(id, name) => {
+                    setDivisionId(id);
+                    setDivision(name);
+                  }}
+                  districts={districtsResp?.data}
+                  districtsLoading={districtsLoading}
                   district={district}
-                  setDistrict={setDistrict}
-                  setIsOpenDistrict={setIsOpenDistrict}
-                  isOpenDistrict={isOpenDistrict}
-                  refetchZone={refetchZone}
-                  zoneLoading={zoneLoading}
-                  zoneData={zoneData}
+                  districtId={districtId}
+                  setDistrict={(id, name) => {
+                    setDistrictId(id);
+                    setDistrict(name);
+                  }}
+                  upazilas={upazilasResp?.data}
+                  upazilasLoading={upazilasLoading}
+                  upazila={upazila}
+                  setUpazila={(id, name) => {
+                    setUpazilaId(id);
+                    setUpazila(name);
+                  }}
                   savedAddresses={savedAddresses}
                   onPickSavedAddress={applySavedAddress}
                   showEmailField={showEmailField}

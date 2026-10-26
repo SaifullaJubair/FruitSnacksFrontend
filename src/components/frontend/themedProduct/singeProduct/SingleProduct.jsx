@@ -45,7 +45,7 @@ import {
   isPossiblePhoneNumber,
   isValidPhoneNumber,
 } from "react-phone-number-input";
-import useGetZoneData from "@/components/lib/getZoneData";
+import useGetGeoChildren from "@/components/lib/getGeoChildren";
 import "react-phone-number-input/style.css";
 import { FaHeart, FaRegHeart, FaStar, FaLock } from "react-icons/fa";
 import { HiMinus, HiOutlinePlus } from "react-icons/hi";
@@ -133,11 +133,15 @@ const SingleProduct = ({ product, theme }) => {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
   }, [userInfo?.data?.user_phone]);
 
-  const [divisionID, setDivisionID] = useState();
+  // Geo picker state — see AddToCart.jsx for the full rationale (same
+  // pattern, same compatibility decision: division/district keep their
+  // display-name meaning; *Id fields are the new geo_locations _id).
+  const [divisionId, setDivisionId] = useState();
   const [division, setDivision] = useState();
-  const [districtId, setDistrictId] = useState("");
+  const [districtId, setDistrictId] = useState();
   const [district, setDistrict] = useState();
-  const [isOpenDistrict, setIsOpenDistrict] = useState(true);
+  const [upazilaId, setUpazilaId] = useState();
+  const [upazila, setUpazila] = useState();
   const [totalDiscount, setTotalDiscount] = useState(0);
   const [shopSubtotals, setShopSubtotals] = useState(0);
   const [shopTotal, setShopTotal] = useState(0);
@@ -163,7 +167,12 @@ const SingleProduct = ({ product, theme }) => {
   const [isCompare, setIsCompare] = useState(false);
   const cartProducts = useSelector((state) => state.cart.products);
   const dispatch = useDispatch();
-  const { data: zoneData, isLoading: zoneLoading } = useGetZoneData(divisionID);
+  const { data: divisionsResp, isLoading: divisionsLoading } =
+    useGetGeoChildren(null, { isRoot: true });
+  const { data: districtsResp, isLoading: districtsLoading } =
+    useGetGeoChildren(divisionId);
+  const { data: upazilasResp, isLoading: upazilasLoading } =
+    useGetGeoChildren(districtId);
 
   const currencySymbol = settingData?.data?.[0]?.currency_symbol || "৳";
   const whatsappNumber = settingData?.data?.[0]?.watsapp;
@@ -547,8 +556,8 @@ const SingleProduct = ({ product, theme }) => {
       });
       return;
     }
-    if (!district || !division || !divisionID || !districtId) {
-      toast.error("Please select a City and Zone.");
+    if (!district || !division || !divisionId || !districtId) {
+      toast.error("Please select a Division and District.");
       return;
     }
 
@@ -584,10 +593,11 @@ const SingleProduct = ({ product, theme }) => {
       shipping_cost: shippingCharge || 0,
       grand_total_amount: shopGrandTotals || 0,
       coupon_id: null,
-      pathao_city_id: parseInt(divisionID),
-      pathao_city_name: division,
-      pathao_zone_id: parseInt(districtId),
-      pathao_zone_name: district,
+      // Geo tree ids — resolved server-side into a Pathao city_id/zone_id at
+      // dispatch time (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5).
+      geo_division_id: divisionId || null,
+      geo_district_id: districtId || null,
+      geo_upazila_id: upazilaId || null,
       order_products: [product].map((item) => ({
         product_id: item._id,
         variation_id: variationProduct?._id || null,
@@ -1177,14 +1187,29 @@ const SingleProduct = ({ product, theme }) => {
                   register={register}
                   userInfo={userInfo}
                   errors={errors}
-                  setDivision={setDivision}
-                  setDistrictId={setDistrictId}
-                  setDivisionID={setDivisionID}
+                  divisions={divisionsResp?.data}
+                  divisionsLoading={divisionsLoading}
                   division={division}
+                  divisionId={divisionId}
+                  setDivision={(id, name) => {
+                    setDivisionId(id);
+                    setDivision(name);
+                  }}
+                  districts={districtsResp?.data}
+                  districtsLoading={districtsLoading}
                   district={district}
-                  setDistrict={setDistrict}
-                  setIsOpenDistrict={setIsOpenDistrict}
-                  isOpenDistrict={isOpenDistrict}
+                  districtId={districtId}
+                  setDistrict={(id, name) => {
+                    setDistrictId(id);
+                    setDistrict(name);
+                  }}
+                  upazilas={upazilasResp?.data}
+                  upazilasLoading={upazilasLoading}
+                  upazila={upazila}
+                  setUpazila={(id, name) => {
+                    setUpazilaId(id);
+                    setUpazila(name);
+                  }}
                   watch={watch}
                   loading={userGetLoading}
                   isAccordionOpen={true}
@@ -1192,8 +1217,6 @@ const SingleProduct = ({ product, theme }) => {
                   customer_phone={customer_phone}
                   setUserPhone={handlePhoneChangeWithTracking}
                   setUserPhoneLogin={setUserPhoneLogin}
-                  zoneLoading={zoneLoading}
-                  zoneData={zoneData}
                 />
               </div>
             </div>
