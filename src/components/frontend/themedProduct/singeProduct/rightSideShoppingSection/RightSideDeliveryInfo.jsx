@@ -50,15 +50,12 @@ const RightSideDeliveryInfo = ({
   register,
   userInfo,
   errors,
-  // Geo picker — Division → District → Upazila. division/district keep
-  // their PRE-geo-module meaning (display NAME) so billing_city/
-  // billing_state and the shipping-cost string-match stay untouched — see
-  // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 2.
-  divisions,
-  divisionsLoading,
-  division,
-  divisionId,
-  setDivision,
+  // Geo picker — District + Area only, no Division field (owner decision,
+  // 2026-10-27). district/division keep their PRE-geo-module meaning
+  // (display NAME) so billing_city/billing_state and the shipping-cost
+  // string-match stay untouched — see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md.
+  // division is DERIVED by the parent from the picked district, not picked
+  // here directly.
   districts,
   districtsLoading,
   district,
@@ -67,6 +64,7 @@ const RightSideDeliveryInfo = ({
   upazilas,
   upazilasLoading,
   upazila,
+  upazilaId,
   setUpazila,
   watch,
   loading,
@@ -182,37 +180,13 @@ const RightSideDeliveryInfo = ({
             )}
           </div>
 
-          {/* Division + District — stack on mobile (the "সিলেক্ট করুন" label
+          {/* District + Area — stack on mobile (the "সিলেক্ট করুন" label
               wraps and breaks when squeezed into 2 narrow columns), 2-up on
-              sm+. Reads our own geo tree, not Pathao's live API — see geo
-              module / docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md. */}
+              sm+. No Division field — the backend derives it from the
+              picked district. Reads our own geo tree, not Pathao's live
+              API — see geo module / docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md.
+              Both fields required, both searchable + clearable. */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label
-                className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
-                style={{ color: "var(--heading-color)" }}
-              >
-                <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
-                বিভাগ
-              </label>
-              <Select
-                placeholder="সিলেক্ট করুন"
-                options={divisions}
-                value={divisionId ? { _id: divisionId, name_en: division } : null}
-                isLoading={divisionsLoading}
-                getOptionLabel={(x) => x?.name_en}
-                getOptionValue={(x) => x?._id}
-                onChange={(opt) => {
-                  setDistrict(undefined, undefined);
-                  setUpazila?.(undefined, undefined);
-                  setDivision(opt?._id, opt?.name_en);
-                }}
-                styles={selectStyles}
-                menuPortalTarget={
-                  typeof document !== "undefined" ? document.body : null
-                }
-              />
-            </div>
             <div>
               <label
                 className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
@@ -225,13 +199,13 @@ const RightSideDeliveryInfo = ({
                 placeholder="সিলেক্ট করুন"
                 options={districts}
                 value={districtId ? { _id: districtId, name_en: district } : null}
-                isDisabled={!divisionId}
                 getOptionLabel={(x) => x?.name_en}
                 getOptionValue={(x) => x?._id}
                 isLoading={districtsLoading}
+                isClearable
                 onChange={(opt) => {
                   setUpazila?.(undefined, undefined);
-                  setDistrict(opt?._id, opt?.name_en);
+                  setDistrict(opt?._id, opt?.name_en, opt?.division_name_en);
                 }}
                 styles={selectStyles}
                 menuPortalTarget={
@@ -239,33 +213,32 @@ const RightSideDeliveryInfo = ({
                 }
               />
             </div>
-          </div>
-          <div>
-            <label
-              className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
-              style={{ color: "var(--heading-color)" }}
-            >
-              <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
-              থানা/এলাকা{" "}
-              <span className="font-normal opacity-60">(ঐচ্ছিক)</span>
-            </label>
-            <Select
-              placeholder="সিলেক্ট করুন (ঐচ্ছিক)"
-              options={upazilas}
-              value={upazila ? { name_en: upazila } : null}
-              isDisabled={!districtId}
-              isLoading={upazilasLoading}
-              isClearable
-              getOptionLabel={(x) => x?.name_en}
-              getOptionValue={(x) => x?._id}
-              onChange={(opt) => {
-                setUpazila?.(opt?._id, opt?.name_en);
-              }}
-              styles={selectStyles}
-              menuPortalTarget={
-                typeof document !== "undefined" ? document.body : null
-              }
-            />
+            <div>
+              <label
+                className="flex items-center gap-1.5 text-xs font-bold mb-1.5"
+                style={{ color: "var(--heading-color)" }}
+              >
+                <FiMapPin size={12} style={{ color: "var(--brand-primary)" }} />
+                থানা/এলাকা
+              </label>
+              <Select
+                placeholder="সিলেক্ট করুন"
+                options={upazilas}
+                value={upazilaId ? { _id: upazilaId, name_en: upazila } : null}
+                isDisabled={!districtId}
+                isLoading={upazilasLoading}
+                isClearable
+                getOptionLabel={(x) => x?.name_en}
+                getOptionValue={(x) => x?._id}
+                onChange={(opt) => {
+                  setUpazila?.(opt?._id, opt?.name_en);
+                }}
+                styles={selectStyles}
+                menuPortalTarget={
+                  typeof document !== "undefined" ? document.body : null
+                }
+              />
+            </div>
           </div>
 
           {/* Address */}

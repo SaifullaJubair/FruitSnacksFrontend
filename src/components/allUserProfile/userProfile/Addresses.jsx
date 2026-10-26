@@ -28,7 +28,7 @@ import {
   FaCheck,
 } from "react-icons/fa";
 import { BASE_URL } from "@/components/utils/baseURL";
-import useGetGeoChildren from "@/components/lib/getGeoChildren";
+import useGetAllDistricts from "@/components/lib/getAllDistricts";
 
 const emptyForm = {
   label: "",
@@ -47,19 +47,19 @@ const Addresses = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [busy, setBusy] = useState(false);
-  // Geo picker — Division → District, same pattern as the checkout pickers
-  // (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md). form.division/
-  // form.district stay NAME-only, same as before this module — the address
-  // schema is name-based, not id-based, so there is no geo_locations id to
-  // persist here yet (a saved address picked at checkout therefore still
-  // can't pre-select a dropdown row by id — see the gap noted in
+  // Geo picker — District only, no Division field (owner decision,
+  // 2026-10-27), same pattern as the checkout pickers (see
+  // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md). form.division/form.district
+  // stay NAME-only, same as before this module — the address schema is
+  // name-based, not id-based, so there is no geo_locations id to persist
+  // here yet (a saved address picked at checkout therefore still can't
+  // pre-select a dropdown row by id — see the gap noted in
   // AddToCart.jsx's applySavedAddress; unchanged by this migration).
-  const [divisionId, setDivisionId] = useState(null);
+  // form.division is set from the picked district's own division_name_en
+  // (attached server-side, see geo.services.ts findAllDistrictsServices).
   const [districtId, setDistrictId] = useState(null);
-  const { data: divisionsResp, isLoading: divisionsLoading } =
-    useGetGeoChildren(null, { isRoot: true });
   const { data: districtsResp, isLoading: districtsLoading } =
-    useGetGeoChildren(divisionId);
+    useGetAllDistricts();
 
   const fetchList = async () => {
     setLoading(true);
@@ -84,7 +84,6 @@ const Addresses = () => {
   const openAdd = () => {
     setEditingId(null);
     setForm({ ...emptyForm, is_default: list.length === 0 });
-    setDivisionId(null);
     setDistrictId(null);
     setShowForm(true);
   };
@@ -101,9 +100,8 @@ const Addresses = () => {
       is_default: !!addr.is_default,
     });
     // Existing addresses carry no geo_locations id (name-only schema, see
-    // note above) — the dropdowns can't pre-select by id, the name still
-    // shows via form.division/form.district read-only until re-picked.
-    setDivisionId(null);
+    // note above) — the dropdown can't pre-select by id, the name still
+    // shows via form.district read-only until re-picked.
     setDistrictId(null);
     setShowForm(true);
   };
@@ -261,30 +259,22 @@ const Addresses = () => {
               className="border px-3 py-2 text-sm rounded outline-primary"
             />
             <Select
-              placeholder="Division"
-              options={divisionsResp?.data}
-              value={form.division ? { name_en: form.division } : null}
-              isLoading={divisionsLoading}
-              getOptionLabel={(x) => x?.name_en}
-              getOptionValue={(x) => x?._id}
-              onChange={(opt) => {
-                setForm({ ...form, division: opt?.name_en || "", district: "" });
-                setDivisionId(opt?._id || null);
-                setDistrictId(null);
-              }}
-              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
-              styles={{ menuPortal: (base) => ({ ...base, zIndex: 999 }) }}
-            />
-            <Select
               placeholder="District"
               options={districtsResp?.data}
               value={form.district ? { name_en: form.district } : null}
-              isDisabled={!divisionId}
               isLoading={districtsLoading}
+              isClearable
               getOptionLabel={(x) => x?.name_en}
               getOptionValue={(x) => x?._id}
               onChange={(opt) => {
-                setForm({ ...form, district: opt?.name_en || "" });
+                // Division is derived from the picked district's own
+                // division_name_en, not picked directly — no Division field
+                // here any more (owner decision, 2026-10-27).
+                setForm({
+                  ...form,
+                  district: opt?.name_en || "",
+                  division: opt?.division_name_en || "",
+                });
                 setDistrictId(opt?._id || null);
               }}
               menuPortalTarget={typeof document !== "undefined" ? document.body : null}

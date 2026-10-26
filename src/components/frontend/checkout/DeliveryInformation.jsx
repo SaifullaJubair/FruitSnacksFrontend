@@ -41,24 +41,20 @@ const DeliveryInformation = ({
   setUserPhoneLogin,
   customer_phone,
   setUserPhone,
-  // Geo picker — Division → District → Upazila. Names below are kept from
-  // the pre-geo-module picker (division/district) so the shipping-cost
-  // string-match in order.recompute.ts and the request payload shape in
-  // AddToCart.jsx stay untouched (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md
-  // Phase 2 — this is a deliberate compatibility choice, not an oversight).
-  divisions,
-  divisionsLoading,
-  division, // selected division NAME (e.g. "Dhaka") — unchanged meaning
-  divisionId, // selected division's geo_locations _id
-  setDivision,
+  // Geo picker — District → Area (upazila). Division is NOT shown (owner
+  // decision, 2026-10-27: one fewer field for the customer to pick) — the
+  // backend still resolves and snapshots the division name from whichever
+  // district is picked, so billing_state/shipping cost keep working with no
+  // Division field here at all. Both District and Area are now REQUIRED.
   districts,
   districtsLoading,
-  district, // selected district NAME — unchanged meaning
+  district, // selected district NAME
   districtId, // selected district's geo_locations _id
   setDistrict,
   upazilas,
   upazilasLoading,
-  upazila, // selected upazila NAME — optional, finest level
+  upazila, // selected upazila NAME
+  upazilaId,
   setUpazila,
   // S6 (2026-06-04) — saved-addresses picker. Both props are optional;
   // anonymous (FB-ads) checkout flows never receive them.
@@ -192,33 +188,12 @@ const DeliveryInformation = ({
           )}
         </div>
 
-        {/* Division → District → Upazila, cascading. Reads our own geo tree
-            (no Pathao credentials needed — see geo module), not Pathao's
-            live zone-list API. Upazila is optional: a customer can finish
-            checkout having only picked down to District. */}
+        {/* District + Area, cascading. Reads our own geo tree (no Pathao
+            credentials needed — see geo module), not Pathao's live
+            zone-list API. No Division field — the backend resolves it from
+            the picked district. Both fields required, both searchable
+            (react-select's built-in filter) and clearable. */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
-              Division <span className="text-primary">*</span>
-            </label>
-            <Select
-              id="division"
-              name="division"
-              placeholder="Select division"
-              options={divisions}
-              value={divisionId ? { _id: divisionId, name_en: division } : null}
-              isLoading={divisionsLoading}
-              getOptionLabel={(x) => x?.name_en}
-              getOptionValue={(x) => x?._id}
-              onChange={(selectedOption) => {
-                setDistrict(undefined, undefined);
-                setUpazila?.(undefined, undefined);
-                setDivision(selectedOption?._id, selectedOption?.name_en);
-              }}
-              menuPortalTarget={document.body}
-              styles={selectStyles}
-            />
-          </div>
           <div>
             <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
               District <span className="text-primary">*</span>
@@ -229,40 +204,44 @@ const DeliveryInformation = ({
               placeholder="Select district"
               options={districts}
               value={districtId ? { _id: districtId, name_en: district } : null}
-              isDisabled={!divisionId}
               isLoading={districtsLoading}
+              isClearable
               getOptionLabel={(x) => x?.name_en}
               getOptionValue={(x) => x?._id}
               onChange={(selectedOption) => {
                 setUpazila?.(undefined, undefined);
-                setDistrict(selectedOption?._id, selectedOption?.name_en);
+                setDistrict(
+                  selectedOption?._id,
+                  selectedOption?.name_en,
+                  selectedOption?.division_name_en,
+                );
               }}
               menuPortalTarget={document.body}
               styles={selectStyles}
             />
           </div>
-        </div>
-        <div>
-          <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
-            Area / Upazila <span className="text-gray-400 normal-case font-normal tracking-normal">(optional, helps courier accuracy)</span>
-          </label>
-          <Select
-            id="upazila"
-            name="upazila"
-            placeholder="Select area (optional)"
-            options={upazilas}
-            value={upazila ? { name_en: upazila } : null}
-            isDisabled={!districtId}
-            isLoading={upazilasLoading}
-            isClearable
-            getOptionLabel={(x) => x?.name_en}
-            getOptionValue={(x) => x?._id}
-            onChange={(selectedOption) => {
-              setUpazila?.(selectedOption?._id, selectedOption?.name_en);
-            }}
-            menuPortalTarget={document.body}
-            styles={selectStyles}
-          />
+          <div>
+            <label className="block text-xs font-semibold text-secondary/80 mb-1.5 uppercase tracking-wide">
+              Area <span className="text-primary">*</span>
+            </label>
+            <Select
+              id="upazila"
+              name="upazila"
+              placeholder="Select area"
+              options={upazilas}
+              value={upazilaId ? { _id: upazilaId, name_en: upazila } : null}
+              isDisabled={!districtId}
+              isLoading={upazilasLoading}
+              isClearable
+              getOptionLabel={(x) => x?.name_en}
+              getOptionValue={(x) => x?._id}
+              onChange={(selectedOption) => {
+                setUpazila?.(selectedOption?._id, selectedOption?.name_en);
+              }}
+              menuPortalTarget={document.body}
+              styles={selectStyles}
+            />
+          </div>
         </div>
         <div className="">
           <label

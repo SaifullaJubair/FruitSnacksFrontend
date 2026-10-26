@@ -46,6 +46,7 @@ import {
   isValidPhoneNumber,
 } from "react-phone-number-input";
 import useGetGeoChildren from "@/components/lib/getGeoChildren";
+import useGetAllDistricts from "@/components/lib/getAllDistricts";
 import "react-phone-number-input/style.css";
 import { FaHeart, FaRegHeart, FaStar, FaLock } from "react-icons/fa";
 import { HiMinus, HiOutlinePlus } from "react-icons/hi";
@@ -133,11 +134,12 @@ const SingleProduct = ({ product, theme }) => {
       setUserPhone(userInfo?.data?.user_phone?.slice(3, 14));
   }, [userInfo?.data?.user_phone]);
 
-  // Geo picker state — see AddToCart.jsx for the full rationale (same
+  // Geo picker state — District + Area only, no Division field (owner
+  // decision, 2026-10-27). See AddToCart.jsx for the full rationale (same
   // pattern, same compatibility decision: division/district keep their
-  // display-name meaning; *Id fields are the new geo_locations _id).
-  const [divisionId, setDivisionId] = useState();
-  const [division, setDivision] = useState();
+  // display-name meaning; division is DERIVED from the picked district, not
+  // picked directly; *Id fields are the geo_locations _id).
+  const [division, setDivision] = useState(); // derived, not picked
   const [districtId, setDistrictId] = useState();
   const [district, setDistrict] = useState();
   const [upazilaId, setUpazilaId] = useState();
@@ -167,10 +169,8 @@ const SingleProduct = ({ product, theme }) => {
   const [isCompare, setIsCompare] = useState(false);
   const cartProducts = useSelector((state) => state.cart.products);
   const dispatch = useDispatch();
-  const { data: divisionsResp, isLoading: divisionsLoading } =
-    useGetGeoChildren(null, { isRoot: true });
   const { data: districtsResp, isLoading: districtsLoading } =
-    useGetGeoChildren(divisionId);
+    useGetAllDistricts();
   const { data: upazilasResp, isLoading: upazilasLoading } =
     useGetGeoChildren(districtId);
 
@@ -556,8 +556,12 @@ const SingleProduct = ({ product, theme }) => {
       });
       return;
     }
-    if (!district || !division || !divisionId || !districtId) {
-      toast.error("Please select a Division and District.");
+    if (!district || !districtId) {
+      toast.error("Please select a District.");
+      return;
+    }
+    if (!upazila || !upazilaId) {
+      toast.error("Please select an Area.");
       return;
     }
 
@@ -593,9 +597,10 @@ const SingleProduct = ({ product, theme }) => {
       shipping_cost: shippingCharge || 0,
       grand_total_amount: shopGrandTotals || 0,
       coupon_id: null,
-      // Geo tree ids — resolved server-side into a Pathao city_id/zone_id at
-      // dispatch time (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5).
-      geo_division_id: divisionId || null,
+      // Geo tree ids — resolved server-side into billing_state/billing_city
+      // AND a Pathao city_id/zone_id at dispatch time (see
+      // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5). No Division id —
+      // the backend derives it from geo_district_id's own ancestry.
       geo_district_id: districtId || null,
       geo_upazila_id: upazilaId || null,
       order_products: [product].map((item) => ({
@@ -1187,25 +1192,21 @@ const SingleProduct = ({ product, theme }) => {
                   register={register}
                   userInfo={userInfo}
                   errors={errors}
-                  divisions={divisionsResp?.data}
-                  divisionsLoading={divisionsLoading}
-                  division={division}
-                  divisionId={divisionId}
-                  setDivision={(id, name) => {
-                    setDivisionId(id);
-                    setDivision(name);
-                  }}
                   districts={districtsResp?.data}
                   districtsLoading={districtsLoading}
                   district={district}
                   districtId={districtId}
-                  setDistrict={(id, name) => {
+                  setDistrict={(id, name, divisionName) => {
                     setDistrictId(id);
                     setDistrict(name);
+                    // Division derived from the picked district — see
+                    // AddToCart.jsx for the same pattern + rationale.
+                    setDivision(divisionName);
                   }}
                   upazilas={upazilasResp?.data}
                   upazilasLoading={upazilasLoading}
                   upazila={upazila}
+                  upazilaId={upazilaId}
                   setUpazila={(id, name) => {
                     setUpazilaId(id);
                     setUpazila(name);

@@ -34,6 +34,7 @@ import { useUserInfoQuery } from "@/redux/feature/auth/authApi";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { allRemoveFromCart } from "@/redux/feature/cart/cartSlice";
 import useGetGeoChildren from "@/components/lib/getGeoChildren";
+import useGetAllDistricts from "@/components/lib/getAllDistricts";
 
 // ✅ একটাই hook — সব platform
 import useAnalytics from "@/components/analyticsScripts/utils/useAnalytics";
@@ -83,16 +84,19 @@ const AddToCart = () => {
     staleTime: 60_000,
   });
   const isLoading = !mounted || cartLoading;
-  // Geo picker state. `division`/`district` keep their PRE-geo-module
-  // meaning (the display NAME, e.g. "Dhaka") on purpose — billing_city /
-  // billing_state / the shipping-cost string-match in order.recompute.ts
-  // all read those names and must not change shape (see
-  // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 2). `*Id` fields are the
-  // new geo_locations _id, sent alongside so the backend can resolve a
-  // Pathao city_id/zone_id at dispatch time without the frontend ever
-  // seeing Pathao's numbers.
-  const [divisionId, setDivisionId] = useState();
-  const [division, setDivision] = useState();
+  // Geo picker state — District + Area only, no Division field (owner
+  // decision, 2026-10-27). `district`/`division` keep their PRE-geo-module
+  // meaning (the display NAME) on purpose — billing_city/billing_state/the
+  // shipping-cost string-match in order.recompute.ts all read those names
+  // and must not change shape (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md
+  // Phase 2). `division` is now DERIVED from the picked district's own
+  // `division_name_en` (attached server-side, see geo.services.ts
+  // findAllDistrictsServices) rather than picked directly — there is no
+  // Division dropdown to pick it from any more. `*Id` fields are the
+  // geo_locations _id, sent alongside so the backend can resolve a Pathao
+  // city_id/zone_id at dispatch time without the frontend ever seeing
+  // Pathao's numbers.
+  const [division, setDivision] = useState(); // derived, not picked — see above
   const [districtId, setDistrictId] = useState();
   const [district, setDistrict] = useState();
   const [upazilaId, setUpazilaId] = useState();
@@ -152,13 +156,12 @@ const AddToCart = () => {
   // Phone is filled when empty.
   //
   // ⚠️ Saved addresses (Addresses.jsx) still store division/district by
-  // NAME only, not by geo_locations id — that picker is migrated in a later
-  // phase (see plan doc, Phase 4). So a saved address can fill the display
-  // name here but cannot supply divisionId/districtId, which means the
-  // cascading dropdown below won't show it as "selected" and the customer
-  // must re-pick division/district from the dropdown even though the name
-  // is prefilled. Not a regression — this exact gap already existed before
-  // the geo migration (saved addresses never carried pathao_city_id either).
+  // NAME only, not by geo_locations id. So a saved address can fill the
+  // display name here but cannot supply districtId, which means the
+  // District dropdown below won't show it as "selected" and the customer
+  // must re-pick from the dropdown even though the name is prefilled. Not a
+  // regression — this exact gap already existed before the geo migration
+  // (saved addresses never carried pathao_city_id either).
   const applySavedAddress = (addr) => {
     if (!addr) return;
     if (addr.recipient_name) setValue("customer_name", addr.recipient_name);
@@ -169,7 +172,6 @@ const AddToCart = () => {
     }
     if (addr.division && addr.division !== division) {
       setDivision(addr.division);
-      setDivisionId(undefined);
       setDistrict(undefined);
       setDistrictId(undefined);
       setUpazila(undefined);
@@ -194,13 +196,10 @@ const AddToCart = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedAddresses]);
 
-  // Division → District → Upazila, cascading from our own geo collection.
-  // Divisions load unconditionally (the root list); each lower level is
-  // gated on its parent being picked.
-  const { data: divisionsResp, isLoading: divisionsLoading } =
-    useGetGeoChildren(null, { isRoot: true });
+  // District (all 64, flat, no Division step) → Area, from our own geo
+  // collection. Area is gated on District being picked.
   const { data: districtsResp, isLoading: districtsLoading } =
-    useGetGeoChildren(divisionId);
+    useGetAllDistricts();
   const { data: upazilasResp, isLoading: upazilasLoading } =
     useGetGeoChildren(districtId);
 
@@ -317,8 +316,12 @@ const AddToCart = () => {
         toast.error("Phone is required!");
         return;
       }
-      if (!district || !division) {
-        toast.error("Please select a Division and District.");
+      if (!district) {
+        toast.error("Please select a District.");
+        return;
+      }
+      if (!upazila) {
+        toast.error("Please select an Area.");
         return;
       }
 
@@ -343,12 +346,12 @@ const AddToCart = () => {
       const purchaseEventId = generateEventId();
 
       const orderData = {
-        // Geo tree ids — resolved server-side into a Pathao city_id/zone_id
-        // at dispatch time (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md
-        // Phase 5). The frontend never sees Pathao's own numbers; only the
-        // names it already showed the customer go in billing_city/
-        // billing_state below, same as before this migration.
-        geo_division_id: divisionId || null,
+        // Geo tree ids — resolved server-side into billing_state/
+        // billing_city AND a Pathao city_id/zone_id at dispatch time (see
+        // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5). No Division
+        // id sent — there's no Division field any more; the backend derives
+        // it from geo_district_id's own ancestry. The frontend never sees
+        // Pathao's own numbers at all.
         geo_district_id: districtId || null,
         geo_upazila_id: upazilaId || null,
         order_status: "pending",
@@ -499,7 +502,6 @@ const AddToCart = () => {
       settingData,
       dispatch,
       navigate,
-      divisionId,
       districtId,
       upazilaId,
       queryClient,
@@ -589,25 +591,24 @@ const AddToCart = () => {
                   setUserPhoneLogin={setUserPhoneLogin}
                   setUserPhone={handlePhoneChangeWithTracking}
                   customer_phone={customer_phone}
-                  divisions={divisionsResp?.data}
-                  divisionsLoading={divisionsLoading}
-                  division={division}
-                  divisionId={divisionId}
-                  setDivision={(id, name) => {
-                    setDivisionId(id);
-                    setDivision(name);
-                  }}
                   districts={districtsResp?.data}
                   districtsLoading={districtsLoading}
                   district={district}
                   districtId={districtId}
-                  setDistrict={(id, name) => {
+                  setDistrict={(id, name, divisionName) => {
                     setDistrictId(id);
                     setDistrict(name);
+                    // Division isn't picked any more — derived from the
+                    // chosen district's own division_name_en (attached
+                    // server-side, see geo.services.ts
+                    // findAllDistrictsServices). Keeps billing_state/
+                    // shipping-cost logic fed exactly as before.
+                    setDivision(divisionName);
                   }}
                   upazilas={upazilasResp?.data}
                   upazilasLoading={upazilasLoading}
                   upazila={upazila}
+                  upazilaId={upazilaId}
                   setUpazila={(id, name) => {
                     setUpazilaId(id);
                     setUpazila(name);

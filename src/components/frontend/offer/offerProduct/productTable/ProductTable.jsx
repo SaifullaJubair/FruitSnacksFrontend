@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import OfferSummary from "./OfferSummary";
 import { normalizeBdPhone } from "@/utils/phone";
 import useGetGeoChildren from "@/components/lib/getGeoChildren";
+import useGetAllDistricts from "@/components/lib/getAllDistricts";
 import useGetSettingData from "@/components/lib/getSettingData";
 import { toast } from "react-toastify";
 import { BASE_URL } from "@/components/utils/baseURL";
@@ -23,16 +24,17 @@ const ProductTable = ({ offerProducts, offer_id }) => {
   const navigate = useRouter();
   const [selectedVariations, setSelectedVariations] = useState({});
   const { data: userInfo, isLoading: userGetLoading } = useUserInfoQuery();
-  // Geo picker state — same pattern as AddToCart.jsx / SingleProduct.jsx.
+  // Geo picker state — District + Area only, no Division field (owner
+  // decision, 2026-10-27). Same pattern as AddToCart.jsx / SingleProduct.jsx.
   // division/district keep their pre-geo-module meaning (display NAME);
-  // *Id fields are the new geo_locations _id, resolved server-side into a
-  // Pathao city_id/zone_id at dispatch time (Phase 5). Previously this flow
-  // sent NEITHER pathao_city_id/zone_id NOR any district/division id at all
-  // — audit finding #1 (2026-10-26): every order placed through an offer
-  // page was already undispatchable to Pathao. That gap is closed here,
-  // not just carried forward.
-  const [divisionId, setDivisionId] = useState();
-  const [division, setDivision] = useState(userInfo?.data?.user_division);
+  // division is DERIVED from the picked district. *Id fields are the
+  // geo_locations _id, resolved server-side into a Pathao city_id/zone_id
+  // at dispatch time (Phase 5). Previously this flow sent NEITHER
+  // pathao_city_id/zone_id NOR any district/division id at all — audit
+  // finding #1 (2026-10-26): every order placed through an offer page was
+  // already undispatchable to Pathao. That gap is closed here, not just
+  // carried forward.
+  const [division, setDivision] = useState(userInfo?.data?.user_division); // derived
   const [districtId, setDistrictId] = useState();
   const [district, setDistrict] = useState(userInfo?.data?.user_district);
   const [upazilaId, setUpazilaId] = useState();
@@ -44,10 +46,8 @@ const ProductTable = ({ offerProducts, offer_id }) => {
   const [shopGrandTotals, setShopGrandTotals] = useState(0);
   const { data: settingData, isLoading: settingLoading } = useGetSettingData();
 
-  const { data: divisionsResp, isLoading: divisionsLoading } =
-    useGetGeoChildren(null, { isRoot: true });
   const { data: districtsResp, isLoading: districtsLoading } =
-    useGetGeoChildren(divisionId);
+    useGetAllDistricts();
   const { data: upazilasResp, isLoading: upazilasLoading } =
     useGetGeoChildren(districtId);
 
@@ -180,8 +180,8 @@ const ProductTable = ({ offerProducts, offer_id }) => {
       new Date().toISOString().split("T")[0] +
       " " +
       new Date().toLocaleTimeString();
-    if (!district || !division)
-      return toast.error("Please select a district and division.");
+    if (!district) return toast.error("Please select a District.");
+    if (!upazila) return toast.error("Please select an Area.");
 
     // Order Unification Phase B — offer orders now go through the SAME
     // /order endpoint as regular orders (order_type:"offer" + offer_id). The
@@ -202,9 +202,10 @@ const ProductTable = ({ offerProducts, offer_id }) => {
       billing_city: district || userInfo?.data?.user_district,
       billing_state: division || userInfo?.data?.user_division,
       billing_address: data?.address,
-      // Geo tree ids — resolved server-side into a Pathao city_id/zone_id at
-      // dispatch time (see docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5).
-      geo_division_id: divisionId || null,
+      // Geo tree ids — resolved server-side into billing_state/billing_city
+      // AND a Pathao city_id/zone_id at dispatch time (see
+      // docs/_ai/GEO_LOCATION_SELF_HOSTED_PLAN.md Phase 5). No Division id —
+      // the backend derives it from geo_district_id's own ancestry.
       geo_district_id: districtId || null,
       geo_upazila_id: upazilaId || null,
       shipping_location:
@@ -432,25 +433,19 @@ const ProductTable = ({ offerProducts, offer_id }) => {
                   register={register}
                   userInfo={userInfo}
                   errors={errors}
-                  divisions={divisionsResp?.data}
-                  divisionsLoading={divisionsLoading}
-                  division={division}
-                  divisionId={divisionId}
-                  setDivision={(id, name) => {
-                    setDivisionId(id);
-                    setDivision(name);
-                  }}
                   districts={districtsResp?.data}
                   districtsLoading={districtsLoading}
                   district={district}
                   districtId={districtId}
-                  setDistrict={(id, name) => {
+                  setDistrict={(id, name, divisionName) => {
                     setDistrictId(id);
                     setDistrict(name);
+                    setDivision(divisionName);
                   }}
                   upazilas={upazilasResp?.data}
                   upazilasLoading={upazilasLoading}
                   upazila={upazila}
+                  upazilaId={upazilaId}
                   setUpazila={(id, name) => {
                     setUpazilaId(id);
                     setUpazila(name);
